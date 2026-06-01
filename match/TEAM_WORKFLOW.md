@@ -1,6 +1,6 @@
-# 🚀 Match App - Guía de Trabajo del Equipo
+# Match App - Guía de Trabajo del Equipo
 
-## 👥 Equipo
+## Equipo
 
 ### Founder y Líder de Proyecto
 
@@ -14,13 +14,13 @@
 
 ---
 
-# 🎯 Objetivo
+# Objetivo
 
 Mantener el código organizado, evitar conflictos y asegurar que cada desarrollador trabaje de manera independiente.
 
 ---
 
-# 🌳 Estructura de Ramas
+# Estructura de Ramas
 
 ## Producción
 
@@ -30,7 +30,7 @@ main
 
 Contiene únicamente código estable.
 
-⚠️ Nadie desarrolla directamente en esta rama.
+Nadie desarrolla directamente en esta rama.
 
 ---
 
@@ -60,7 +60,7 @@ Cada desarrollador trabaja en una rama propia.
 
 ---
 
-# 📋 Asignación Inicial
+# Asignación Inicial
 
 ## Cristian (Founder)
 
@@ -127,7 +127,7 @@ feature/chat
 
 ---
 
-# ⚙️ Configuración Inicial
+# Configuración Inicial
 
 ## Crear rama develop
 
@@ -143,7 +143,7 @@ git push -u origin develop
 
 ---
 
-# 💻 Primeros Pasos para Cada Desarrollador
+# Primeros Pasos para Cada Desarrollador
 
 ## 1. Clonar el repositorio
 
@@ -203,7 +203,7 @@ git push -u origin feature/auth
 
 ---
 
-# 🔄 Flujo Diario
+# Flujo Diario
 
 Antes de comenzar:
 
@@ -227,7 +227,7 @@ git merge develop
 
 ---
 
-# 💾 Guardar Cambios
+# Guardar Cambios
 
 ```bash
 git add .
@@ -239,7 +239,7 @@ git push
 
 ---
 
-# 📝 Convención de Commits
+# Convención de Commits
 
 ## Correcto
 
@@ -269,7 +269,7 @@ git commit -m "asd"
 
 ---
 
-# 🔀 Pull Requests
+# Pull Requests
 
 Cuando una funcionalidad esté terminada:
 
@@ -287,11 +287,11 @@ feature/auth
 develop
 ```
 
-⚠️ Nunca hacia main.
+Nunca hacia main.
 
 ---
 
-# ✅ Revisión de Código
+# Revisión de Código
 
 Proceso:
 
@@ -304,7 +304,7 @@ Proceso:
 
 ---
 
-# 🚀 Publicación
+# Publicación
 
 Cuando la versión esté estable:
 
@@ -318,7 +318,7 @@ Solo Cristian realiza esta acción.
 
 ---
 
-# ❌ Prohibido
+# Prohibido
 
 - Hacer push directo a main.
 - Trabajar directamente en main.
@@ -328,7 +328,7 @@ Solo Cristian realiza esta acción.
 
 ---
 
-# ✅ Obligatorio
+# Obligatorio
 
 - Trabajar en una rama propia.
 - Hacer pull antes de comenzar.
@@ -338,7 +338,7 @@ Solo Cristian realiza esta acción.
 
 ---
 
-# 📁 Estructura del Proyecto
+# Estructura del Proyecto
 
 ```text
 Match-App
@@ -361,7 +361,7 @@ Match-App
 
 ---
 
-# 📌 Resumen
+# Resumen
 
 | Miembro  | Rama            |
 | -------- | --------------- |
