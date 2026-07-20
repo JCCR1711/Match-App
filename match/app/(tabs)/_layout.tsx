@@ -38,6 +38,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => renderIcon(msExplore, color, size),
         }}
       />
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          title: "Dashboard",
+          tabBarIcon: ({ color, size }) => renderIcon(msExplore, color, size),
+        }}
+      />
     </Tabs>
   );
 }
