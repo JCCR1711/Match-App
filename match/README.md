@@ -1,50 +1,79 @@
-# Welcome to your Expo app 👋
+# Match
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación móvil desarrollada con **React Native + Expo** y **Expo Router**.
 
-## Get started
+## Tecnologías principales
 
-1. Install dependencies
+- React Native
+- Expo
+- Expo Router
+- TypeScript
 
-   ```bash
-   npm install
-   ```
+## Estructura del proyecto
 
-2. Start the app
+El proyecto utiliza una arquitectura basada en **features**.
 
-   ```bash
-   npx expo start
-   ```
+Las rutas de navegación se encuentran en `app/` y la implementación de las funcionalidades se encuentra en `src/`.
 
-In the output, you'll find options to open the app in a
+Para conocer la estructura completa y las reglas de organización del código, consultar:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+**[ARCHITECTURE.md](./ARCHITECTURE.md)**
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+Para conocer el modelo previsto de usuarios, negocios, permisos y planes, consultar:
 
-## Get a fresh project
+**[PRODUCT_MODEL.md](./PRODUCT_MODEL.md)**
 
-When you're ready, run:
+## Rutas
 
-```bash
-npm run reset-project
+Expo Router utiliza la carpeta `app/` para definir la navegación de la aplicación.
+
+Ejemplo:
+
+```text
+app/auth/login/index.tsx
+        ↓
+src/features/auth/views/LoginView.tsx
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Las rutas deben mantenerse simples y delegar la implementación a las vistas correspondientes.
 
-## Learn more
+## Desarrollo
 
-To learn more about developing your project with Expo, look at the following resources:
+Instalar dependencias:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm install
+```
 
-## Join the community
+Ejecutar el proyecto:
 
-Join our community of developers creating universal apps.
+```bash
+npx expo start
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Verificación de TypeScript
+
+Antes de finalizar cambios:
+
+```bash
+npx tsc --noEmit
+```
+
+El proyecto debe mantenerse sin errores de TypeScript.
+
+## Documentación
+
+| Documento          | Propósito                                    |
+| ------------------ | -------------------------------------------- |
+| `README.md`        | Información general y ejecución del proyecto |
+| `ARCHITECTURE.md`  | Arquitectura y organización del código       |
+| `PRODUCT_MODEL.md` | Usuarios, modos, permisos y planes            |
+| `TEAM_WORKFLOW.md` | Flujo de trabajo del equipo                  |
+| `AGENTS.md`        | Instrucciones para agentes de desarrollo     |
+| `CLAUDE.md`        | Instrucciones específicas para Claude        |
+
+## Regla
+
+Antes de crear nuevas carpetas o mover archivos, consultar `ARCHITECTURE.md`.
+
+La arquitectura debe mantenerse consistente durante todo el desarrollo.

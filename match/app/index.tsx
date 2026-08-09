@@ -2,8 +2,23 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { Redirect } from "expo-router";
 
 export default function Index() {
-    const {user} = useAuth();
-    return user
-        ? <Redirect href={"/(tabs)"}/>
-        : <Redirect href={"/auth/slides"}/>
+  const { initialized, isAuthenticated, user } = useAuth();
+
+  if (!initialized) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/auth/onboarding" />;
+  }
+
+  if (!user?.activeMode) {
+    return <Redirect href="/auth/select-mode" />;
+  }
+
+  return user.activeMode === "venue_manager" ? (
+    <Redirect href="/business/setup" />
+  ) : (
+    <Redirect href="/(tabs)" />
+  );
 }

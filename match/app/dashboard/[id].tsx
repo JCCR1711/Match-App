@@ -1,1 +1,1 @@
-export { default } from '@/src/feature/dashboard/views/PerformanceFieldView';
+export { default } from '@/src/features/dashboard/views/PerformanceFieldView';

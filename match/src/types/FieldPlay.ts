@@ -4,8 +4,8 @@ export interface FieldPlay {
     direction: string;
     price: number;
     percentage: number;
-    bestSchedules: Array<string>  ;
-    summary: Summary  
+    bestSchedules: string[];
+    summary: Summary;
 }
 
 export interface Summary {

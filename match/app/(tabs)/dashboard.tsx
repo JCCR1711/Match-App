@@ -1,1 +1,17 @@
-export { default } from '@/src/feature/dashboard/views/DashboardView';
+import DashboardView from "@/src/features/dashboard/views/DashboardView";
+import { useAuth } from "@/src/hooks/useAuth";
+import { Redirect } from "expo-router";
+
+export default function BusinessDashboardRoute() {
+  const { user } = useAuth();
+
+  if (!user?.activeMode) {
+    return <Redirect href="/" />;
+  }
+
+  if (user.activeMode !== "venue_manager") {
+    return <Redirect href="/(tabs)" />;
+  }
+
+  return <DashboardView />;
+}
