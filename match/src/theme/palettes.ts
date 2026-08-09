@@ -1,8 +1,8 @@
 import { colors } from "./colors";
 
 export const metricAccentColors = [
-  colors.authBlueDeep,
-  colors.electricBlue,
-  colors.authBlueSoft,
+  colors.sunsetOrange,
+  colors.warmAmber,
+  colors.softCoral,
   colors.accent,
 ] as const;
