@@ -11,7 +11,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-type CustomButtonVariant = "primary" | "secondary" | "inverse";
+type CustomButtonVariant = "primary" | "secondary" | "inverse" | "light";
 type CustomButtonSize = "default" | "icon";
 
 export interface CustomButtonProps extends Omit<PressableProps, "children" | "style"> {
@@ -99,10 +99,14 @@ const styles = StyleSheet.create({
     ...theme.shadows.medium,
   },
   primary: {
-    backgroundColor: theme.colors.accent,
+    backgroundColor: theme.colors.electricBlue,
   },
   secondary: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   inverse: {
     backgroundColor: theme.colors.surface,
@@ -110,6 +114,9 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.surfaceAlt,
     shadowOpacity: 0,
     elevation: 0,
+  },
+  light: {
+    backgroundColor: theme.colors.white,
   },
   iconButton: {
     width: 52,
@@ -134,15 +141,19 @@ const styles = StyleSheet.create({
   },
   primaryLabel: {
     ...theme.typography.button,
-    color: theme.colors.black,
+    color: theme.colors.white,
   } as TextStyle,
   secondaryLabel: {
     ...theme.typography.button,
-    color: theme.colors.black,
+    color: theme.colors.white,
   } as TextStyle,
   inverseLabel: {
     ...theme.typography.button,
     color: theme.colors.white,
+  } as TextStyle,
+  lightLabel: {
+    ...theme.typography.button,
+    color: theme.colors.black,
   } as TextStyle,
   pressed: {
     opacity: 0.84,

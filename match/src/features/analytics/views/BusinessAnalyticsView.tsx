@@ -1,48 +1,35 @@
-import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
+import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
+import AppSection from "@/src/components/ui/AppSection";
 import AnalyticsHeroCard from "@/src/features/analytics/components/AnalyticsHeroCard";
 import AnalyticsMetricGrid from "@/src/features/analytics/components/AnalyticsMetricGrid";
+import AnalyticsScopeSelector from "@/src/features/analytics/components/AnalyticsScopeSelector";
 import OccupancyList from "@/src/features/analytics/components/OccupancyList";
-import { businessMetrics, occupancyComparison } from "@/src/features/analytics/data/analyticsPreview";
-import DashboardBackground from "@/src/features/dashboard/components/DashboardBackground";
-import DashboardSection from "@/src/features/dashboard/components/DashboardSection";
-import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
-import { theme } from "@/src/theme";
+import { getBusinessAnalyticsPreview } from "@/src/features/analytics/data/analyticsPreview";
+import type { AnalyticsRange, AnalyticsScope } from "@/src/features/analytics/types/businessAnalytics";
 import { router } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { StyleSheet, View } from "react-native";
-import Animated from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useMemo, useState } from "react";
 
 const BusinessAnalyticsView = () => {
-  const { scrollY, onScroll, headerContentInset } = useCollapsibleHeader();
+  const [selectedRange, setSelectedRange] = useState<AnalyticsRange>("month");
+  const [selectedScope, setSelectedScope] = useState<AnalyticsScope>("all");
+  const snapshot = useMemo(() => getBusinessAnalyticsPreview(selectedRange, selectedScope), [selectedRange, selectedScope]);
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
-      <DashboardBackground />
-      <AppScreenHeader title="Estadísticas" onBack={() => router.back()} scrollY={scrollY} />
-      <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-        <Animated.ScrollView
-          contentContainerStyle={[styles.content, { paddingTop: headerContentInset + theme.spacing.lg }]}
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-        >
-          <AnalyticsHeroCard metric={businessMetrics[0]} />
-          <AnalyticsMetricGrid metrics={businessMetrics.slice(1)} />
-          <DashboardSection title="Ocupación por cancha">
-            <OccupancyList items={occupancyComparison} />
-          </DashboardSection>
-        </Animated.ScrollView>
-      </SafeAreaView>
-    </View>
+    <AppScreenLayout title="Estadísticas" backgroundVariant="dashboard" onBack={() => router.back()}>
+      <AnalyticsScopeSelector selectedScope={selectedScope} onScopeChange={setSelectedScope} />
+      <AnalyticsHeroCard
+        metric={snapshot.metrics[0]}
+        periodLabel={snapshot.periodLabel}
+        revenueTrend={snapshot.revenueTrend}
+        selectedRange={selectedRange}
+        onRangeChange={setSelectedRange}
+      />
+      <AnalyticsMetricGrid metrics={snapshot.metrics.slice(1)} />
+      <AppSection title="Ocupación por cancha">
+        <OccupancyList items={snapshot.occupancy} />
+      </AppSection>
+    </AppScreenLayout>
   );
 };
 
 export default BusinessAnalyticsView;
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: theme.colors.black },
-  safeArea: { flex: 1 },
-  content: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.huge, gap: theme.spacing.xxxl },
-});

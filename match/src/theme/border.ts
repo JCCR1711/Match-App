@@ -3,5 +3,7 @@ export const radius = {
   standard: 12,
   large: 16,
   extraLarge: 20,
+  card: 28,
+  sheet: 32,
   pill: 999,
 };

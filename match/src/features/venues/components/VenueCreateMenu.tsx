@@ -20,8 +20,8 @@ const VenueCreateMenu = ({ visible, onClose, onCreateVenue, onCreateField }: Ven
       <SafeAreaView style={styles.sheet} edges={["bottom"]}>
         <CustomText text="Añadir" variant="body" style={styles.title} />
         <View style={styles.actions}>
-          <CustomButton label="Nueva sede" leadingIcon={<CustomIcon icon={Location01Icon} size={28} color={theme.colors.black} />} variant="secondary" onPress={onCreateVenue} style={styles.action} />
-          <CustomButton label="Nueva cancha" leadingIcon={<CustomIcon icon={FootballIcon} size={28} color={theme.colors.white} />} variant="inverse" onPress={onCreateField} style={styles.action} />
+          <CustomButton label="Nueva sede" leadingIcon={<CustomIcon icon={Location01Icon} size={28} color={theme.colors.white} />} variant="primary" onPress={onCreateVenue} style={styles.action} />
+          <CustomButton label="Nueva cancha" leadingIcon={<CustomIcon icon={FootballIcon} size={28} color={theme.colors.black} />} variant="light" onPress={onCreateField} style={styles.action} />
         </View>
       </SafeAreaView>
     </View>
@@ -32,7 +32,7 @@ export default VenueCreateMenu;
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.68)" },
-  sheet: { gap: theme.spacing.lg, padding: theme.spacing.lg, borderTopLeftRadius: 30, borderTopRightRadius: 30, borderCurve: "continuous", backgroundColor: theme.colors.backgroundAlt },
+  sheet: { gap: theme.spacing.lg, padding: theme.spacing.lg, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet, borderCurve: "continuous", backgroundColor: theme.colors.backgroundAlt },
   title: { color: theme.colors.white, fontSize: 20, fontFamily: theme.fontFamilies.poppinsBold },
   actions: { gap: theme.spacing.md },
   action: { minHeight: 62, borderWidth: 0 },

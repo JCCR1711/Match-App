@@ -1,8 +1,8 @@
 import {
   BusinessBasicsInput,
   BusinessOnboardingDraft,
-  FieldAvailabilityInput,
   SportsFieldInput,
+  UpdateSportsFieldInput,
   VenueLocationInput,
   VenueOnboardingGateway,
 } from "@/src/features/venues/types/businessOnboarding";
@@ -137,11 +137,15 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       scheduleMode: input.scheduleMode,
       scheduleOverride: input.scheduleOverride,
       hourlyPrice: input.hourlyPrice,
+      nightHourlyPrice: input.nightHourlyPrice ?? input.hourlyPrice,
+      nightStartsAt: input.nightStartsAt ?? "18:00",
       currency: input.currency,
       availability: effectiveSchedule
         ? {
             ...effectiveSchedule,
             hourlyPrice: input.hourlyPrice,
+            nightHourlyPrice: input.nightHourlyPrice ?? input.hourlyPrice,
+            nightStartsAt: input.nightStartsAt ?? "18:00",
             currency: input.currency,
           }
         : null,
@@ -193,6 +197,48 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     return this.draft;
   }
 
+  async updateSportsField(accessToken: string, organizationId: string, fieldId: string, input: UpdateSportsFieldInput) {
+    await wait(300);
+    const ownerId = this.getOwnerId(accessToken);
+    await this.hydrateDraft(ownerId);
+    if (!this.draft || this.draft.organizationId !== organizationId || !this.draft.fields.some((field) => field.fieldId === fieldId)) throw new Error("No encontramos la cancha.");
+    const fields = this.draft.fields.map((field) => {
+      if (field.fieldId !== fieldId) return field;
+      const venue = this.draft?.venues.find((item) => item.venueId === field.venueId);
+      const effectiveSchedule = input.scheduleMode === "custom"
+        ? input.scheduleOverride
+        : venue?.defaultSchedule ?? null;
+      return {
+        ...field,
+        ...input,
+        fieldName: input.fieldName.trim(),
+        scheduleOverride: input.scheduleMode === "custom" ? input.scheduleOverride : null,
+        availability: effectiveSchedule
+          ? {
+              ...effectiveSchedule,
+              hourlyPrice: input.hourlyPrice,
+              nightHourlyPrice: input.nightHourlyPrice ?? input.hourlyPrice,
+              nightStartsAt: input.nightStartsAt ?? "18:00",
+              currency: field.currency,
+            }
+          : null,
+      };
+    });
+    this.draft = {
+      ...this.draft,
+      fields,
+      field:
+        fields.find((field) => field.fieldId === this.draft?.field?.fieldId) ??
+        fields[0] ??
+        null,
+      nextStep: fields.some((field) => !field.availability)
+        ? "availability"
+        : "complete",
+    };
+    await this.draftStore.save(ownerId, this.draft);
+    return this.draft;
+  }
+
   async deleteVenue(accessToken: string, organizationId: string, venueId: string) {
     await wait(300);
     const ownerId = this.getOwnerId(accessToken);
@@ -212,59 +258,6 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       field: fields[0] ?? null,
       nextStep: venues.length === 0 ? "location" : fields.length === 0 ? "field" : "complete",
     };
-    await this.draftStore.save(ownerId, this.draft);
-    return this.draft;
-  }
-
-  async saveFieldAvailability(
-    accessToken: string,
-    organizationId: string,
-    fieldId: string,
-    input: FieldAvailabilityInput,
-  ) {
-    await wait(350);
-    const ownerId = this.getOwnerId(accessToken);
-    await this.hydrateDraft(ownerId);
-
-    if (
-      !this.draft ||
-      this.draft.organizationId !== organizationId ||
-      !this.draft.fields.some((field) => field.fieldId === fieldId)
-    ) {
-      throw new Error("Primero agrega una cancha válida.");
-    }
-
-    const fields = this.draft.fields.map((field) =>
-      field.fieldId === fieldId
-        ? {
-            ...field,
-            scheduleMode: "custom" as const,
-            scheduleOverride: {
-              weekdays: input.weekdays,
-              openingTime: input.openingTime,
-              closingTime: input.closingTime,
-            },
-            hourlyPrice: input.hourlyPrice,
-            currency: input.currency,
-            availability: {
-              weekdays: input.weekdays,
-              openingTime: input.openingTime,
-              closingTime: input.closingTime,
-              hourlyPrice: input.hourlyPrice,
-              currency: input.currency,
-            },
-          }
-        : field,
-    );
-    this.draft = {
-      ...this.draft,
-      fields,
-      field: fields.find((field) => field.fieldId === fieldId) ?? fields[0] ?? null,
-      nextStep: fields.some((field) => !field.availability)
-        ? "availability"
-        : "complete",
-    };
-
     await this.draftStore.save(ownerId, this.draft);
     return this.draft;
   }

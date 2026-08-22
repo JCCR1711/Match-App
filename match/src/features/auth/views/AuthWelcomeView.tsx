@@ -4,14 +4,23 @@ import AuthBackButton from "@/src/features/auth/components/AuthBackButton";
 import AuthButton from "@/src/features/auth/components/AuthButton";
 import AuthFlowBackground from "@/src/features/auth/components/AuthFlowBackground";
 import AuthProviderButtons from "@/src/features/auth/components/AuthProviderButtons";
+import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
-import { Mail01Icon } from "@hugeicons/core-free-icons";
+import { Building03Icon, Mail01Icon, UserIcon } from "@hugeicons/core-free-icons";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const AuthWelcomeView = () => {
+  const { signInDemo, loading } = useAuth();
+
+  const openDemo = async (mode: "player" | "venue_manager") => {
+    const authenticated = await signInDemo(mode);
+    if (!authenticated) return;
+    router.replace(mode === "player" ? "/(tabs)" : "/(tabs)/dashboard");
+  };
+
   const showPendingProvider = (provider: "Google" | "Apple") => {
     Alert.alert(
       `${provider} estará disponible pronto`,
@@ -45,16 +54,43 @@ const AuthWelcomeView = () => {
           </View>
 
           <View style={styles.actions}>
+            {__DEV__ ? (
+              <View style={styles.demoSection}>
+                <CustomText text="Acceso rápido" variant="caption" style={styles.demoLabel} />
+                <View style={styles.demoActions}>
+                  <AuthButton
+                    label="Jugador"
+                    leadingIcon={<CustomIcon icon={UserIcon} sizeToken="small" color={theme.colors.black} />}
+                    variant="light"
+                    accessibilityLabel="Entrar con el usuario de prueba jugador"
+                    onPress={() => void openDemo("player")}
+                    disabled={loading}
+                    style={styles.demoButton}
+                    textSize="secondary"
+                  />
+                  <AuthButton
+                    label="Negocio"
+                    leadingIcon={<CustomIcon icon={Building03Icon} sizeToken="small" color={theme.colors.black} />}
+                    variant="light"
+                    accessibilityLabel="Entrar con el usuario de prueba negocio"
+                    onPress={() => void openDemo("venue_manager")}
+                    disabled={loading}
+                    style={styles.demoButton}
+                    textSize="secondary"
+                  />
+                </View>
+              </View>
+            ) : null}
             <AuthButton
               label="Continuar con correo"
               leadingIcon={
                 <CustomIcon
                   icon={Mail01Icon}
                   sizeToken="small"
-                  color={theme.colors.black}
+                  color={theme.colors.white}
                 />
               }
-              variant="secondary"
+              variant="primary"
               accessibilityLabel="Continuar con correo"
               onPress={() => router.push("/auth/email")}
               style={styles.primaryButton}
@@ -121,6 +157,22 @@ const styles = StyleSheet.create({
   actions: {
     width: "100%",
     gap: theme.spacing.md,
+  },
+  demoSection: {
+    gap: theme.spacing.sm,
+  },
+  demoLabel: {
+    color: theme.colors.authTextSecondary,
+    textAlign: "center",
+  },
+  demoActions: {
+    flexDirection: "row",
+    gap: theme.spacing.sm,
+  },
+  demoButton: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: theme.radius.large,
   },
   primaryButton: {
     height: 64,

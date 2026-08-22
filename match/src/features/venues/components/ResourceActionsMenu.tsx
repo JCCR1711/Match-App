@@ -53,7 +53,7 @@ export default ResourceActionsMenu;
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.68)" },
-  sheet: { gap: theme.spacing.xl, paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.lg, borderTopLeftRadius: 32, borderTopRightRadius: 32, borderCurve: "continuous", backgroundColor: theme.colors.backgroundAlt },
+  sheet: { gap: theme.spacing.xl, paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.lg, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet, borderCurve: "continuous", backgroundColor: theme.colors.backgroundAlt },
   title: { color: theme.colors.white, fontSize: 22, lineHeight: 28, fontFamily: theme.fontFamilies.poppinsBold },
   actions: { gap: theme.spacing.xxs },
   action: { minHeight: 66, flexDirection: "row", alignItems: "center", gap: theme.spacing.md, paddingHorizontal: theme.spacing.xs },

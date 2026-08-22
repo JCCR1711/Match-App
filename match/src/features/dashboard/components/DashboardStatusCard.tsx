@@ -1,7 +1,6 @@
+import AppSurface, { type AppSurfaceVariant } from "@/src/components/ui/AppSurface";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
-import AppSurface from "@/src/components/ui/AppSurface";
-import type { AppSurfaceVariant } from "@/src/components/ui/AppSurface";
 import { theme } from "@/src/theme";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import type { IconSvgElement } from "@hugeicons/react-native";
@@ -16,9 +15,10 @@ interface DashboardStatusCardProps {
   onPress?: () => void;
   accentColor?: string;
   variant?: AppSurfaceVariant;
+  showArrow?: boolean;
 }
 
-const DashboardStatusCard = ({ icon, title, subtitle, value, accessibilityLabel, onPress, accentColor = theme.colors.white, variant = "neutral" }: DashboardStatusCardProps) => (
+const DashboardStatusCard = ({ icon, title, subtitle, value, accessibilityLabel, onPress, accentColor = theme.colors.white, variant = "neutral", showArrow = true }: DashboardStatusCardProps) => (
   <AppSurface variant={variant} onPress={onPress} accessibilityLabel={accessibilityLabel} style={styles.card}>
     <CustomIcon icon={icon} color={accentColor} size={28} strokeWidth={2.3} />
     <View style={styles.copy}>
@@ -26,7 +26,7 @@ const DashboardStatusCard = ({ icon, title, subtitle, value, accessibilityLabel,
       {subtitle ? <CustomText text={subtitle} variant="caption" style={styles.subtitle} /> : null}
     </View>
     {value ? <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={[styles.value, { color: accentColor }]}>{value}</Text> : null}
-    {onPress && !value ? <CustomIcon icon={ArrowRight01Icon} color={accentColor} size={25} strokeWidth={2.6} /> : null}
+    {onPress && !value && showArrow ? <CustomIcon icon={ArrowRight01Icon} color={accentColor} size={25} strokeWidth={2.6} /> : null}
   </AppSurface>
 );
 

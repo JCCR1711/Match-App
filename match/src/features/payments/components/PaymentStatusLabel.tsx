@@ -16,8 +16,8 @@ const PaymentStatusLabel = ({ status }: { status: PaymentStatus }) => (
 export default PaymentStatusLabel;
 
 const styles = StyleSheet.create({
-  base: { alignSelf: "flex-start" },
-  paid: { color: theme.colors.accent },
-  pending: { color: theme.colors.authTextSecondary },
-  failed: { color: theme.colors.errorSoft },
+  base: { alignSelf: "flex-start", overflow: "hidden", paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xxs, borderRadius: theme.radius.pill, color: theme.colors.black, fontFamily: theme.fontFamilies.poppinsBold, fontSize: 11, lineHeight: 16 },
+  paid: { backgroundColor: theme.colors.accent },
+  pending: { backgroundColor: theme.colors.authPrimary },
+  failed: { backgroundColor: theme.colors.errorSoft },
 });

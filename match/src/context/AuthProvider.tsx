@@ -8,7 +8,8 @@ import {
   UserMode,
   VerificationOutcome,
 } from "@/src/types/auth";
-import { ReactNode, useCallback, useEffect, useState } from "react";
+import type { SportsAvatarId } from "@/src/types/avatar";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import AuthContext from "./AuthContext";
 
 interface AuthProviderProps {
@@ -35,13 +36,21 @@ export function AuthProvider({
   const [initialized, setInitialized] = useState(false);
   const [status, setStatus] = useState<AuthStatus>("restoringSession");
   const [error, setError] = useState<string | null>(null);
+  const sessionEpochRef = useRef(0);
 
   const isAuthenticated = Boolean(user && accessToken);
   const loading = status !== "idle";
 
   const applySession = useCallback(
-    async (session: AuthenticatedSession) => {
+    async (session: AuthenticatedSession, expectedEpoch = sessionEpochRef.current) => {
+      if (expectedEpoch !== sessionEpochRef.current) {
+        return;
+      }
       await sessionStore.saveRefreshToken(session.tokens.refreshToken);
+      if (expectedEpoch !== sessionEpochRef.current) {
+        await sessionStore.clearRefreshToken();
+        return;
+      }
       setUser(session.user);
       setAccessToken(session.tokens.accessToken);
       setAccessTokenExpiresAt(session.tokens.accessTokenExpiresAt);
@@ -55,6 +64,7 @@ export function AuthProvider({
     let active = true;
 
     const restoreSession = async () => {
+      const restoreEpoch = sessionEpochRef.current;
       try {
         const refreshToken = await sessionStore.getRefreshToken();
         if (!refreshToken) {
@@ -63,7 +73,7 @@ export function AuthProvider({
 
         const session = await gateway.refreshSession(refreshToken);
         if (active) {
-          await applySession(session);
+          await applySession(session, restoreEpoch);
         }
       } catch {
         await sessionStore.clearRefreshToken();
@@ -83,6 +93,7 @@ export function AuthProvider({
   }, [applySession, gateway, sessionStore]);
 
   const clearSession = useCallback(async () => {
+    sessionEpochRef.current += 1;
     setUser(null);
     setAccessToken(null);
     setAccessTokenExpiresAt(null);
@@ -105,6 +116,7 @@ export function AuthProvider({
 
     const timeoutId = setTimeout(() => {
       const refreshCurrentSession = async () => {
+        const refreshEpoch = sessionEpochRef.current;
         try {
           const refreshToken = await sessionStore.getRefreshToken();
           if (!refreshToken) {
@@ -113,7 +125,7 @@ export function AuthProvider({
 
           const session = await gateway.refreshSession(refreshToken);
           if (active) {
-            await applySession(session);
+            await applySession(session, refreshEpoch);
           }
         } catch {
           if (active) {
@@ -266,7 +278,40 @@ export function AuthProvider({
     }
   };
 
+  const signInDemo = async (mode: UserMode) => {
+    if (!__DEV__ || !gateway.signInDemo) {
+      setError("El acceso de demostración solo está disponible en desarrollo.");
+      return false;
+    }
+
+    setStatus("signingInDemo");
+    setError(null);
+
+    try {
+      const previousRefreshToken = await sessionStore.getRefreshToken();
+      if (previousRefreshToken) {
+        await gateway.revokeSession(previousRefreshToken).catch(() => undefined);
+      }
+      await clearSession();
+      await applySession(await gateway.signInDemo(mode));
+      return true;
+    } catch (demoError) {
+      setError(
+        demoError instanceof Error
+          ? demoError.message
+          : "No pudimos iniciar la demostración.",
+      );
+      return false;
+    } finally {
+      setStatus("idle");
+    }
+  };
+
   const clearAuthError = () => setError(null);
+
+  const selectAvatar = (avatarId: SportsAvatarId) => {
+    setUser((currentUser) => currentUser ? { ...currentUser, avatarId } : currentUser);
+  };
 
   const logout = async () => {
     setStatus("signingOut");
@@ -300,6 +345,8 @@ export function AuthProvider({
         verifyEmailCode,
         completeSignUp,
         selectUserMode,
+        selectAvatar,
+        signInDemo,
         resendEmailCode,
         clearAuthError,
         logout,

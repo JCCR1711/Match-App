@@ -1,71 +1,44 @@
 import CustomText from "@/src/components/ui/CustomText";
 import GlassHeader from "@/src/components/ui/GlassHeader";
+import BusinessDashboardHeader, { BUSINESS_DASHBOARD_HEADER_HEIGHT } from "@/src/features/dashboard/components/BusinessDashboardHeader";
+import BusinessDashboardContext from "@/src/features/dashboard/components/BusinessDashboardContext";
 import BusinessDashboardOverview from "@/src/features/dashboard/components/BusinessDashboardOverview";
 import type { BusinessSetupKind } from "@/src/features/dashboard/components/BusinessSetupCard";
 import BusinessSetupCard from "@/src/features/dashboard/components/BusinessSetupCard";
-import DashboardBackground from "@/src/features/dashboard/components/DashboardBackground";
+import AppBackground from "@/src/components/ui/AppBackground";
+import { useReservations } from "@/src/features/reservations/hooks/useReservations";
+import { reservationDates } from "@/src/features/reservations/data/reservationDates";
+import { settlements } from "@/src/features/payments/data/paymentsPreview";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
+import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
-import Animated, {
-  Extrapolation,
-  interpolate,
-  interpolateColor,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-} from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const AnimatedCustomText = Animated.createAnimatedComponent(CustomText);
 
 const DashboardView = () => {
   const { draft, loading, error } = useBusinessDraft();
+  const { user } = useAuth();
+  const { reservations, blocks } = useReservations();
   const insets = useSafeAreaInsets();
   const businessName = draft?.businessName || "Match Arena";
   const venues = draft?.venues ?? [];
   const fields = draft?.fields ?? [];
   const pendingField = fields.find((field) => !field.availability);
-  const scrollY = useSharedValue(0);
-
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
-
-  const headerShellStyle = useAnimatedStyle(() => ({
-    height: interpolate(
-      scrollY.value,
-      [0, 104],
-      [insets.top + 112, insets.top + 64],
-      Extrapolation.CLAMP,
-    ),
-  }));
-
-  const greetingStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollY.value, [0, 78], [1, 0], Extrapolation.CLAMP),
-    transform: [
-      {
-        translateY: interpolate(
-          scrollY.value,
-          [0, 90],
-          [0, -18],
-          Extrapolation.CLAMP,
-        ),
-      },
-    ],
-  }));
-
-  const businessNameStyle = useAnimatedStyle(() => ({
-    color: interpolateColor(
-      scrollY.value,
-      [0, 104],
-      [theme.colors.textSecondary, theme.colors.white],
-    ),
-  }));
+  const todayKey = reservationDates[0].dateKey;
+  const todayReservations = reservations.filter((reservation) => reservation.dateKey === todayKey);
+  const todayBlocks = blocks.filter((block) => block.dateKey === todayKey);
+  const scheduledMinutes = fields.reduce((total, field) => {
+    if (!field.availability) return total;
+    const [openHour, openMinute] = field.availability.openingTime.split(":").map(Number);
+    const [closeHour, closeMinute] = field.availability.closingTime.split(":").map(Number);
+    return total + Math.max(0, (closeHour * 60 + closeMinute) - (openHour * 60 + openMinute));
+  }, 0);
+  const occupiedMinutes = [...todayReservations.filter((reservation) => reservation.status !== "canceled"), ...todayBlocks]
+    .reduce((total, item) => total + item.durationMinutes, 0);
+  const availableHours = Math.max(0, Math.floor((scheduledMinutes - occupiedMinutes) / 60));
 
   const handleSetup = () => {
     if (venues.length === 0) {
@@ -78,7 +51,7 @@ const DashboardView = () => {
     }
     if (pendingField) {
       router.push({
-        pathname: "/business/availability",
+        pathname: "/business/fields/[fieldId]/edit",
         params: { fieldId: pendingField.fieldId },
       });
       return;
@@ -93,8 +66,8 @@ const DashboardView = () => {
   } = pendingField
     ? {
         kind: "availability",
-        title: "Abre tu agenda",
-        accessibilityLabel: "Configurar disponibilidad",
+        title: "Configura tu cancha",
+        accessibilityLabel: "Editar configuración de cancha",
       }
     : venues.length > 0
       ? {
@@ -111,45 +84,27 @@ const DashboardView = () => {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <DashboardBackground />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.headerShell,
-          { height: insets.top + 112 },
-          headerShellStyle,
-        ]}
-      >
-        <GlassHeader topInset={insets.top} contentHeight={112}>
-          <View style={styles.headerCopy}>
-            <View style={styles.businessNameSlot}>
-              <AnimatedCustomText
-                text={businessName.toLocaleUpperCase()}
-                variant="caption"
-                style={[styles.businessName, businessNameStyle]}
-                numberOfLines={1}
-              />
-            </View>
-            <Animated.View style={[styles.greetingSlot, greetingStyle]}>
-              <CustomText
-                text="Bienvenido"
-                variant="body"
-                style={styles.greeting}
-                numberOfLines={1}
-              />
-            </Animated.View>
-          </View>
-        </GlassHeader>
-      </Animated.View>
+      <AppBackground variant="dashboard" />
+      <GlassHeader topInset={insets.top} contentHeight={BUSINESS_DASHBOARD_HEADER_HEIGHT}>
+        <BusinessDashboardHeader
+          businessName={businessName}
+          profileName={user?.displayName || "Propietario"}
+          profileSeed={user?.id || user?.displayName || "business-owner"}
+          avatarId={user?.avatarId}
+          onOpenProfile={() => router.navigate("/(tabs)/business-profile")}
+        />
+      </GlassHeader>
       <Animated.ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 112 + theme.spacing.xl },
+          {
+            paddingTop: insets.top + BUSINESS_DASHBOARD_HEADER_HEIGHT + theme.spacing.lg,
+            paddingBottom: insets.bottom + theme.layout.tabBarClearance,
+          },
         ]}
         showsVerticalScrollIndicator={false}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16}
       >
+        <BusinessDashboardContext venueName={venues[0]?.venueName} />
         {loading ? (
           <CustomText
             text="Preparando tu inicio"
@@ -177,12 +132,14 @@ const DashboardView = () => {
             {venues.length > 0 ? (
               <BusinessDashboardOverview
                 draft={draft}
-                onOpenReservations={() =>
-                  router.navigate("/(tabs)/business-reservations")
-                }
                 onOpenFields={() => router.navigate("/(tabs)/business-fields")}
                 onOpenAnalytics={() => router.push("/business/analytics")}
                 onOpenPayments={() => router.push("/business/payments")}
+                onOpenReservations={() => router.navigate("/(tabs)/business-reservations")}
+                todayReservations={todayReservations}
+                todayBlocks={todayBlocks}
+                availableHours={availableHours}
+                settlement={settlements[0]}
                 onOpenField={(fieldId) =>
                   router.push({
                     pathname: "/business/fields/[fieldId]",
@@ -202,49 +159,10 @@ export default DashboardView;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.authCanvas },
-  headerShell: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 4,
-    overflow: "hidden",
-  },
-  headerCopy: {
-    flex: 1,
-    maxWidth: "76%",
-  },
-  businessNameSlot: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    left: 0,
-    height: 64,
-    justifyContent: "center",
-  },
-  businessName: {
-    letterSpacing: 1.15,
-    fontFamily: theme.fontFamilies.poppinsBold,
-    fontWeight: theme.fontWeights.bold,
-  },
-  greetingSlot: {
-    position: "absolute",
-    top: 60,
-    right: 0,
-    left: 0,
-  },
-  greeting: {
-    color: theme.colors.authText,
-    fontFamily: theme.fontFamilies.poppinsBold,
-    fontSize: 28,
-    lineHeight: 36,
-    fontWeight: theme.fontWeights.bold,
-    letterSpacing: -0.35,
-  },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.huge * 2 + theme.spacing.lg,
+    paddingHorizontal: theme.layout.screenGutter,
+    gap: theme.spacing.md,
   },
   centeredMessage: {
     marginVertical: "auto",
@@ -253,6 +171,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    gap: theme.spacing.xxxl,
+    gap: theme.layout.sectionGap,
   },
 });

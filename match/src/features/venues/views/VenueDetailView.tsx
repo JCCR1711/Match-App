@@ -5,7 +5,7 @@ import CustomText from "@/src/components/ui/CustomText";
 import FloatingActionButton from "@/src/components/ui/FloatingActionButton";
 import FieldManagementCard from "@/src/features/venues/components/FieldManagementCard";
 import ResourceActionsMenu from "@/src/features/venues/components/ResourceActionsMenu";
-import VenueSetupBackground from "@/src/features/venues/components/VenueSetupBackground";
+import AppBackground from "@/src/components/ui/AppBackground";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import type { ResourceStatus, SportsFieldDraft } from "@/src/features/venues/types/businessOnboarding";
@@ -64,7 +64,7 @@ const VenueDetailView = () => {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <VenueSetupBackground />
+      <AppBackground />
       <AppScreenHeader title={venue?.venueName ?? "Sede"} onBack={() => router.back()} scrollY={scrollY} action={<CustomButton icon={<CustomIcon icon={MoreHorizontalIcon} color={theme.colors.white} size={27} />} size="icon" variant="inverse" onPress={() => setVenueMenuVisible(true)} style={styles.headerMenu} accessibilityLabel={`Opciones de ${venue?.venueName ?? "sede"}`} />} />
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
         <Animated.FlatList

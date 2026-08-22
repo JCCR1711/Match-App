@@ -2,7 +2,7 @@ import CustomButton from "@/src/components/ui/CustomButton";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import GlassSurface from "@/src/components/ui/GlassSurface";
-import { COLLAPSIBLE_HEADER_EXPANDED_HEIGHT } from "@/src/hooks/useCollapsibleHeader";
+import { COLLAPSIBLE_HEADER_COLLAPSED_HEIGHT, COLLAPSIBLE_HEADER_EXPANDED_HEIGHT } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import type { ReactNode } from "react";
@@ -38,24 +38,19 @@ const AppScreenHeader = ({
     height: interpolate(
       scrollY.value,
       [0, 72],
-      [insets.top + COLLAPSIBLE_HEADER_EXPANDED_HEIGHT, insets.top + 58],
+      [insets.top + COLLAPSIBLE_HEADER_EXPANDED_HEIGHT, insets.top + COLLAPSIBLE_HEADER_COLLAPSED_HEIGHT],
       Extrapolation.CLAMP,
     ),
   }));
   const titleStyle = useAnimatedStyle(() => ({
-    fontSize: interpolate(scrollY.value, [0, 72], [28, 17], Extrapolation.CLAMP),
-    lineHeight: interpolate(scrollY.value, [0, 72], [36, 22], Extrapolation.CLAMP),
+    fontSize: interpolate(scrollY.value, [0, 72], [28, 16], Extrapolation.CLAMP),
+    lineHeight: interpolate(scrollY.value, [0, 72], [36, 20], Extrapolation.CLAMP),
     transform: [
       {
-        translateX: interpolate(
-          scrollY.value,
-          [0, 72],
-          [0, onBack ? 48 : 0],
-          Extrapolation.CLAMP,
-        ),
+        translateX: interpolate(scrollY.value, [0, 72], [0, onBack ? 56 : 0], Extrapolation.CLAMP),
       },
       {
-        translateY: interpolate(scrollY.value, [0, 72], [0, -32], Extrapolation.CLAMP),
+        translateY: interpolate(scrollY.value, [0, 72], [0, -36], Extrapolation.CLAMP),
       },
     ],
   }));
@@ -122,11 +117,11 @@ const styles = StyleSheet.create({
     height: COLLAPSIBLE_HEADER_EXPANDED_HEIGHT,
     paddingHorizontal: theme.spacing.md,
   },
-  side: { position: "absolute", top: 10, left: theme.spacing.md, width: 44 },
+  side: { position: "absolute", top: 1, left: theme.spacing.md, width: 44 },
   action: { left: undefined, right: theme.spacing.md, alignItems: "flex-end" },
   title: {
     position: "absolute",
-    top: 52,
+    top: 48,
     right: theme.spacing.lg,
     left: theme.spacing.lg,
     color: theme.colors.white,

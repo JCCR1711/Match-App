@@ -47,7 +47,6 @@ const display: TextStyle = {
   lineHeight: 56,
   letterSpacing: -1,
   fontWeight: fontWeights.bold,
-  textTransform: "uppercase",
 };
 
 const heading: TextStyle = {
@@ -56,7 +55,6 @@ const heading: TextStyle = {
   lineHeight: 40,
   letterSpacing: -0.8,
   fontWeight: fontWeights.bold,
-  textTransform: "uppercase",
 };
 
 const subtitle: TextStyle = {
@@ -65,7 +63,6 @@ const subtitle: TextStyle = {
   lineHeight: 28,
   letterSpacing: -0.3,
   fontWeight: fontWeights.bold,
-  textTransform: "uppercase",
 };
 
 const body: TextStyle = {
@@ -100,6 +97,14 @@ const button: TextStyle = {
   fontWeight: fontWeights.semibold,
 };
 
+const label: TextStyle = {
+  fontFamily: fontFamilies.outfitSemiBold,
+  fontSize: fontSizes.label,
+  lineHeight: lineHeights.label,
+  letterSpacing: letterSpacings.normal,
+  fontWeight: fontWeights.semibold,
+};
+
 const screenTitle: TextStyle = {
   fontFamily: fontFamilies.poppinsBold,
   fontSize: 36,
@@ -120,6 +125,13 @@ const action: TextStyle = {
   fontFamily: fontFamilies.poppinsBold,
   fontSize: 18,
   lineHeight: 24,
+  fontWeight: fontWeights.bold,
+};
+
+const sectionHeading: TextStyle = {
+  fontFamily: fontFamilies.poppinsBold,
+  fontSize: 19,
+  lineHeight: 26,
   fontWeight: fontWeights.bold,
 };
 
@@ -151,10 +163,12 @@ export const typography: {
   body: TextStyle;
   bodyStrong: TextStyle;
   caption: TextStyle;
+  label: TextStyle;
   button: TextStyle;
   screenTitle: TextStyle;
   heroTitle: TextStyle;
   action: TextStyle;
+  sectionHeading: TextStyle;
   actionSecondary: TextStyle;
   codeDigit: TextStyle;
   input: TextStyle;
@@ -168,10 +182,12 @@ export const typography: {
   body,
   bodyStrong,
   caption,
+  label,
   button,
   screenTitle,
   heroTitle,
   action,
+  sectionHeading,
   actionSecondary,
   codeDigit,
   input,

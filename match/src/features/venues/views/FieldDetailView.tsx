@@ -4,14 +4,14 @@ import CustomButton from "@/src/components/ui/CustomButton";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import ResourceActionsMenu from "@/src/features/venues/components/ResourceActionsMenu";
-import VenueSetupBackground from "@/src/features/venues/components/VenueSetupBackground";
+import AppBackground from "@/src/components/ui/AppBackground";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import type { ResourceStatus } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
-import { Calendar03Icon, Location01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
+import { Location01Icon, MoreHorizontalIcon, Settings02Icon } from "@hugeicons/core-free-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
@@ -60,7 +60,7 @@ const FieldDetailView = () => {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <VenueSetupBackground />
+      <AppBackground />
       <AppScreenHeader title={field?.fieldName ?? "Cancha"} onBack={() => router.back()} scrollY={scrollY} action={<CustomButton icon={<CustomIcon icon={MoreHorizontalIcon} color={theme.colors.white} size={27} />} size="icon" variant="inverse" onPress={() => setMenuVisible(true)} style={styles.headerMenu} accessibilityLabel="Opciones de cancha" />} />
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
         <Animated.ScrollView contentContainerStyle={[styles.content, { paddingTop: headerContentInset + theme.spacing.xl }]} showsVerticalScrollIndicator={false} onScroll={onScroll} scrollEventThrottle={16}>
@@ -76,7 +76,7 @@ const FieldDetailView = () => {
           {error || actionError ? <CustomText text={error ?? actionError ?? ""} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
         </Animated.ScrollView>
       </SafeAreaView>
-      <ResourceActionsMenu visible={menuVisible} title={field?.fieldName ?? "Cancha"} active={field?.status === "active"} disabled={busy} onClose={() => setMenuVisible(false)} onToggleStatus={() => field && void updateStatus(field.status === "active" ? "inactive" : "active")} secondaryAction={{ label: "Configurar horario", icon: Calendar03Icon, onPress: () => { setMenuVisible(false); if (field) router.push({ pathname: "/business/availability", params: { fieldId: field.fieldId } }); } }} onDelete={confirmDelete} />
+      <ResourceActionsMenu visible={menuVisible} title={field?.fieldName ?? "Cancha"} active={field?.status === "active"} disabled={busy} onClose={() => setMenuVisible(false)} onToggleStatus={() => field && void updateStatus(field.status === "active" ? "inactive" : "active")} secondaryAction={{ label: "Editar cancha", icon: Settings02Icon, onPress: () => { setMenuVisible(false); if (field) router.push({ pathname: "/business/fields/[fieldId]/edit", params: { fieldId: field.fieldId } }); } }} onDelete={confirmDelete} />
     </View>
   );
 };

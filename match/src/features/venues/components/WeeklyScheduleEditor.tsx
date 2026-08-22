@@ -1,10 +1,11 @@
+import AppSurface from "@/src/components/ui/AppSurface";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import TimePickerSheet from "@/src/features/venues/components/TimePickerSheet";
 import WeekdaySelector from "@/src/features/venues/components/WeekdaySelector";
 import type { WeeklySchedule } from "@/src/features/venues/types/businessOnboarding";
 import { theme } from "@/src/theme";
-import { ArrowRight01Icon, Clock01Icon } from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
@@ -33,10 +34,13 @@ const WeeklyScheduleEditor = ({ value, onChange, disabled = false }: WeeklySched
         <CustomText text="Días activos" variant="body" style={styles.sectionTitle} />
         <WeekdaySelector value={value.weekdays} disabled={disabled} onChange={(weekdays) => onChange({ ...value, weekdays })} />
       </View>
-      <CustomText text="Horario" variant="body" style={styles.sectionTitle} />
-      <View style={styles.times}>
-        <TimeRow label="Apertura" value={value.openingTime} onPress={() => setPicker("opening")} disabled={disabled} accent={theme.colors.accentSoft} backgroundColor="rgba(115, 254, 101, 0.10)" />
-        <TimeRow label="Cierre" value={value.closingTime} onPress={() => setPicker("closing")} disabled={disabled} accent={theme.colors.iceBlue} backgroundColor="rgba(103, 199, 255, 0.11)" />
+      <View style={styles.block}>
+        <CustomText text="Horario" variant="body" style={styles.sectionTitle} />
+        <AppSurface style={styles.timeGroup}>
+          <TimeRow label="Apertura" value={value.openingTime} onPress={() => setPicker("opening")} disabled={disabled} />
+          <View style={styles.divider} />
+          <TimeRow label="Cierre" value={value.closingTime} onPress={() => setPicker("closing")} disabled={disabled} />
+        </AppSurface>
       </View>
       <TimePickerSheet
         visible={picker !== null}
@@ -49,15 +53,18 @@ const WeeklyScheduleEditor = ({ value, onChange, disabled = false }: WeeklySched
   );
 };
 
-const TimeRow = ({ label, value, onPress, disabled, accent, backgroundColor }: { label: string; value: string; onPress: () => void; disabled: boolean; accent: string; backgroundColor: string }) => (
-  <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.timeRow, { backgroundColor }, disabled && styles.disabled, pressed && styles.pressed]} accessibilityRole="button" accessibilityLabel={`${label}: ${value}`}>
-    <View style={styles.timeHeading}>
-      <CustomIcon icon={Clock01Icon} color={accent} size={24} strokeWidth={2.2} />
-      <CustomText text={label} variant="caption" style={[styles.timeLabel, { color: accent }]} />
-    </View>
+const TimeRow = ({ label, value, onPress, disabled }: { label: string; value: string; onPress: () => void; disabled: boolean }) => (
+  <Pressable
+    disabled={disabled}
+    onPress={onPress}
+    style={({ pressed }) => [styles.timeRow, disabled && styles.disabled, pressed && styles.pressed]}
+    accessibilityRole="button"
+    accessibilityLabel={`${label}: ${value}`}
+  >
+    <CustomText text={label} variant="caption" style={styles.timeLabel} />
     <View style={styles.timeValue}>
       <CustomText text={value} variant="body" style={styles.selectedTime} />
-      <CustomIcon icon={ArrowRight01Icon} color={accent} size={24} strokeWidth={2.2} />
+      <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={20} strokeWidth={2.2} />
     </View>
   </Pressable>
 );
@@ -65,15 +72,15 @@ const TimeRow = ({ label, value, onPress, disabled, accent, backgroundColor }: {
 export default WeeklyScheduleEditor;
 
 const styles = StyleSheet.create({
-  container: { gap: theme.spacing.md },
-  block: { gap: theme.spacing.md, marginBottom: theme.spacing.sm },
+  container: { gap: theme.layout.groupGap },
+  block: { gap: theme.spacing.md },
   sectionTitle: { color: theme.colors.authText, fontFamily: theme.fontFamilies.poppinsBold },
-  times: { flexDirection: "row", gap: theme.spacing.md },
-  timeRow: { flex: 1, minHeight: 126, justifyContent: "space-between", padding: theme.spacing.lg, borderRadius: theme.radius.extraLarge, borderCurve: "continuous" },
-  timeHeading: { gap: theme.spacing.sm },
-  timeLabel: { fontFamily: theme.fontFamilies.poppinsBold },
-  timeValue: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.xs },
-  selectedTime: { color: theme.colors.white, fontSize: 22, lineHeight: 28, fontFamily: theme.fontFamilies.poppinsBold },
+  timeGroup: { overflow: "hidden" },
+  timeRow: { minHeight: 68, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg },
+  timeLabel: { color: theme.colors.authTextSecondary },
+  timeValue: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
+  selectedTime: { color: theme.colors.white, fontSize: 18, lineHeight: 24, fontFamily: theme.fontFamilies.poppinsBold },
+  divider: { height: StyleSheet.hairlineWidth, marginLeft: theme.spacing.lg, backgroundColor: "rgba(255, 255, 255, 0.1)" },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.72 },
 });
