@@ -11,6 +11,7 @@ export interface ProfileActionItem {
   label: string;
   onPress: () => void;
   destructive?: boolean;
+  disabled?: boolean;
 }
 
 interface ProfileActionSectionProps {
@@ -26,7 +27,13 @@ const ProfileActionSection = ({ title, items }: ProfileActionSectionProps) => (
         const color = item.destructive ? theme.colors.errorSoft : theme.colors.authText;
         return (
           <View key={item.key}>
-            <Pressable onPress={item.onPress} accessibilityRole="button" style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+            <Pressable
+              onPress={item.onPress}
+              disabled={item.disabled}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: item.disabled }}
+              style={({ pressed }) => [styles.row, pressed && styles.pressed, item.disabled && styles.disabled]}
+            >
               <CustomIcon icon={item.icon} color={color} size={25} strokeWidth={2.2} />
               <CustomText text={item.label} variant="body" style={[styles.label, item.destructive && styles.destructive]} />
               {!item.destructive ? <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={24} strokeWidth={2.5} /> : null}
@@ -49,4 +56,5 @@ const styles = StyleSheet.create({
   destructive: { color: theme.colors.errorSoft },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 41, backgroundColor: "rgba(255, 255, 255, 0.1)" },
   pressed: { opacity: 0.62 },
+  disabled: { opacity: 0.48 },
 });

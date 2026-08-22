@@ -38,6 +38,28 @@ export class MockAuthGateway implements AuthGateway {
     return { user, tokens };
   }
 
+  async signInDemo(mode: UserMode) {
+    await wait(250);
+
+    return this.createSession(
+      mode === "player"
+        ? {
+            id: "mock-player-1",
+            displayName: "Josue",
+            email: "jugador@match.demo",
+            availableModes: ["player"],
+            activeMode: "player",
+          }
+        : {
+            id: "mock-venue-owner-1",
+            displayName: "Josue",
+            email: "negocio@match.demo",
+            availableModes: ["player", "venue_manager"],
+            activeMode: "venue_manager",
+          },
+    );
+  }
+
   async requestEmailCode(email: string) {
     await wait(350);
     const challengeId = `mock-${Date.now()}`;

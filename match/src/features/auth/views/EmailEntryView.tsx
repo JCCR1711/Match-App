@@ -101,7 +101,7 @@ const EmailEntryView = () => {
 
                 <AuthButton
                   label={loading ? "Enviando código..." : "Continuar"}
-                  variant="secondary"
+                  variant="primary"
                   onPress={handleContinue}
                   disabled={loading}
                   style={styles.continueButton}

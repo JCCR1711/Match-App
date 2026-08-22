@@ -123,7 +123,7 @@ const CompleteProfileView = () => {
 
                 <AuthButton
                   label={loading ? "Creando cuenta..." : "Crear cuenta"}
-                  variant="secondary"
+                  variant="primary"
                   onPress={handleSubmit}
                   disabled={loading}
                   style={styles.submitButton}
@@ -132,7 +132,7 @@ const CompleteProfileView = () => {
               ) : (
                 <AuthButton
                   label="Solicitar un código nuevo"
-                  variant="secondary"
+                  variant="primary"
                   onPress={() => router.replace("/auth/email")}
                   style={styles.submitButton}
                   accessibilityLabel="Solicitar un nuevo código por correo"

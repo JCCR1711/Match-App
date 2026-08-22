@@ -34,6 +34,8 @@ export interface SportsFieldInput {
   scheduleMode: FieldScheduleMode;
   scheduleOverride: WeeklySchedule | null;
   hourlyPrice: number;
+  nightHourlyPrice?: number;
+  nightStartsAt?: string;
   currency: "PEN";
 }
 
@@ -41,6 +43,8 @@ export interface SportsFieldDraft extends SportsFieldInput {
   fieldId: string;
   availability: FieldAvailability | null;
 }
+
+export type UpdateSportsFieldInput = Omit<SportsFieldInput, "venueId" | "status" | "currency">;
 
 export type Weekday =
   | "monday"
@@ -56,6 +60,8 @@ export interface FieldAvailabilityInput {
   openingTime: string;
   closingTime: string;
   hourlyPrice: number;
+  nightHourlyPrice?: number;
+  nightStartsAt?: string;
   currency: "PEN";
 }
 
@@ -96,6 +102,12 @@ export interface VenueOnboardingGateway {
     organizationId: string,
     input: SportsFieldInput,
   ): Promise<BusinessOnboardingDraft>;
+  updateSportsField(
+    accessToken: string,
+    organizationId: string,
+    fieldId: string,
+    input: UpdateSportsFieldInput,
+  ): Promise<BusinessOnboardingDraft>;
   deleteSportsField(
     accessToken: string,
     organizationId: string,
@@ -105,12 +117,6 @@ export interface VenueOnboardingGateway {
     accessToken: string,
     organizationId: string,
     venueId: string,
-  ): Promise<BusinessOnboardingDraft>;
-  saveFieldAvailability(
-    accessToken: string,
-    organizationId: string,
-    fieldId: string,
-    input: FieldAvailabilityInput,
   ): Promise<BusinessOnboardingDraft>;
   updateVenueStatus(
     accessToken: string,

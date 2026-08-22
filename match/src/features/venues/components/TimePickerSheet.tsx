@@ -44,7 +44,7 @@ const TimePickerSheet = ({ visible, title, value, onSelect, onClose }: TimePicke
       DateTimePickerAndroid.open({
         value: selectedTime,
         mode: "time",
-        is24Hour: false,
+        is24Hour: true,
         minuteInterval: 30,
         onChange: (event, date) => {
           if (event.type === "set" && date) {
@@ -82,7 +82,7 @@ const TimePickerSheet = ({ visible, title, value, onSelect, onClose }: TimePicke
           />
           <CustomButton
             label="Confirmar hora"
-            variant="secondary"
+            variant="light"
             onPress={() => onSelect(dateToTime(draftTime))}
             style={styles.confirmButton}
           />
@@ -99,8 +99,8 @@ const styles = StyleSheet.create({
   sheet: {
     paddingHorizontal: theme.spacing.xl,
     paddingBottom: theme.spacing.lg,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: theme.radius.sheet,
+    borderTopRightRadius: theme.radius.sheet,
     borderCurve: "continuous",
     backgroundColor: theme.colors.backgroundAlt,
   },

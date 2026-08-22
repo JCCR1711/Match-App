@@ -1,3 +1,5 @@
+import type { SportsAvatarId } from "./avatar";
+
 export type UserMode = "player" | "venue_manager";
 
 export interface User {
@@ -6,6 +8,7 @@ export interface User {
   email: string;
   availableModes: UserMode[];
   activeMode: UserMode | null;
+  avatarId?: SportsAvatarId;
 }
 
 export interface SessionTokens {
@@ -55,6 +58,7 @@ export interface AuthGateway {
   selectUserMode(accessToken: string, mode: UserMode): Promise<User>;
   refreshSession(refreshToken: string): Promise<AuthenticatedSession>;
   revokeSession(refreshToken: string): Promise<void>;
+  signInDemo?(mode: UserMode): Promise<AuthenticatedSession>;
 }
 
 export interface SessionStore {
@@ -70,6 +74,7 @@ export type AuthStatus =
   | "verifyingCode"
   | "completingSignUp"
   | "selectingMode"
+  | "signingInDemo"
   | "signingOut";
 
 export type VerificationOutcome =
@@ -92,6 +97,8 @@ export interface AuthContextType {
   verifyEmailCode: (code: string) => Promise<VerificationOutcome>;
   completeSignUp: (displayName: string) => Promise<boolean>;
   selectUserMode: (mode: UserMode) => Promise<boolean>;
+  selectAvatar: (avatarId: SportsAvatarId) => void;
+  signInDemo: (mode: UserMode) => Promise<boolean>;
   resendEmailCode: () => Promise<boolean>;
   clearAuthError: () => void;
   logout: () => Promise<void>;

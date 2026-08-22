@@ -1,7 +1,7 @@
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomText from "@/src/components/ui/CustomText";
 import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
-import VenueSetupBackground from "@/src/features/venues/components/VenueSetupBackground";
+import AppBackground from "@/src/components/ui/AppBackground";
 import VenueTextField from "@/src/features/venues/components/VenueTextField";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -122,7 +122,7 @@ const BusinessBasicsView = () => {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <VenueSetupBackground />
+      <AppBackground />
       <AppScreenHeader title="Tu club" onBack={() => router.back()} backAccessibilityLabel="Volver" scrollY={scrollY} />
 
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
@@ -203,7 +203,7 @@ const BusinessBasicsView = () => {
 
                 <CustomButton
                   label={submitting ? "Guardando..." : "Continuar"}
-                  variant="secondary"
+                  variant="primary"
                   onPress={handleContinue}
                   disabled={submitting}
                   style={styles.continueButton}
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    gap: theme.spacing.huge,
+    gap: theme.layout.sectionGap,
   },
   contentLoading: {
     justifyContent: "center",
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     color: theme.colors.authTextSecondary,
   },
   form: {
-    gap: theme.spacing.xxl,
+    gap: theme.layout.groupGap,
   },
   errorText: {
     color: theme.colors.authTextSecondary,

@@ -67,8 +67,10 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xxs,
   },
   day: {
-    width: 42,
-    height: 42,
+    flex: 1,
+    minWidth: 0,
+    aspectRatio: 1,
+    maxWidth: 44,
     borderRadius: theme.radius.pill,
     alignItems: "center",
     justifyContent: "center",

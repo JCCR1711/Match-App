@@ -15,7 +15,7 @@ const FloatingActionButton = ({ onPress, accessibilityLabel, disabled, bottom = 
   <CustomButton
     icon={<CustomIcon icon={Add01Icon} color={theme.colors.black} size={27} strokeWidth={2.7} />}
     size="icon"
-    variant="secondary"
+    variant="primary"
     onPress={onPress}
     disabled={disabled}
     style={[styles.button, { bottom }]}

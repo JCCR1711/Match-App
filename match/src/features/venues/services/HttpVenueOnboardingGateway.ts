@@ -1,8 +1,8 @@
 import {
   BusinessBasicsInput,
   BusinessOnboardingDraft,
-  FieldAvailabilityInput,
   SportsFieldInput,
+  UpdateSportsFieldInput,
   VenueLocationInput,
   VenueOnboardingGateway,
 } from "@/src/features/venues/types/businessOnboarding";
@@ -94,6 +94,8 @@ export class HttpVenueOnboardingGateway implements VenueOnboardingGateway {
           scheduleMode: input.scheduleMode,
           scheduleOverride: input.scheduleOverride,
           hourlyPrice: input.hourlyPrice,
+          nightHourlyPrice: input.nightHourlyPrice,
+          nightStartsAt: input.nightStartsAt,
           currency: input.currency,
         }),
       },
@@ -121,6 +123,15 @@ export class HttpVenueOnboardingGateway implements VenueOnboardingGateway {
     return this.readDraftResponse(response);
   }
 
+  async updateSportsField(accessToken: string, organizationId: string, fieldId: string, input: UpdateSportsFieldInput) {
+    const response = await fetch(`${this.baseUrl}/venue-organizations/${organizationId}/fields/${fieldId}`, {
+      method: "PATCH",
+      headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    return this.readDraftResponse(response);
+  }
+
   async deleteVenue(accessToken: string, organizationId: string, venueId: string) {
     const response = await fetch(
       `${this.baseUrl}/venue-organizations/${organizationId}/venues/${venueId}`,
@@ -130,28 +141,6 @@ export class HttpVenueOnboardingGateway implements VenueOnboardingGateway {
           Accept: "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-      },
-    );
-
-    return this.readDraftResponse(response);
-  }
-
-  async saveFieldAvailability(
-    accessToken: string,
-    organizationId: string,
-    fieldId: string,
-    input: FieldAvailabilityInput,
-  ) {
-    const response = await fetch(
-      `${this.baseUrl}/venue-organizations/${organizationId}/fields/${fieldId}/availability`,
-      {
-        method: "PUT",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(input),
       },
     );
 
@@ -224,6 +213,14 @@ export class HttpVenueOnboardingGateway implements VenueOnboardingGateway {
         scheduleMode: field.scheduleMode ?? "inherit",
         scheduleOverride: field.scheduleOverride ?? null,
         hourlyPrice: field.hourlyPrice ?? field.availability?.hourlyPrice ?? 0,
+        nightHourlyPrice:
+          field.nightHourlyPrice ??
+          field.availability?.nightHourlyPrice ??
+          field.hourlyPrice ??
+          field.availability?.hourlyPrice ??
+          0,
+        nightStartsAt:
+          field.nightStartsAt ?? field.availability?.nightStartsAt ?? "18:00",
         currency: field.currency ?? field.availability?.currency ?? "PEN",
       }),
     );

@@ -1,9 +1,9 @@
-import DashboardSection from "@/src/features/dashboard/components/DashboardSection";
+import AppSection from "@/src/components/ui/AppSection";
 import FieldManagementCard from "@/src/features/venues/components/FieldManagementCard";
 import type { SportsFieldDraft, VenueLocation } from "@/src/features/venues/types/businessOnboarding";
 import { theme } from "@/src/theme";
-import { useCallback } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import { useCallback, useMemo } from "react";
+import { FlatList, StyleSheet, useWindowDimensions, View } from "react-native";
 
 interface FieldsCarouselProps {
   fields: SportsFieldDraft[];
@@ -13,15 +13,19 @@ interface FieldsCarouselProps {
 }
 
 const FieldsCarousel = ({ fields, venues, onOpenAll, onOpenField }: FieldsCarouselProps) => {
+  const { width } = useWindowDimensions();
+  const availableWidth = width - theme.layout.screenGutter * 2;
+  const cardWidth = availableWidth;
+  const cardStyle = useMemo(() => ({ width: cardWidth }), [cardWidth]);
   const renderField = useCallback(({ item }: { item: SportsFieldDraft }) => {
     const venueName = venues.find((venue) => venue.venueId === item.venueId)?.venueName;
-    return <FieldManagementCard field={item} subtitle={venueName} style={styles.card} showArrow={false} onPress={() => onOpenField(item.fieldId)} />;
-  }, [onOpenField, venues]);
+    return <FieldManagementCard field={item} subtitle={venueName} presentation="featured" style={cardStyle} onPress={() => onOpenField(item.fieldId)} />;
+  }, [cardStyle, onOpenField, venues]);
 
   if (fields.length === 0) return null;
 
   return (
-    <DashboardSection title="Tus canchas" actionLabel="Ver todas" onAction={onOpenAll}>
+    <AppSection title="Canchas" actionLabel="Ver todas" onAction={onOpenAll}>
       <FlatList
         horizontal
         data={fields}
@@ -33,9 +37,9 @@ const FieldsCarousel = ({ fields, venues, onOpenAll, onOpenField }: FieldsCarous
         showsHorizontalScrollIndicator={false}
         nestedScrollEnabled
         decelerationRate="fast"
-        snapToInterval={316}
+        snapToInterval={cardWidth + theme.spacing.sm}
       />
-    </DashboardSection>
+    </AppSection>
   );
 };
 
@@ -46,6 +50,5 @@ export default FieldsCarousel;
 const styles = StyleSheet.create({
   list: { marginHorizontal: -theme.spacing.lg },
   content: { paddingHorizontal: theme.spacing.lg },
-  card: { width: 300, minHeight: 150 },
-  separator: { width: theme.spacing.md },
+  separator: { width: theme.spacing.sm },
 });

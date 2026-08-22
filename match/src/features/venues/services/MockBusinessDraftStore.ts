@@ -3,6 +3,7 @@ import type {
   FieldAvailability,
   SportsFieldDraft,
 } from "@/src/features/venues/types/businessOnboarding";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 
 const getDraftKey = (ownerId: string) => `match.mock-business.draft.${ownerId}`;
@@ -24,10 +25,15 @@ type LegacyBusinessDraft = Omit<BusinessOnboardingDraft, "field" | "fields" | "v
 
 export class MockBusinessDraftStore {
   async get(ownerId: string) {
-    if (!(await SecureStore.isAvailableAsync())) return null;
-    const serializedDraft = await SecureStore.getItemAsync(
-      getDraftKey(ownerId),
-    );
+    const key = getDraftKey(ownerId);
+    let serializedDraft = await AsyncStorage.getItem(key);
+    if (!serializedDraft && (await SecureStore.isAvailableAsync())) {
+      serializedDraft = await SecureStore.getItemAsync(key);
+      if (serializedDraft) {
+        await AsyncStorage.setItem(key, serializedDraft);
+        await SecureStore.deleteItemAsync(key);
+      }
+    }
     if (!serializedDraft) return null;
 
     try {
@@ -50,6 +56,8 @@ export class MockBusinessDraftStore {
         scheduleMode: field.scheduleMode ?? "inherit",
         scheduleOverride: field.scheduleOverride ?? null,
         hourlyPrice: field.hourlyPrice ?? field.availability?.hourlyPrice ?? legacyAvailability?.hourlyPrice ?? 0,
+        nightHourlyPrice: field.nightHourlyPrice ?? field.hourlyPrice ?? field.availability?.hourlyPrice ?? legacyAvailability?.hourlyPrice ?? 0,
+        nightStartsAt: field.nightStartsAt ?? "18:00",
         currency: field.currency ?? field.availability?.currency ?? legacyAvailability?.currency ?? "PEN",
       }));
 
@@ -64,17 +72,13 @@ export class MockBusinessDraftStore {
         field: fields[0] ?? null,
       } satisfies BusinessOnboardingDraft;
     } catch {
-      await SecureStore.deleteItemAsync(getDraftKey(ownerId));
+      await AsyncStorage.removeItem(key);
+      if (await SecureStore.isAvailableAsync()) await SecureStore.deleteItemAsync(key);
       return null;
     }
   }
 
   async save(ownerId: string, draft: BusinessOnboardingDraft) {
-    if (!(await SecureStore.isAvailableAsync())) return;
-    await SecureStore.setItemAsync(
-      getDraftKey(ownerId),
-      JSON.stringify(draft),
-      { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY },
-    );
+    await AsyncStorage.setItem(getDraftKey(ownerId), JSON.stringify(draft));
   }
 }

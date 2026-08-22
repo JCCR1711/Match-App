@@ -1,9 +1,10 @@
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomText from "@/src/components/ui/CustomText";
 import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
-import VenueSetupBackground from "@/src/features/venues/components/VenueSetupBackground";
+import AppBackground from "@/src/components/ui/AppBackground";
 import VenueCardOption from "@/src/features/venues/components/VenueCardOption";
 import VenueChoicePill from "@/src/features/venues/components/VenueChoicePill";
+import FieldPricingEditor from "@/src/features/venues/components/FieldPricingEditor";
 import VenueTextField from "@/src/features/venues/components/VenueTextField";
 import WeeklyScheduleEditor from "@/src/features/venues/components/WeeklyScheduleEditor";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
@@ -49,6 +50,8 @@ const FirstFieldView = () => {
     closingTime: "23:00",
   });
   const [hourlyPrice, setHourlyPrice] = useState("");
+  const [nightHourlyPrice, setNightHourlyPrice] = useState("");
+  const [nightStartsAt, setNightStartsAt] = useState("18:00");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [fieldNameError, setFieldNameError] = useState(false);
@@ -114,6 +117,7 @@ const FirstFieldView = () => {
 
   const handleSave = async () => {
     const parsedPrice = Number(hourlyPrice.replace(",", "."));
+    const parsedNightPrice = Number(nightHourlyPrice.replace(",", "."));
     if (fieldName.trim().length < 2) {
       setFieldNameError(true);
       setErrorMessage("Ingresa el nombre de la cancha.");
@@ -138,6 +142,10 @@ const FirstFieldView = () => {
     }
     if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
       setErrorMessage("Ingresa un precio válido por hora.");
+      return;
+    }
+    if (!Number.isFinite(parsedNightPrice) || parsedNightPrice <= 0 || !/^([01]\d|2[0-3]):[0-5]\d$/.test(nightStartsAt)) {
+      setErrorMessage("Revisa la tarifa nocturna y su hora de inicio.");
       return;
     }
 
@@ -165,6 +173,8 @@ const FirstFieldView = () => {
           scheduleMode,
           scheduleOverride: scheduleMode === "custom" ? scheduleOverride : null,
           hourlyPrice: parsedPrice,
+          nightHourlyPrice: parsedNightPrice,
+          nightStartsAt,
           currency: "PEN",
         },
       );
@@ -189,7 +199,7 @@ const FirstFieldView = () => {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <VenueSetupBackground variant="field" />
+      <AppBackground />
       <AppScreenHeader title="Nueva cancha" onBack={() => router.back()} backAccessibilityLabel="Volver al panel" scrollY={scrollY} />
 
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
@@ -308,18 +318,7 @@ const FirstFieldView = () => {
                     ) : null}
                   </View>
 
-                  <VenueTextField
-                    label="Precio por hora"
-                    value={hourlyPrice}
-                    onChangeText={(value) => {
-                      setHourlyPrice(value.replace(/[^0-9.,]/g, ""));
-                      clearError();
-                    }}
-                    placeholder="S/ 120"
-                    keyboardType="decimal-pad"
-                    editable={!submitting}
-                    accessibilityLabel="Precio por hora en soles"
-                  />
+                  <FieldPricingEditor dayHourlyPrice={hourlyPrice} nightHourlyPrice={nightHourlyPrice} nightStartsAt={nightStartsAt} disabled={submitting} onChange={(pricing) => { setHourlyPrice(pricing.dayHourlyPrice); setNightHourlyPrice(pricing.nightHourlyPrice); setNightStartsAt(pricing.nightStartsAt); clearError(); }} />
 
                   {errorMessage ? (
                     <CustomText
@@ -332,7 +331,7 @@ const FirstFieldView = () => {
 
                   <CustomButton
                     label={submitting ? "Guardando..." : "Guardar cancha"}
-                    variant="secondary"
+                    variant="primary"
                     onPress={handleSave}
                     disabled={submitting}
                     style={styles.saveButton}
@@ -374,13 +373,13 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    gap: theme.spacing.huge,
+    gap: theme.layout.sectionGap,
   },
   description: {
     color: theme.colors.authTextSecondary,
   },
   form: {
-    gap: theme.spacing.xxl,
+    gap: theme.layout.groupGap,
   },
   venueGroup: { gap: theme.spacing.md },
   venues: { gap: theme.spacing.md },

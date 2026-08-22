@@ -44,7 +44,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Permite que Match use tu ubicación para completar la dirección de tu sede."
+          "locationWhenInUsePermission": "Permite que Match use tu ubicación para mostrar canchas cercanas y completar la ubicación de tus sedes."
         }
       ],
       "@react-native-community/datetimepicker"

@@ -36,7 +36,7 @@ const OnboardingView = () => {
         <View style={styles.footer}>
           <AuthButton
             label="Continuar"
-            variant="secondary"
+            variant="light"
             onPress={openWelcome}
             style={styles.primaryButton}
             labelStyle={styles.primaryButtonLabel}

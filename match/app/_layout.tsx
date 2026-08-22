@@ -7,9 +7,13 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
 import { useCallback, useEffect, useState } from "react";
+import { StyleSheet } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
+void SystemUI.setBackgroundColorAsync(theme.colors.appCanvas);
 
 export default function RootLayout() {
   const [showLaunchSplash, setShowLaunchSplash] = useState(true);
@@ -33,6 +37,7 @@ export default function RootLayout() {
   }
 
   return (
+    <GestureHandlerRootView style={styles.root}>
     <AuthProvider gateway={authGateway} sessionStore={sessionStore}>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }}>
@@ -116,10 +121,34 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="business/availability"
+          name="business/fields/[fieldId]/edit"
           options={{
             animation: "ios_from_right",
             gestureEnabled: true,
+            contentStyle: { backgroundColor: theme.colors.black },
+          }}
+        />
+        <Stack.Screen
+          name="venues/[venueId]"
+          options={{
+            animation: "ios_from_right",
+            gestureEnabled: true,
+            contentStyle: { backgroundColor: theme.colors.black },
+          }}
+        />
+        <Stack.Screen
+          name="reservations/new"
+          options={{
+            animation: "ios_from_right",
+            gestureEnabled: true,
+            contentStyle: { backgroundColor: theme.colors.black },
+          }}
+        />
+        <Stack.Screen
+          name="reservations/confirmation"
+          options={{
+            animation: "fade",
+            gestureEnabled: false,
             contentStyle: { backgroundColor: theme.colors.black },
           }}
         />
@@ -131,10 +160,23 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: theme.colors.black },
           }}
         />
+        <Stack.Screen
+          name="profile/avatar"
+          options={{
+            animation: "ios_from_right",
+            gestureEnabled: true,
+            contentStyle: { backgroundColor: theme.colors.black },
+          }}
+        />
       </Stack>
       {showLaunchSplash ? (
         <LaunchSplash onComplete={handleLaunchComplete} />
       ) : null}
     </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+});

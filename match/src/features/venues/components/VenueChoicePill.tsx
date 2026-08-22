@@ -25,7 +25,7 @@ export default VenueChoicePill;
 
 const styles = StyleSheet.create({
   container: { flex: 1, minHeight: 50, alignItems: "center", justifyContent: "center", borderRadius: theme.radius.pill, backgroundColor: theme.colors.surface },
-  selected: { backgroundColor: theme.colors.authPrimary },
+  selected: { backgroundColor: theme.colors.accent },
   label: { color: theme.colors.authTextSecondary },
   selectedLabel: { color: theme.colors.black, fontFamily: theme.fontFamilies.poppinsBold },
   disabled: { opacity: 0.38 },

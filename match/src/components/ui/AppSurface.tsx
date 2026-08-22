@@ -1,3 +1,4 @@
+import { theme } from "@/src/theme";
 import type { ReactNode } from "react";
 import { Pressable, type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
@@ -34,9 +35,9 @@ const AppSurface = ({ children, variant = "neutral", style, accessibilityLabel, 
 export default AppSurface;
 
 const styles = StyleSheet.create({
-  surface: { overflow: "hidden", borderRadius: 26, borderCurve: "continuous" },
-  neutral: { backgroundColor: "rgba(255, 255, 255, 0.075)" },
-  blue: { backgroundColor: "rgba(36, 124, 255, 0.76)" },
-  pressed: { opacity: 0.76, transform: [{ scale: 0.99 }] },
+  surface: { overflow: "hidden", borderRadius: theme.radius.card, borderCurve: "continuous" },
+  neutral: { backgroundColor: "rgba(255, 255, 255, 0.075)", borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255, 255, 255, 0.1)" },
+  blue: { backgroundColor: "rgba(36, 72, 255, 0.82)" },
+  pressed: { opacity: 0.76 },
   disabled: { opacity: 0.5 },
 });

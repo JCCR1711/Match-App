@@ -2,7 +2,7 @@ import CustomButton from "@/src/components/ui/CustomButton";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
-import VenueSetupBackground from "@/src/features/venues/components/VenueSetupBackground";
+import AppBackground from "@/src/components/ui/AppBackground";
 import VenueTextField from "@/src/features/venues/components/VenueTextField";
 import WeeklyScheduleEditor from "@/src/features/venues/components/WeeklyScheduleEditor";
 import { detectVenueLocation } from "@/src/features/venues/services/detectVenueLocation";
@@ -183,7 +183,7 @@ const VenueLocationView = () => {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <VenueSetupBackground variant="venue" />
+      <AppBackground />
       <AppScreenHeader title="Nueva sede" onBack={() => router.back()} backAccessibilityLabel="Volver al panel" scrollY={scrollY} />
 
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
@@ -323,7 +323,7 @@ const VenueLocationView = () => {
 
                   <CustomButton
                     label={submitting ? "Guardando..." : "Guardar sede"}
-                    variant="secondary"
+                    variant="primary"
                     onPress={handleSave}
                     disabled={submitting}
                     style={styles.saveButton}
@@ -365,18 +365,18 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    gap: theme.spacing.huge,
+    gap: theme.layout.sectionGap,
   },
   description: {
     color: theme.colors.authTextSecondary,
   },
   form: {
-    gap: theme.spacing.xxl,
+    gap: theme.layout.groupGap,
   },
   locationButton: {
     minHeight: 54,
     borderWidth: 0,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.deepTeal,
   },
   scheduleSection: { gap: theme.spacing.lg, paddingTop: theme.spacing.md },
   sectionHeading: { gap: theme.spacing.xxs },

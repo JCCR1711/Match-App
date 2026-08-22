@@ -57,11 +57,11 @@ const SelectUserModeView = () => {
                 leadingIcon={
                   <CustomIcon
                     icon={FootballIcon}
-                    color={theme.colors.black}
+                    color={theme.colors.white}
                     size={24}
                   />
                 }
-                variant="secondary"
+                variant="primary"
                 onPress={() => handleModeSelection("player")}
                 disabled={loading}
                 style={styles.primaryOption}
