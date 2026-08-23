@@ -29,7 +29,7 @@ const OpenMatchCard = ({ match, venue, width, onPress }: OpenMatchCardProps) => 
         <CustomText text={`${match.dateLabel}, ${match.time} · ${match.availableSpots} cupos`} variant="caption" style={styles.metadata} numberOfLines={1} />
       </View>
       <View style={styles.arrow}>
-        <CustomIcon icon={ArrowRight01Icon} color={theme.colors.black} size={19} strokeWidth={2.5} />
+        <CustomIcon icon={ArrowRight01Icon} color={theme.colors.black} size={19} />
       </View>
     </View>
   </Pressable>

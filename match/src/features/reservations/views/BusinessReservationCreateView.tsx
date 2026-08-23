@@ -1,0 +1,211 @@
+import CustomButton from "@/src/components/ui/CustomButton";
+import CustomIcon from "@/src/components/ui/CustomIcon";
+import CustomText from "@/src/components/ui/CustomText";
+import ReservationCustomerPicker from "@/src/features/reservations/components/ReservationCustomerPicker";
+import ReservationStatusSelector from "@/src/features/reservations/components/ReservationStatusSelector";
+import ReservationSheetDetails from "@/src/features/reservations/components/ReservationSheetDetails";
+import ReservationSheetHeroValue from "@/src/features/reservations/components/ReservationSheetHeroValue";
+import ReservationTimeRange from "@/src/features/reservations/components/ReservationTimeRange";
+import ScheduleStatusLabel from "@/src/features/reservations/components/ScheduleStatusLabel";
+import { reservationCustomers } from "@/src/features/reservations/data/reservationCustomers";
+import { reservationsStore } from "@/src/features/reservations/services/MockReservationsStore";
+import type { ReservationCreateStatus, ReservationCustomer } from "@/src/features/reservations/types/reservation";
+import { theme } from "@/src/theme";
+import { formatMoneyAmount } from "@/src/utils/formatMoney";
+import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
+import { router, useLocalSearchParams } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useMemo, useState } from "react";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+type RouteParams = {
+  venueId?: string;
+  venueName?: string;
+  fieldId?: string;
+  fieldName?: string;
+  dateKey?: string;
+  dateLabel?: string;
+  startTime?: string;
+  endTime?: string;
+  hourlyPrice?: string;
+};
+
+const toMinutes = (time: string) => {
+  const [hour = 0, minute = 0] = time.split(":").map(Number);
+  return hour * 60 + minute;
+};
+
+const BusinessReservationCreateView = () => {
+  const params = useLocalSearchParams<RouteParams>();
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<ReservationCustomer | null>(null);
+  const [reservationStatus, setReservationStatus] = useState<ReservationCreateStatus>("pending");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const durationMinutes = Math.max(30, toMinutes(params.endTime ?? "") - toMinutes(params.startTime ?? ""));
+  const hourlyPrice = Number(params.hourlyPrice ?? 0);
+  const amount = useMemo(() => Math.round(hourlyPrice * durationMinutes / 60 * 100) / 100, [durationMinutes, hourlyPrice]);
+  const hasContext = Boolean(params.venueId && params.fieldId && params.dateKey && params.startTime);
+
+  const handleCreate = () => {
+    if (!selectedCustomer) {
+      setErrorMessage("Selecciona un jugador de Match.");
+      return;
+    }
+    if (!hasContext || !params.venueId || !params.fieldId || !params.dateKey || !params.startTime) {
+      setErrorMessage("No pudimos recuperar este horario.");
+      return;
+    }
+    const reservation = reservationsStore.createReservation({
+      customerId: selectedCustomer.id,
+      venueId: params.venueId,
+      venueName: params.venueName ?? "Club",
+      fieldId: params.fieldId,
+      fieldName: params.fieldName ?? "Cancha",
+      dateKey: params.dateKey,
+      dateLabel: params.dateLabel ?? params.dateKey,
+      startTime: params.startTime,
+      durationMinutes,
+      amount,
+      customerName: selectedCustomer.displayName,
+      status: reservationStatus,
+    });
+    if (!reservation) {
+      setErrorMessage("Este horario ya no está disponible.");
+      return;
+    }
+    router.back();
+  };
+
+  return (
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <KeyboardAvoidingView style={styles.keyboardArea} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={styles.modalHeader}>
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar nueva reserva"
+              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
+            >
+              <CustomIcon icon={ArrowDown01Icon} color={theme.colors.white} size={24} strokeWidth={3} />
+            </Pressable>
+            <View pointerEvents="none" style={styles.titleContainer}>
+              <CustomText text="Nueva reserva" variant="body" style={styles.title} />
+            </View>
+          </View>
+
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+          >
+        <View style={styles.context}>
+          <ScheduleStatusLabel status="available" />
+          <ReservationTimeRange startTime={params.startTime ?? "--:--"} endTime={params.endTime} tone="available" />
+          <ReservationSheetDetails
+            divided={false}
+            items={[
+              { label: "Cancha", value: params.fieldName ?? "Cancha" },
+              { label: "Fecha", value: params.dateLabel ?? "Fecha por definir" },
+            ]}
+          />
+        </View>
+
+        <View style={styles.form}>
+          <ReservationCustomerPicker
+            customers={reservationCustomers}
+            query={customerQuery}
+            selectedCustomerId={selectedCustomer?.id ?? null}
+            onChangeQuery={(query) => {
+              setCustomerQuery(query);
+              setSelectedCustomer(null);
+              setErrorMessage(null);
+            }}
+            onSelect={(customer) => {
+              setSelectedCustomer(customer);
+              setCustomerQuery(customer.displayName);
+              setErrorMessage(null);
+            }}
+          />
+          {errorMessage ? <CustomText text={errorMessage} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
+        </View>
+
+        <ReservationStatusSelector value={reservationStatus} onChange={setReservationStatus} />
+
+        <View style={styles.totalRow}>
+          <CustomText text="Total" variant="body" style={styles.totalLabel} />
+          <ReservationSheetHeroValue value={formatMoneyAmount(amount)} prefix="S/" accessibilityLabel={`Precio S/ ${formatMoneyAmount(amount)}`} />
+        </View>
+
+            <CustomButton label="Crear reserva" variant="light" onPress={handleCreate} disabled={!hasContext || !selectedCustomer} style={styles.submit} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
+  );
+};
+
+export default BusinessReservationCreateView;
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: theme.colors.black },
+  safeArea: { flex: 1 },
+  keyboardArea: { flex: 1 },
+  modalHeader: {
+    minHeight: 80,
+    paddingHorizontal: theme.layout.screenGutter,
+    paddingTop: theme.spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+  },
+  titleContainer: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: {
+    color: theme.colors.white,
+    textAlign: "center",
+    textTransform: "none",
+    letterSpacing: 0.2,
+  },
+  closeButton: {
+    width: 48,
+    height: 48,
+    borderRadius: theme.radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pressed: { opacity: 0.72 },
+  scroll: { flex: 1 },
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: theme.layout.screenGutter,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.huge,
+    gap: theme.layout.sectionGap,
+  },
+  context: { gap: theme.spacing.lg },
+  form: { gap: theme.spacing.sm },
+  error: { color: theme.colors.textOnDarkSecondary },
+  totalRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.dividerOnDark,
+  },
+  totalLabel: { color: theme.colors.textOnDarkSecondary },
+  submit: { minHeight: 60, borderRadius: theme.radius.pill },
+});

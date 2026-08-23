@@ -17,7 +17,7 @@ export default function Index() {
   }
 
   return user.activeMode === "venue_manager" ? (
-    <Redirect href="/business/setup" />
+    <Redirect href="/(tabs)/dashboard" />
   ) : (
     <Redirect href="/(tabs)" />
   );

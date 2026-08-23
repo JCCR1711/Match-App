@@ -11,10 +11,17 @@ import { reservationDates } from "@/src/features/reservations/data/reservationDa
 import { useReservations } from "@/src/features/reservations/hooks/useReservations";
 import { reservationsStore } from "@/src/features/reservations/services/MockReservationsStore";
 import type { ReservationRecord } from "@/src/features/reservations/types/reservation";
+import { isActiveReservation } from "@/src/features/reservations/utils/isActiveReservation";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
-import { useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+
+const getRouteParam = (param: string | string[] | undefined) => Array.isArray(param) ? param[0] : param;
 
 const BusinessReservationsView = () => {
+  const routeParams = useLocalSearchParams<{ reservationId?: string | string[]; dateKey?: string | string[]; fieldId?: string | string[] }>();
+  const initialDateKey = getRouteParam(routeParams.dateKey) ?? reservationDates[0].dateKey;
+  const initialFieldId = getRouteParam(routeParams.fieldId) ?? null;
   const { reservations, blocks } = useReservations();
   const { draft } = useBusinessDraft({ redirectWhenMissing: false });
   const fields = useMemo(
@@ -36,12 +43,11 @@ const BusinessReservationsView = () => {
     },
     [blocks, draft?.fields, draft?.venues, reservations],
   );
-  const [selectedDateKey, setSelectedDateKey] = useState(
-    reservationDates[0].dateKey,
-  );
-  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [selectedDateKey, setSelectedDateKey] = useState(initialDateKey);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(initialFieldId);
   const [selectedReservation, setSelectedReservation] =
     useState<ReservationRecord | null>(null);
+  const [focusedReservationId, setFocusedReservationId] = useState<string | null>(null);
   const [availabilityAction, setAvailabilityAction] =
     useState<AvailabilityAction | null>(null);
   const defaultFieldId = fields.find((field) => reservations.some((reservation) => reservation.fieldId === field.id && reservation.status !== "canceled"))?.id ?? fields[0]?.id ?? null;
@@ -55,12 +61,13 @@ const BusinessReservationsView = () => {
       }, new Map<string, number>()),
     [activeFieldId, reservations],
   );
-  const agendaReservations = reservations.filter(
-    (reservation) =>
-      reservation.status !== "canceled" &&
-      reservation.dateKey === selectedDateKey &&
-      reservation.fieldId === activeFieldId,
-  );
+  const agendaReservations = reservations
+    .filter(isActiveReservation)
+    .filter(
+      (reservation) =>
+        reservation.dateKey === selectedDateKey &&
+        reservation.fieldId === activeFieldId,
+    );
   const agendaBlocks = blocks.filter(
     (block) =>
       block.dateKey === selectedDateKey && block.fieldId === activeFieldId,
@@ -72,6 +79,20 @@ const BusinessReservationsView = () => {
   const availableHours = Math.max(0, Math.floor((scheduledMinutes - occupiedMinutes) / 60));
   const selectedDateLabel = formatSelectedDate(selectedDateKey);
 
+  useEffect(() => {
+    const reservationId = getRouteParam(routeParams.reservationId);
+    if (!reservationId) return;
+
+    const reservation = reservations.find((item) => item.id === reservationId);
+    if (!reservation) return;
+
+    setSelectedDateKey(getRouteParam(routeParams.dateKey) ?? reservation.dateKey);
+    setSelectedFieldId(getRouteParam(routeParams.fieldId) ?? reservation.fieldId);
+    setFocusedReservationId(reservation.id);
+    setSelectedReservation(reservation);
+    router.setParams({ reservationId: undefined });
+  }, [reservations, routeParams.dateKey, routeParams.fieldId, routeParams.reservationId]);
+
   return (
     <>
       <AppScreenLayout
@@ -79,9 +100,15 @@ const BusinessReservationsView = () => {
         backgroundVariant="dashboard"
         hasTabBar
       >
-        <BusinessFieldSelector fields={fields} selectedFieldId={activeFieldId} onSelectField={setSelectedFieldId} />
+        <BusinessFieldSelector fields={fields} selectedFieldId={activeFieldId} onSelectField={(fieldId) => {
+          setFocusedReservationId(null);
+          setSelectedFieldId(fieldId);
+        }} />
 
-        <BusinessReservationCalendar selectedDateKey={selectedDateKey} activityCounts={activityCounts} onSelectDate={setSelectedDateKey} />
+        <BusinessReservationCalendar selectedDateKey={selectedDateKey} activityCounts={activityCounts} onSelectDate={(dateKey) => {
+          setFocusedReservationId(null);
+          setSelectedDateKey(dateKey);
+        }} />
 
         <BusinessReservationDaySummary dateLabel={selectedDateLabel} reservationCount={agendaReservations.length} availableHours={availableHours} />
 
@@ -90,7 +117,11 @@ const BusinessReservationsView = () => {
           blocks={agendaBlocks}
           openingTime={openingTime}
           closingTime={closingTime}
-          onPressReservation={setSelectedReservation}
+          focusedReservationId={focusedReservationId}
+          onPressReservation={(reservation) => {
+            setFocusedReservationId(reservation.id);
+            setSelectedReservation(reservation);
+          }}
           onPressAvailable={(slot) =>
             setAvailabilityAction({ kind: "available", ...slot })
           }
@@ -104,34 +135,38 @@ const BusinessReservationsView = () => {
         reservation={selectedReservation}
         onClose={() => setSelectedReservation(null)}
         onConfirm={(reservationId) => {
-          reservationsStore.updateReservationStatus(reservationId, "confirmed");
+          reservationsStore.confirmReservation(reservationId);
           setSelectedReservation(null);
         }}
         onCancel={(reservationId) => {
-          reservationsStore.updateReservationStatus(reservationId, "canceled");
+          reservationsStore.cancelReservation(reservationId);
           setSelectedReservation(null);
         }}
       />
       <AvailabilityBlockActionsSheet
         action={availabilityAction}
+        dateLabel={selectedDateLabel}
+        fieldName={activeField?.name}
         onClose={() => setAvailabilityAction(null)}
-        onReserve={(startTime, customerName) => {
+        onCreateReservation={(startTime, endTime) => {
           if (!activeField) return;
-          reservationsStore.createReservation({
-            venueId: activeField.venueId,
-            venueName: activeField.venueName ?? "Club",
-            fieldId: activeField.id,
-            fieldName: activeField.name,
-            dateKey: selectedDateKey,
-            dateLabel: selectedDateLabel,
-            startTime,
-            durationMinutes: 60,
-            amount: activeField.hourlyPrice,
-            customerName,
-          });
           setAvailabilityAction(null);
+          router.push({
+            pathname: "/business/reservations/new",
+            params: {
+              venueId: activeField.venueId,
+              venueName: activeField.venueName ?? "Club",
+              fieldId: activeField.id,
+              fieldName: activeField.name,
+              dateKey: selectedDateKey,
+              dateLabel: selectedDateLabel,
+              startTime,
+              endTime,
+              hourlyPrice: String(activeField.hourlyPrice),
+            },
+          });
         }}
-        onBlock={(startTime) => {
+        onBlock={(startTime, kind) => {
           if (!activeField) return;
           reservationsStore.createBlock({
             venueId: activeField.venueId,
@@ -140,7 +175,8 @@ const BusinessReservationsView = () => {
             dateKey: selectedDateKey,
             startTime,
             durationMinutes: 60,
-            label: "Horario bloqueado",
+            label: kind === "maintenance" ? "Mantenimiento" : "Horario bloqueado",
+            kind,
           });
           setAvailabilityAction(null);
         }}

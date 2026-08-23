@@ -19,7 +19,7 @@ const AppRootHeader = ({ title, subtitle, actionIcon, actionLabel, onAction }: A
       <CustomText text={subtitle} variant="caption" style={styles.subtitle} numberOfLines={1} />
     </View>
     <Pressable accessibilityRole="button" accessibilityLabel={actionLabel} hitSlop={8} onPress={onAction} style={({ pressed }) => [styles.action, pressed && styles.pressed]}>
-      <CustomIcon icon={actionIcon} color={theme.colors.black} size={23} strokeWidth={2.3} />
+      <CustomIcon icon={actionIcon} color={theme.colors.black} size={23} />
     </Pressable>
   </View>
 );

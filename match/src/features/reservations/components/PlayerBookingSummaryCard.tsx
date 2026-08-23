@@ -1,21 +1,31 @@
 import AppSurface from "@/src/components/ui/AppSurface";
 import CustomText from "@/src/components/ui/CustomText";
 import { formatBookingDuration } from "@/src/features/reservations/utils/formatBookingDuration";
-import type { PlayerBookingSummary } from "@/src/features/reservations/types/playerReservation";
+import { formatTimeRange } from "@/src/features/reservations/utils/reservationTime";
 import { theme } from "@/src/theme";
+import { formatSoles } from "@/src/utils/formatMoney";
 import { StyleSheet, View } from "react-native";
 
-const PlayerBookingSummaryCard = ({ venueName, fieldName, dateLabel, startTime, durationMinutes, total }: PlayerBookingSummary) => (
+interface PlayerBookingSummaryCardProps {
+  venueName: string;
+  fieldName: string;
+  dateLabel: string;
+  startTime: string;
+  durationMinutes: number;
+  total: number;
+}
+
+const PlayerBookingSummaryCard = ({ venueName, fieldName, dateLabel, startTime, durationMinutes, total }: PlayerBookingSummaryCardProps) => (
   <AppSurface style={styles.card}>
     <View style={styles.heading}>
       <View style={styles.copy}>
         <CustomText text={venueName} variant="sectionHeading" style={styles.venueName} numberOfLines={1} />
         <CustomText text={fieldName} variant="caption" style={styles.fieldName} numberOfLines={1} />
       </View>
-      <CustomText text={`S/ ${total}`} variant="action" style={styles.total} />
+      <CustomText text={formatSoles(total)} variant="action" style={styles.total} />
     </View>
     <View style={styles.schedule}>
-      <CustomText text={`${dateLabel} · ${startTime} · ${formatBookingDuration(durationMinutes)}`} variant="caption" style={styles.scheduleText} numberOfLines={1} />
+      <CustomText text={`${dateLabel} · ${formatTimeRange(startTime, durationMinutes)} · ${formatBookingDuration(durationMinutes)}`} variant="caption" style={styles.scheduleText} numberOfLines={1} />
     </View>
   </AppSurface>
 );

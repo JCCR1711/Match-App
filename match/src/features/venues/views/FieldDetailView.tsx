@@ -11,6 +11,7 @@ import type { ResourceStatus } from "@/src/features/venues/types/businessOnboard
 import { useAuth } from "@/src/hooks/useAuth";
 import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
+import { formatSoles } from "@/src/utils/formatMoney";
 import { Location01Icon, MoreHorizontalIcon, Settings02Icon } from "@hugeicons/core-free-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -67,7 +68,7 @@ const FieldDetailView = () => {
           {venue ? <View style={styles.location}><CustomIcon icon={Location01Icon} color={theme.colors.authTextSecondary} size={23} /><CustomText text={venue.venueName} variant="body" style={styles.secondary} /></View> : null}
           <View style={styles.metrics}>
             <Metric label="Formato" value={field?.format ?? "—"} />
-            <Metric label="Precio por hora" value={field ? `S/ ${field.hourlyPrice}` : "—"} />
+            <Metric label="Precio por hora" value={field ? formatSoles(field.hourlyPrice) : "—"} />
           </View>
           <AppSurface style={styles.schedule}>
             <CustomText text="Horario" variant="body" style={styles.sectionTitle} />

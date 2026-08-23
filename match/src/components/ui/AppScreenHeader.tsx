@@ -22,6 +22,7 @@ interface AppScreenHeaderProps {
   backAccessibilityLabel?: string;
   action?: ReactNode;
   scrollY?: SharedValue<number>;
+  glassTint?: string;
 }
 
 const AppScreenHeader = ({
@@ -30,6 +31,7 @@ const AppScreenHeader = ({
   backAccessibilityLabel = "Volver",
   action,
   scrollY: externalScrollY,
+  glassTint = "rgba(8, 8, 10, 0.72)",
 }: AppScreenHeaderProps) => {
   const insets = useSafeAreaInsets();
   const localScrollY = useSharedValue(0);
@@ -43,16 +45,19 @@ const AppScreenHeader = ({
     ),
   }));
   const titleStyle = useAnimatedStyle(() => ({
-    fontSize: interpolate(scrollY.value, [0, 72], [28, 16], Extrapolation.CLAMP),
-    lineHeight: interpolate(scrollY.value, [0, 72], [36, 20], Extrapolation.CLAMP),
+    fontSize: interpolate(scrollY.value, [0, 72], [22, 16], Extrapolation.CLAMP),
+    lineHeight: interpolate(scrollY.value, [0, 72], [28, 20], Extrapolation.CLAMP),
     transform: [
       {
-        translateX: interpolate(scrollY.value, [0, 72], [0, onBack ? 56 : 0], Extrapolation.CLAMP),
+        translateX: interpolate(scrollY.value, [0, 72], [0, onBack ? 48 : 0], Extrapolation.CLAMP),
       },
       {
-        translateY: interpolate(scrollY.value, [0, 72], [0, -36], Extrapolation.CLAMP),
+        translateY: interpolate(scrollY.value, [0, 72], [0, -14], Extrapolation.CLAMP),
       },
     ],
+  }));
+  const glassStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollY.value, [4, 40], [0, 1], Extrapolation.CLAMP),
   }));
 
   return (
@@ -64,25 +69,21 @@ const AppScreenHeader = ({
         shellStyle,
       ]}
     >
-      <GlassSurface
-        intensity={52}
-        fallbackTint="rgba(0, 0, 0, 0.32)"
-        style={[
-          styles.container,
-          {
-            height: insets.top + COLLAPSIBLE_HEADER_EXPANDED_HEIGHT,
-            paddingTop: insets.top,
-          },
-        ]}
-      >
+      <Animated.View pointerEvents="none" style={[styles.glass, { height: insets.top + COLLAPSIBLE_HEADER_EXPANDED_HEIGHT }, glassStyle]}>
+        <GlassSurface intensity={58} fallbackTint={glassTint} tintColor={glassTint} style={StyleSheet.absoluteFill}>
+          <View />
+        </GlassSurface>
+      </Animated.View>
+      <View style={[styles.container, { height: insets.top + COLLAPSIBLE_HEADER_EXPANDED_HEIGHT, paddingTop: insets.top }]}>
         <View style={styles.content}>
         <View style={styles.side}>
           {onBack ? (
             <CustomButton
-              icon={<CustomIcon icon={ArrowLeft01Icon} color={theme.colors.white} size={23} strokeWidth={2.4} />}
+              icon={<CustomIcon icon={ArrowLeft01Icon} color={theme.colors.white} size={23} />}
               size="icon"
               variant="inverse"
               onPress={onBack}
+              hitSlop={4}
               style={styles.backButton}
               accessibilityLabel={backAccessibilityLabel}
             />
@@ -91,7 +92,7 @@ const AppScreenHeader = ({
         <AnimatedCustomText text={title} variant="body" style={[styles.title, titleStyle]} numberOfLines={1} />
         <View style={[styles.side, styles.action]}>{action}</View>
         </View>
-      </GlassSurface>
+      </View>
     </Animated.View>
   );
 };
@@ -110,18 +111,18 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   container: {
-    overflow: "hidden",
     zIndex: 10,
   },
+  glass: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
   content: {
     height: COLLAPSIBLE_HEADER_EXPANDED_HEIGHT,
     paddingHorizontal: theme.spacing.md,
   },
-  side: { position: "absolute", top: 1, left: theme.spacing.md, width: 44 },
-  action: { left: undefined, right: theme.spacing.md, alignItems: "flex-end" },
+  side: { position: "absolute", top: 0, left: theme.spacing.sm, width: 44 },
+  action: { left: undefined, right: theme.spacing.sm, alignItems: "flex-end" },
   title: {
     position: "absolute",
-    top: 48,
+    top: 24,
     right: theme.spacing.lg,
     left: theme.spacing.lg,
     color: theme.colors.white,
@@ -131,9 +132,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.35,
   },
   backButton: {
-    width: 42,
-    minHeight: 42,
-    height: 42,
+    width: 40,
+    minHeight: 40,
+    height: 40,
     borderWidth: 0,
     backgroundColor: "transparent",
   },

@@ -1,7 +1,16 @@
 export type ReservationStatus = "confirmed" | "pending" | "canceled";
+export type ReservationCreateStatus = Exclude<ReservationStatus, "canceled">;
+
+export interface ReservationCustomer {
+  id: string;
+  displayName: string;
+  email: string;
+}
+export type AvailabilityBlockKind = "blocked" | "maintenance";
 
 export interface ReservationRecord {
   id: string;
+  customerId: string | null;
   venueId: string;
   venueName: string;
   fieldId: string;
@@ -24,6 +33,7 @@ export interface AvailabilityBlock {
   startTime: string;
   durationMinutes: number;
   label: string;
+  kind?: AvailabilityBlockKind;
 }
 
 export interface AvailabilityBlockCreateInput {
@@ -34,9 +44,11 @@ export interface AvailabilityBlockCreateInput {
   startTime: string;
   durationMinutes: number;
   label: string;
+  kind?: AvailabilityBlockKind;
 }
 
 export interface ReservationCreateInput {
+  customerId: string | null;
   venueId: string;
   venueName: string;
   fieldId: string;
@@ -47,4 +59,5 @@ export interface ReservationCreateInput {
   durationMinutes: number;
   amount: number;
   customerName: string;
+  status: ReservationCreateStatus;
 }

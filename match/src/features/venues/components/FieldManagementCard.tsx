@@ -3,7 +3,9 @@ import CustomText from "@/src/components/ui/CustomText";
 import { getVenueImage } from "@/src/features/venues/data/venueImages";
 import type { SportsFieldDraft } from "@/src/features/venues/types/businessOnboarding";
 import { theme } from "@/src/theme";
+import { formatMoneyAmount, formatSoles } from "@/src/utils/formatMoney";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { memo } from "react";
 import { type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
@@ -16,87 +18,127 @@ interface FieldManagementCardProps {
   onPress: () => void;
 }
 
-const FieldManagementCard = ({ field, disabled, subtitle, style, presentation = "compact", onPress }: FieldManagementCardProps) => (
-  <AppSurface
-    style={[styles.card, presentation === "featured" ? styles.featuredCard : styles.compactCard, style]}
-    onPress={onPress}
-    disabled={disabled}
-    accessibilityLabel={`Abrir ${field.fieldName}, fútbol ${field.format}, precio S/ ${field.hourlyPrice}`}
-  >
-    {presentation === "featured" ? <FeaturedField field={field} venueName={subtitle} /> : <CompactField field={field} venueName={subtitle} />}
-  </AppSurface>
-);
+const FieldManagementCard = ({ field, disabled, subtitle, style, presentation = "compact", onPress }: FieldManagementCardProps) => {
+  const isFeatured = presentation === "featured";
+
+  return (
+    <AppSurface
+      style={[
+        styles.card,
+        isFeatured ? styles.featuredCard : styles.compactCard,
+        style,
+      ]}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityLabel={`Abrir ${field.fieldName}, fútbol ${field.format}, precio ${formatSoles(field.hourlyPrice)}`}
+    >
+      {isFeatured ? (
+        <FeaturedField field={field} venueName={subtitle} />
+      ) : (
+        <CompactField field={field} venueName={subtitle} />
+      )}
+    </AppSurface>
+  );
+};
 
 const FeaturedField = ({ field, venueName }: { field: SportsFieldDraft; venueName?: string }) => (
   <View style={styles.featuredContent}>
-    <View style={styles.featuredMedia}>
-      <Image source={getVenueImage(field.venueId)} style={styles.featuredImage} contentFit="cover" transition={180} cachePolicy="memory-disk" />
-      <View style={styles.formatBadge}>
-        <CustomText text={field.format} variant="actionSecondary" style={styles.formatBadgeText} />
-      </View>
-    </View>
+    <Image source={getVenueImage(field.venueId)} style={styles.featuredImage} contentFit="cover" transition={180} cachePolicy="memory-disk" />
+    <LinearGradient
+      colors={["transparent", "rgba(8, 8, 10, 0.34)", "rgba(8, 8, 10, 0.9)"]}
+      locations={[0, 0.34, 1]}
+      style={styles.featuredFade}
+      pointerEvents="none"
+    />
     <View style={styles.featuredBody}>
       <View style={styles.featuredCopy}>
-        <CustomText text={field.fieldName} variant="subtitle" style={styles.featuredName} numberOfLines={1} />
-        <CustomText text={venueName ?? "Cancha deportiva"} variant="caption" style={styles.featuredVenue} numberOfLines={1} />
+        <View style={styles.featuredTitleRow}>
+          <CustomText text={field.fieldName} variant="sectionHeading" style={styles.featuredName} numberOfLines={1} />
+          <CustomText text={field.status === "active" ? "ACTIVA" : "INACTIVA"} variant="label" style={[styles.featuredStatusText, field.status === "inactive" && styles.featuredInactiveText]} />
+        </View>
+        <View style={styles.featuredMeta}>
+          <CustomText text={venueName ?? "Cancha deportiva"} variant="caption" style={styles.featuredVenue} numberOfLines={1} />
+          <CustomText text="·" variant="caption" style={styles.featuredMetaDivider} />
+          <CustomText text={field.format} variant="caption" style={styles.featuredFormat} />
+        </View>
       </View>
-      <View style={styles.priceBadge}>
-        <CustomText text="S/" variant="label" style={styles.featuredCurrency} />
-        <CustomText text={String(field.hourlyPrice)} variant="subtitle" style={styles.featuredPriceAmount} numberOfLines={1} />
+      <View style={styles.featuredPrice}>
+        <View style={styles.featuredPriceRow}>
+          <CustomText text="S/" variant="label" style={styles.featuredCurrency} />
+          <CustomText text={formatMoneyAmount(field.hourlyPrice)} variant="actionSecondary" style={styles.featuredPriceAmount} numberOfLines={1} />
+        </View>
       </View>
     </View>
   </View>
 );
 
 const CompactField = ({ field, venueName }: { field: SportsFieldDraft; venueName?: string }) => (
-  <>
-    <Image source={getVenueImage(field.venueId)} style={styles.compactImage} contentFit="cover" transition={180} cachePolicy="memory-disk" />
-    <View style={styles.compactContent}>
-      <View style={styles.compactCopy}>
-        <CustomText text={field.fieldName} variant="sectionHeading" style={styles.compactName} numberOfLines={1} />
-        <CustomText text={venueName ?? `Fútbol ${field.format}`} variant="caption" style={styles.compactSubtitle} numberOfLines={1} />
-      </View>
-      <View style={styles.compactFooter}>
-        <CustomText text={`Fútbol ${field.format}`} variant="caption" style={styles.compactFormat} numberOfLines={1} />
-        <FieldPrice amount={field.hourlyPrice} />
-      </View>
+  <View style={styles.compactContent}>
+    <LinearGradient
+      pointerEvents="none"
+      colors={[theme.colors.businessBlueSurface, theme.colors.authBlueDeep]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={StyleSheet.absoluteFill}
+    />
+    <View style={styles.compactMedia}>
+      <Image source={getVenueImage(field.venueId)} style={styles.compactImage} contentFit="cover" transition={180} cachePolicy="memory-disk" />
     </View>
-  </>
+    <View style={styles.compactBody}>
+      <View style={styles.compactCopy}>
+        <CustomText text={field.fieldName} variant="subtitle" style={styles.compactName} numberOfLines={1} />
+        <View style={styles.compactMeta}>
+          {venueName ? <CustomText text={venueName} variant="caption" style={styles.compactSubtitle} numberOfLines={1} /> : null}
+          {venueName ? <CustomText text="·" variant="caption" style={styles.compactDivider} /> : null}
+          <CustomText text={`Fútbol ${field.format}`} variant="caption" style={styles.compactFormat} numberOfLines={1} />
+        </View>
+      </View>
+      <FieldPrice amount={field.hourlyPrice} />
+    </View>
+  </View>
 );
 
 const FieldPrice = ({ amount }: { amount: number }) => (
   <View style={styles.priceRow}>
     <CustomText text="S/" variant="label" style={styles.currency} />
-    <CustomText text={String(amount)} variant="actionSecondary" style={styles.priceAmount} numberOfLines={1} />
+    <CustomText text={formatMoneyAmount(amount)} variant="actionSecondary" style={styles.priceAmount} numberOfLines={1} />
   </View>
 );
 
 export default memo(FieldManagementCard);
 
 const styles = StyleSheet.create({
-  card: { borderRadius: theme.radius.extraLarge, borderWidth: 0, backgroundColor: theme.colors.authSurface },
-  featuredCard: { backgroundColor: theme.colors.black },
-  featuredContent: { flex: 1 },
-  featuredMedia: { position: "relative" },
-  featuredImage: { width: "100%", aspectRatio: 1.8, backgroundColor: theme.colors.backgroundAlt },
-  formatBadge: { position: "absolute", top: theme.spacing.md, left: theme.spacing.md, minHeight: 40, justifyContent: "center", paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.pill, backgroundColor: theme.colors.accent },
-  formatBadgeText: { color: theme.colors.black },
-  priceBadge: { minHeight: 48, flexDirection: "row", alignItems: "baseline", justifyContent: "center", gap: theme.spacing.xs, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.xs, borderRadius: theme.radius.pill, backgroundColor: theme.colors.authPrimary },
-  featuredBody: { minWidth: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.md, padding: theme.spacing.lg },
-  featuredCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xs },
-  featuredName: { color: theme.colors.white },
-  featuredVenue: { color: theme.colors.textOnDarkSecondary },
-  featuredCurrency: { color: theme.colors.surfaceMuted },
-  featuredPriceAmount: { color: theme.colors.black },
+  card: { borderRadius: theme.radius.card, borderWidth: 0, backgroundColor: theme.colors.authSurface },
+  featuredCard: { minHeight: 264, backgroundColor: theme.colors.authSurface },
+  featuredContent: { flex: 1, minHeight: 264, position: "relative", justifyContent: "flex-end" },
+  featuredImage: { ...StyleSheet.absoluteFillObject, backgroundColor: theme.colors.backgroundAlt },
+  featuredFade: { position: "absolute", right: 0, bottom: 0, left: 0, height: "66%" },
+  featuredBody: { zIndex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
+  featuredCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xxs },
+  featuredTitleRow: { minWidth: 0, flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
+  featuredName: { flexShrink: 1, minWidth: 0, color: theme.colors.white },
+  featuredMeta: { minWidth: 0, flexDirection: "row", alignItems: "center", gap: theme.spacing.xs },
+  featuredVenue: { flexShrink: 1, color: theme.colors.textOnMediaSecondary },
+  featuredMetaDivider: { color: theme.colors.textOnMediaSecondary },
+  featuredFormat: { flexShrink: 0, color: theme.colors.white },
+  featuredPrice: { flexShrink: 0, alignItems: "flex-end" },
+  featuredPriceRow: { flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xxs },
+  featuredCurrency: { color: theme.colors.white },
+  featuredPriceAmount: { color: theme.colors.white },
+  featuredStatusText: { flexShrink: 0, color: theme.colors.accent, letterSpacing: 0.8 },
+  featuredInactiveText: { color: theme.colors.warning },
   priceRow: { flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xxs },
-  currency: { color: theme.colors.authTextSecondary },
+  currency: { color: theme.colors.textOnDarkSecondary },
   priceAmount: { color: theme.colors.white },
-  compactCard: { minHeight: 120, flexDirection: "row" },
-  compactImage: { width: 112, alignSelf: "stretch", backgroundColor: theme.colors.authSurface },
-  compactContent: { flex: 1, minWidth: 0, justifyContent: "space-between", gap: theme.spacing.sm, padding: theme.spacing.md },
-  compactCopy: { gap: theme.spacing.xxs },
-  compactName: { color: theme.colors.white },
-  compactSubtitle: { color: theme.colors.authTextSecondary },
-  compactFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.sm },
-  compactFormat: { flex: 1, color: theme.colors.authTextSecondary },
+  compactCard: { minHeight: 348, backgroundColor: theme.colors.businessBlueSurface },
+  compactMedia: { position: "relative", height: 242, margin: theme.spacing.sm, marginBottom: 0, overflow: "hidden", borderRadius: theme.radius.extraLarge, backgroundColor: theme.colors.authSurface },
+  compactImage: { width: "100%", height: "100%", backgroundColor: theme.colors.authSurface },
+  compactContent: { flex: 1, minWidth: 0, minHeight: 348, overflow: "hidden" },
+  compactBody: { minHeight: 106, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.lg, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
+  compactCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xxs },
+  compactName: { color: theme.colors.white, fontSize: 22, lineHeight: 28 },
+  compactMeta: { minWidth: 0, flexDirection: "row", alignItems: "center", gap: theme.spacing.xs },
+  compactSubtitle: { flexShrink: 1, color: theme.colors.textOnDarkSecondary },
+  compactDivider: { color: theme.colors.textOnDarkSecondary },
+  compactFormat: { flexShrink: 0, color: theme.colors.white },
 });

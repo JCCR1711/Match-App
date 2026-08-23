@@ -1,8 +1,8 @@
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import { theme } from "@/src/theme";
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import type { IconSvgElement } from "@hugeicons/react-native";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Pressable, StyleSheet, View } from "react-native";
 
 export interface ProfileActionItem {
@@ -34,9 +34,9 @@ const ProfileActionSection = ({ title, items }: ProfileActionSectionProps) => (
               accessibilityState={{ disabled: item.disabled }}
               style={({ pressed }) => [styles.row, pressed && styles.pressed, item.disabled && styles.disabled]}
             >
-              <CustomIcon icon={item.icon} color={color} size={25} strokeWidth={2.2} />
+              <CustomIcon icon={item.icon} color={color} size={25} />
               <CustomText text={item.label} variant="body" style={[styles.label, item.destructive && styles.destructive]} />
-              {!item.destructive ? <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={24} strokeWidth={2.5} /> : null}
+              {!item.destructive ? <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={24} /> : null}
             </Pressable>
             {index < items.length - 1 ? <View style={styles.separator} /> : null}
           </View>

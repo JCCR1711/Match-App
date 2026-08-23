@@ -43,9 +43,9 @@ interface MenuActionProps { label: string; icon: IconSvgElement; onPress: () => 
 
 const MenuAction = ({ label, icon, onPress, disabled, destructive }: MenuActionProps) => (
   <Pressable disabled={disabled} onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.action, disabled && styles.disabled, pressed && styles.pressed]}>
-    <CustomIcon icon={icon} color={destructive ? theme.colors.error : theme.colors.white} size={27} strokeWidth={2.2} />
+    <CustomIcon icon={icon} color={destructive ? theme.colors.error : theme.colors.white} size={27} />
     <CustomText text={label} variant="body" style={[styles.actionLabel, destructive && styles.deleteLabel]} />
-    {!destructive ? <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={23} strokeWidth={2.4} /> : null}
+    {!destructive ? <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={23} /> : null}
   </Pressable>
 );
 

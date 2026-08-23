@@ -4,99 +4,20 @@ import type {
   ReservationCreateInput,
   ReservationRecord,
 } from "@/src/features/reservations/types/reservation";
+import {
+  availabilityBlocksPreview,
+  reservationsPreview,
+  RESERVATIONS_PREVIEW_DATE_KEY,
+  RESERVATIONS_PREVIEW_VERSION,
+} from "@/src/features/reservations/data/reservationsPreview";
 import { isSlotUnavailable } from "@/src/features/reservations/utils/isSlotUnavailable";
-import { reservationDates } from "@/src/features/reservations/data/reservationDates";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STORAGE_KEY = "match:reservations:v1";
 
-const seedReservations: ReservationRecord[] = [
-  {
-    id: "reservation-1",
-    venueId: "arena-san-miguel",
-    venueName: "Arena San Miguel",
-    fieldId: "arena-5",
-    fieldName: "Cancha Central",
-    dateKey: reservationDates[0].dateKey,
-    dateLabel: `${reservationDates[0].label}, ${reservationDates[0].detail}`,
-    startTime: "19:00",
-    durationMinutes: 120,
-    customerName: "Carlos Mendoza",
-    amount: 135,
-    status: "confirmed",
-  },
-  {
-    id: "reservation-2",
-    venueId: "arena-san-miguel",
-    venueName: "Arena San Miguel",
-    fieldId: "arena-7",
-    fieldName: "Cancha Norte",
-    dateKey: reservationDates[0].dateKey,
-    dateLabel: `${reservationDates[0].label}, ${reservationDates[0].detail}`,
-    startTime: "20:00",
-    durationMinutes: 60,
-    customerName: "Andrea Rojas",
-    amount: 120,
-    status: "pending",
-  },
-  {
-    id: "reservation-3",
-    venueId: "match-padel-club",
-    venueName: "Match Club Surco",
-    fieldId: "surco-5",
-    fieldName: "Cancha 1",
-    dateKey: reservationDates[1].dateKey,
-    dateLabel: `${reservationDates[1].label}, ${reservationDates[1].detail}`,
-    startTime: "18:00",
-    durationMinutes: 60,
-    customerName: "Diego Salazar",
-    amount: 100,
-    status: "confirmed",
-  },
-  {
-    id: "reservation-4",
-    venueId: "arena-san-miguel",
-    venueName: "Arena San Miguel",
-    fieldId: "arena-5",
-    fieldName: "Cancha Central",
-    dateKey: reservationDates[1].dateKey,
-    dateLabel: `${reservationDates[1].label}, ${reservationDates[1].detail}`,
-    startTime: "18:00",
-    durationMinutes: 60,
-    customerName: "Lucía Torres",
-    amount: 110,
-    status: "confirmed",
-  },
-  {
-    id: "reservation-5",
-    venueId: "arena-san-miguel",
-    venueName: "Arena San Miguel",
-    fieldId: "arena-5",
-    fieldName: "Cancha Central",
-    dateKey: reservationDates[2].dateKey,
-    dateLabel: `${reservationDates[2].label}, ${reservationDates[2].detail}`,
-    startTime: "20:00",
-    durationMinutes: 120,
-    customerName: "José Ramírez",
-    amount: 220,
-    status: "pending",
-  },
-];
+let reservations: ReservationRecord[] = [...reservationsPreview];
 
-let reservations: ReservationRecord[] = [...seedReservations];
-
-let blocks: AvailabilityBlock[] = [
-  {
-    id: "block-1",
-    venueId: "arena-san-miguel",
-    fieldId: "arena-5",
-    fieldName: "Cancha Central",
-    dateKey: reservationDates[0].dateKey,
-    startTime: "17:00",
-    durationMinutes: 60,
-    label: "Mantenimiento",
-  },
-];
+let blocks: AvailabilityBlock[] = [...availabilityBlocksPreview];
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -104,6 +25,8 @@ const listeners = new Set<Listener>();
 const emit = () => listeners.forEach((listener) => listener());
 
 interface PersistedReservationsState {
+  previewVersion: number;
+  previewDateKey: string;
   reservations: ReservationRecord[];
   blocks: AvailabilityBlock[];
 }
@@ -112,7 +35,7 @@ let hydrated = false;
 let hydrationPromise: Promise<void> | null = null;
 
 const persist = () => {
-  const state: PersistedReservationsState = { reservations, blocks };
+  const state: PersistedReservationsState = { previewVersion: RESERVATIONS_PREVIEW_VERSION, previewDateKey: RESERVATIONS_PREVIEW_DATE_KEY, reservations, blocks };
   void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => undefined);
 };
 
@@ -129,11 +52,31 @@ export class MockReservationsStore {
         if (!storedState) return;
 
         const parsedState = JSON.parse(storedState) as Partial<PersistedReservationsState>;
+        const shouldRefreshPreview =
+          (parsedState.previewVersion ?? 0) < RESERVATIONS_PREVIEW_VERSION ||
+          parsedState.previewDateKey !== RESERVATIONS_PREVIEW_DATE_KEY;
         if (Array.isArray(parsedState.reservations)) {
-          const persistedIds = new Set(parsedState.reservations.map((reservation) => reservation.id));
-          reservations = [...parsedState.reservations, ...seedReservations.filter((reservation) => !persistedIds.has(reservation.id))];
+          const previewIds = new Set(reservationsPreview.map((reservation) => reservation.id));
+          const persistedReservations = parsedState.reservations
+            .filter((reservation) => !shouldRefreshPreview || !previewIds.has(reservation.id));
+          const persistedIds = new Set(persistedReservations.map((reservation) => reservation.id));
+          reservations = [
+            ...persistedReservations,
+            ...reservationsPreview.filter((reservation) => !persistedIds.has(reservation.id)),
+          ];
         }
-        if (Array.isArray(parsedState.blocks)) blocks = parsedState.blocks;
+        if (Array.isArray(parsedState.blocks)) {
+          const previewBlockIds = new Set(availabilityBlocksPreview.map((block) => block.id));
+          const persistedBlocks = parsedState.blocks.filter(
+            (block) => !shouldRefreshPreview || !previewBlockIds.has(block.id),
+          );
+          const persistedBlockIds = new Set(persistedBlocks.map((block) => block.id));
+          blocks = [
+            ...persistedBlocks,
+            ...availabilityBlocksPreview.filter((block) => !persistedBlockIds.has(block.id)),
+          ];
+        }
+        if (shouldRefreshPreview) persist();
       })
       .catch(() => {
         // Keep prototype seed data when local storage is unavailable or malformed.
@@ -162,10 +105,13 @@ export class MockReservationsStore {
   }
 
   createReservation(input: ReservationCreateInput) {
+    if (this.isTimeRangeUnavailable(input.fieldId, input.dateKey, input.startTime, input.durationMinutes)) {
+      return null;
+    }
+
     const reservation: ReservationRecord = {
       id: `reservation-${Date.now()}`,
       ...input,
-      status: "confirmed",
     };
     reservations.unshift(reservation);
     persist();
@@ -198,14 +144,21 @@ export class MockReservationsStore {
     return true;
   }
 
-  updateReservationStatus(
-    reservationId: string,
-    status: ReservationRecord["status"],
-  ) {
+  confirmReservation(reservationId: string) {
     const reservation = reservations.find((item) => item.id === reservationId);
-    if (!reservation) return null;
+    if (!reservation || reservation.status !== "pending") return null;
 
-    reservation.status = status;
+    reservation.status = "confirmed";
+    persist();
+    emit();
+    return reservation;
+  }
+
+  cancelReservation(reservationId: string) {
+    const reservation = reservations.find((item) => item.id === reservationId);
+    if (!reservation || reservation.status === "canceled") return null;
+
+    reservation.status = "canceled";
     persist();
     emit();
     return reservation;

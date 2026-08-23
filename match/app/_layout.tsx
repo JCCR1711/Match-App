@@ -129,6 +129,15 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="business/reservations/new"
+          options={{
+            animation: "slide_from_bottom",
+            presentation: "modal",
+            gestureEnabled: true,
+            contentStyle: { backgroundColor: theme.colors.black },
+          }}
+        />
+        <Stack.Screen
           name="venues/[venueId]"
           options={{
             animation: "ios_from_right",

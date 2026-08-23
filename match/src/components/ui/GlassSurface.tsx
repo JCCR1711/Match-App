@@ -19,6 +19,7 @@ interface GlassSurfaceProps {
   style?: StyleProp<ViewStyle>;
   intensity?: number;
   fallbackTint?: string;
+  tintColor?: string;
   interactive?: boolean;
 }
 
@@ -32,6 +33,7 @@ const GlassSurface = ({
   style,
   intensity = 58,
   fallbackTint = "rgba(8, 8, 10, 0.28)",
+  tintColor = theme.colors.authSurface,
   interactive = false,
 }: GlassSurfaceProps) => {
   if (supportsLiquidGlass) {
@@ -39,7 +41,7 @@ const GlassSurface = ({
       <GlassView
         glassEffectStyle="regular"
         colorScheme="dark"
-        tintColor={theme.colors.authSurface}
+        tintColor={tintColor}
         isInteractive={interactive}
         style={style}
       >

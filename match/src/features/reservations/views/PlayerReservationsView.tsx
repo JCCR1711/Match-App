@@ -4,6 +4,8 @@ import CustomText from "@/src/components/ui/CustomText";
 import PlayerReservationCard from "@/src/features/reservations/components/PlayerReservationCard";
 import { reservationDates } from "@/src/features/reservations/data/reservationDates";
 import { useReservations } from "@/src/features/reservations/hooks/useReservations";
+import { isActiveReservation, type ActiveReservation } from "@/src/features/reservations/utils/isActiveReservation";
+import { useAuth } from "@/src/hooks/useAuth";
 import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
 import { StatusBar } from "expo-status-bar";
@@ -14,12 +16,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const PlayerReservationsView = () => {
   const { scrollY, onScroll, headerContentInset } = useCollapsibleHeader();
+  const { user } = useAuth();
   const { reservations, isHydrated } = useReservations();
-  const upcomingReservations = reservations.filter(
-    (reservation) => reservation.status !== "canceled" && reservation.dateKey >= reservationDates[0].dateKey,
-  );
+  const upcomingReservations = reservations
+    .filter(isActiveReservation)
+    .filter(
+      (reservation) =>
+        reservation.customerId === user?.id &&
+        reservation.dateKey >= reservationDates[0].dateKey,
+    );
   const renderReservation = useCallback(
-    ({ item }: { item: (typeof reservations)[number] }) => <PlayerReservationCard reservation={{ id: item.id, venueName: item.venueName, fieldName: item.fieldName, dateLabel: item.dateLabel, startTime: item.startTime, durationMinutes: item.durationMinutes, total: item.amount, status: item.status === "pending" ? "pending" : "confirmed" }} />,
+    ({ item }: { item: ActiveReservation }) => <PlayerReservationCard reservation={item} />,
     [],
   );
 

@@ -20,7 +20,7 @@ const VenueCardOption = ({ name, location, selected, disabled, onPress }: VenueC
     accessibilityState={{ selected, disabled }}
     style={({ pressed }) => [styles.container, selected && styles.selected, pressed && styles.pressed]}
   >
-    <CustomIcon icon={Location01Icon} color={selected ? theme.colors.black : theme.colors.authTextSecondary} size={27} strokeWidth={2.2} />
+    <CustomIcon icon={Location01Icon} color={selected ? theme.colors.black : theme.colors.authTextSecondary} size={27} />
     <View style={styles.copy}>
       <CustomText text={name} variant="body" style={[styles.name, selected && styles.selectedText]} />
       <CustomText text={location} variant="caption" style={[styles.location, selected && styles.selectedMeta]} numberOfLines={2} />

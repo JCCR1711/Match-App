@@ -1,13 +1,13 @@
 import CustomText from "@/src/components/ui/CustomText";
 import GlassHeader from "@/src/components/ui/GlassHeader";
 import BusinessDashboardHeader, { BUSINESS_DASHBOARD_HEADER_HEIGHT } from "@/src/features/dashboard/components/BusinessDashboardHeader";
-import BusinessDashboardContext from "@/src/features/dashboard/components/BusinessDashboardContext";
 import BusinessDashboardOverview from "@/src/features/dashboard/components/BusinessDashboardOverview";
 import type { BusinessSetupKind } from "@/src/features/dashboard/components/BusinessSetupCard";
 import BusinessSetupCard from "@/src/features/dashboard/components/BusinessSetupCard";
 import AppBackground from "@/src/components/ui/AppBackground";
 import { useReservations } from "@/src/features/reservations/hooks/useReservations";
 import { reservationDates } from "@/src/features/reservations/data/reservationDates";
+import type { ReservationRecord } from "@/src/features/reservations/types/reservation";
 import { settlements } from "@/src/features/payments/data/paymentsPreview";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -59,6 +59,17 @@ const DashboardView = () => {
     router.navigate("/(tabs)/business-fields");
   };
 
+  const handleOpenReservation = (reservation: ReservationRecord) => {
+    router.navigate({
+      pathname: "/(tabs)/business-reservations",
+      params: {
+        reservationId: reservation.id,
+        dateKey: reservation.dateKey,
+        fieldId: reservation.fieldId,
+      },
+    });
+  };
+
   const setupAction: {
     kind: BusinessSetupKind;
     title: string;
@@ -98,13 +109,12 @@ const DashboardView = () => {
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + BUSINESS_DASHBOARD_HEADER_HEIGHT + theme.spacing.lg,
+            paddingTop: insets.top + BUSINESS_DASHBOARD_HEADER_HEIGHT + theme.spacing.xl,
             paddingBottom: insets.bottom + theme.layout.tabBarClearance,
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <BusinessDashboardContext venueName={venues[0]?.venueName} />
         {loading ? (
           <CustomText
             text="Preparando tu inicio"
@@ -136,8 +146,8 @@ const DashboardView = () => {
                 onOpenAnalytics={() => router.push("/business/analytics")}
                 onOpenPayments={() => router.push("/business/payments")}
                 onOpenReservations={() => router.navigate("/(tabs)/business-reservations")}
+                onOpenReservation={handleOpenReservation}
                 todayReservations={todayReservations}
-                todayBlocks={todayBlocks}
                 availableHours={availableHours}
                 settlement={settlements[0]}
                 onOpenField={(fieldId) =>

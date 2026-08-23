@@ -3,10 +3,10 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { Redirect } from "expo-router";
 
 export default function BusinessReservationsRoute() {
-  const { user } = useAuth();
-  return user?.activeMode === "venue_manager" ? (
-    <BusinessReservationsView />
-  ) : (
-    <Redirect href="/(tabs)" />
-  );
+  const { isAuthenticated, user } = useAuth();
+
+  if (!isAuthenticated) return <Redirect href="/" />;
+  if (user?.activeMode !== "venue_manager") return <Redirect href="/(tabs)" />;
+
+  return <BusinessReservationsView />;
 }

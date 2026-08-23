@@ -1,7 +1,7 @@
 import { useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export const COLLAPSIBLE_HEADER_EXPANDED_HEIGHT = 92;
+export const COLLAPSIBLE_HEADER_EXPANDED_HEIGHT = 58;
 export const COLLAPSIBLE_HEADER_COLLAPSED_HEIGHT = 44;
 
 export const useCollapsibleHeader = () => {

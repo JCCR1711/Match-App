@@ -1,6 +1,5 @@
-import CustomIcon from "@/src/components/ui/CustomIcon";
+import BusinessCardArrow from "@/src/features/dashboard/components/BusinessCardArrow";
 import { theme } from "@/src/theme";
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
@@ -31,14 +30,10 @@ const BusinessHighlightSurface = ({
       ]}
     >
       <View style={styles.content}>{children}</View>
-      <View style={[styles.action, isLight ? styles.lightAction : styles.navyAction]}>
-        <CustomIcon
-          icon={ArrowRight01Icon}
-          color={isLight ? theme.colors.white : theme.colors.businessBlueSurface}
-          size={24}
-          strokeWidth={2.5}
-        />
-      </View>
+      <BusinessCardArrow
+        backgroundColor={isLight ? theme.colors.black : theme.colors.white}
+        color={isLight ? theme.colors.white : theme.colors.black}
+      />
     </Pressable>
   );
 };
@@ -65,19 +60,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     minWidth: 0,
-  },
-  action: {
-    width: 48,
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radius.pill,
-  },
-  navyAction: {
-    backgroundColor: theme.colors.accent,
-  },
-  lightAction: {
-    backgroundColor: theme.colors.black,
   },
   pressed: {
     opacity: 0.78,

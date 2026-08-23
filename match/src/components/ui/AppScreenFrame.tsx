@@ -15,9 +15,11 @@ interface AppScreenFrameProps {
   title: string;
   children: (layout: AppScreenFrameRenderProps) => ReactNode;
   backgroundVariant?: AppBackgroundVariant;
+  backgroundOverlay?: ReactNode;
   onBack?: () => void;
   backAccessibilityLabel?: string;
   headerAction?: ReactNode;
+  headerGlassTint?: string;
   hasTabBar?: boolean;
 }
 
@@ -26,9 +28,11 @@ const AppScreenFrame = ({
   title,
   children,
   backgroundVariant = "content",
+  backgroundOverlay,
   onBack,
   backAccessibilityLabel,
   headerAction,
+  headerGlassTint,
   hasTabBar = false,
 }: AppScreenFrameProps) => {
   const header = useCollapsibleHeader();
@@ -39,12 +43,14 @@ const AppScreenFrame = ({
     <View style={styles.root}>
       <StatusBar style="light" />
       <AppBackground variant={backgroundVariant} />
+      {backgroundOverlay}
       <AppScreenHeader
         title={title}
         onBack={onBack}
         backAccessibilityLabel={backAccessibilityLabel}
         action={headerAction}
         scrollY={header.scrollY}
+        glassTint={headerGlassTint}
       />
       {children({ ...header, contentBottomInset })}
     </View>

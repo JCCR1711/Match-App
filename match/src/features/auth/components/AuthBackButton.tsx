@@ -13,13 +13,7 @@ const AuthBackButton = ({
   accessibilityLabel = "Volver",
 }: AuthBackButtonProps) => (
   <CustomButton
-    icon={
-      <CustomIcon
-        icon={ArrowLeft01Icon}
-        color={theme.colors.authText}
-        sizeToken="medium"
-      />
-    }
+    icon={<CustomIcon icon={ArrowLeft01Icon} color={theme.colors.authText} size={24} />}
     size="icon"
     variant="inverse"
     onPress={() => router.back()}

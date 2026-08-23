@@ -1,19 +1,23 @@
 import AppScreenFrame from "@/src/components/ui/AppScreenFrame";
 import CustomText from "@/src/components/ui/CustomText";
 import FloatingActionButton from "@/src/components/ui/FloatingActionButton";
+import FieldManagementCard from "@/src/features/venues/components/FieldManagementCard";
 import ResourceActionsMenu from "@/src/features/venues/components/ResourceActionsMenu";
 import VenueCreateMenu from "@/src/features/venues/components/VenueCreateMenu";
-import VenueOverviewCard from "@/src/features/venues/components/VenueOverviewCard";
+import VenueSelectorItem from "@/src/features/venues/components/VenueSelectorItem";
+import VenueSpotlight from "@/src/features/venues/components/VenueSpotlight";
+import { getVenueVisual } from "@/src/features/venues/data/venueVisuals";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
-import type { VenueLocation } from "@/src/features/venues/types/businessOnboarding";
+import type { SportsFieldDraft, VenueLocation } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
 import { FootballIcon } from "@hugeicons/core-free-icons";
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
-import Animated from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
+import { useCallback, useMemo, useState } from "react";
+import { Alert, FlatList, StyleSheet, View } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 
 const BusinessFieldsView = () => {
   const { accessToken } = useAuth();
@@ -21,7 +25,18 @@ const BusinessFieldsView = () => {
   const [createMenuVisible, setCreateMenuVisible] = useState(false);
   const [deletingVenueId, setDeletingVenueId] = useState<string | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<VenueLocation | null>(null);
+  const [focusedVenueId, setFocusedVenueId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const venues = useMemo(() => draft?.venues ?? [], [draft?.venues]);
+  const fields = useMemo(() => draft?.fields ?? [], [draft?.fields]);
+  const focusedVenue = venues.find((venue) => venue.venueId === focusedVenueId) ?? venues[0] ?? null;
+  const focusedVenueIndex = focusedVenue ? venues.findIndex((venue) => venue.venueId === focusedVenue.venueId) : -1;
+  const focusedVisual = getVenueVisual(focusedVenueIndex);
+  const focusedFields = useMemo(() => focusedVenue ? fields.filter((field) => field.venueId === focusedVenue.venueId) : [], [fields, focusedVenue]);
+  const fieldCountByVenueId = useMemo(() => fields.reduce<Record<string, number>>((counts, field) => {
+    counts[field.venueId] = (counts[field.venueId] ?? 0) + 1;
+    return counts;
+  }, {}), [fields]);
 
   const deleteVenue = useCallback(async (venueId: string) => {
     if (!accessToken || !draft) return;
@@ -61,10 +76,15 @@ const BusinessFieldsView = () => {
     }
   };
 
-  const renderVenue = useCallback(({ item }: { item: VenueLocation }) => {
-    const fieldCount = draft?.fields.filter((field) => field.venueId === item.venueId).length ?? 0;
-    return <VenueOverviewCard name={item.venueName} location={`${item.district}, ${item.city}`} fieldCount={fieldCount} onPress={() => router.push({ pathname: "/business/venues/[venueId]", params: { venueId: item.venueId } })} onOpenMenu={() => setSelectedVenue(item)} />;
-  }, [draft?.fields]);
+  const renderField = useCallback(({ item }: { item: SportsFieldDraft }) => (
+    <FieldManagementCard
+      field={item}
+      subtitle={focusedVenue?.venueName}
+      presentation="featured"
+      disabled={deletingVenueId !== null}
+      onPress={() => router.push({ pathname: "/business/fields/[fieldId]", params: { fieldId: item.fieldId } })}
+    />
+  ), [deletingVenueId, focusedVenue?.venueName]);
 
   const openCreation = (kind: "venue" | "field") => {
     setCreateMenuVisible(false);
@@ -72,17 +92,46 @@ const BusinessFieldsView = () => {
   };
 
   return (
-    <AppScreenFrame title="Sedes" backgroundVariant="dashboard" hasTabBar>
+    <AppScreenFrame
+      title="Sedes"
+      backgroundVariant="dashboard"
+      backgroundOverlay={
+        focusedVenue ? (
+          <Animated.View key={focusedVenue.venueId} entering={FadeIn.duration(220)} pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <LinearGradient
+              colors={[focusedVisual.colors[0], focusedVisual.colors[1], theme.colors.appCanvas]}
+              locations={[0, 0.5, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0.9, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
+        ) : null
+      }
+      headerGlassTint={`${focusedVisual.colors[0]}E6`}
+      hasTabBar
+    >
       {({ onScroll, headerContentInset, contentBottomInset }) => (
         <>
           <Animated.FlatList
-            data={draft?.venues ?? []}
-            renderItem={renderVenue}
-            keyExtractor={(item) => item.venueId}
-            contentContainerStyle={[styles.content, { paddingTop: headerContentInset + theme.spacing.xl, paddingBottom: contentBottomInset }]}
-            ItemSeparatorComponent={VenueSeparator}
-            ListHeaderComponent={error || actionError ? <CustomText text={error ?? actionError ?? ""} variant="caption" style={styles.message} accessibilityRole="alert" /> : null}
-            ListEmptyComponent={!loading ? <EmptyVenues /> : <CustomText text="Cargando" variant="body" style={styles.message} />}
+            data={focusedFields}
+            renderItem={renderField}
+            keyExtractor={(item) => item.fieldId}
+            contentContainerStyle={[styles.content, { paddingTop: headerContentInset + theme.spacing.md, paddingBottom: contentBottomInset }]}
+            ItemSeparatorComponent={FieldSeparator}
+            ListHeaderComponent={
+              <VenueScreenHeader
+                venues={venues}
+                fieldCountByVenueId={fieldCountByVenueId}
+                focusedVenue={focusedVenue}
+                focusedVenueIndex={focusedVenueIndex}
+                focusedFields={focusedFields}
+                message={error ?? actionError}
+                onSelectVenue={setFocusedVenueId}
+                onOpenMenu={() => focusedVenue && setSelectedVenue(focusedVenue)}
+              />
+            }
+            ListEmptyComponent={loading ? <CustomText text="Cargando" variant="body" style={styles.message} /> : focusedVenue ? <EmptyFields /> : <EmptyVenues />}
             showsVerticalScrollIndicator={false}
             onScroll={onScroll}
             scrollEventThrottle={16}
@@ -105,7 +154,60 @@ const BusinessFieldsView = () => {
   );
 };
 
-const VenueSeparator = () => <View style={styles.separator} />;
+interface VenueScreenHeaderProps {
+  venues: VenueLocation[];
+  fieldCountByVenueId: Record<string, number>;
+  focusedVenue: VenueLocation | null;
+  focusedVenueIndex: number;
+  focusedFields: SportsFieldDraft[];
+  message: string | null;
+  onSelectVenue: (venueId: string) => void;
+  onOpenMenu: () => void;
+}
+
+const VenueScreenHeader = ({ venues, fieldCountByVenueId, focusedVenue, focusedVenueIndex, focusedFields, message, onSelectVenue, onOpenMenu }: VenueScreenHeaderProps) => (
+  <View>
+    {message ? <CustomText text={message} variant="caption" style={styles.message} accessibilityRole="alert" /> : null}
+
+    {focusedVenue ? (
+      <>
+        <FlatList
+          horizontal
+          data={venues}
+          keyExtractor={(venue) => venue.venueId}
+          renderItem={({ item, index }) => (
+            <VenueSelectorItem
+              index={index}
+              name={item.venueName}
+              fieldCount={fieldCountByVenueId[item.venueId] ?? 0}
+              selected={item.venueId === focusedVenue.venueId}
+              onPress={() => onSelectVenue(item.venueId)}
+            />
+          )}
+          ItemSeparatorComponent={VenueSelectorSeparator}
+          showsHorizontalScrollIndicator={false}
+          style={styles.selectorList}
+          contentContainerStyle={styles.selectorContent}
+        />
+        <VenueSpotlight
+          index={focusedVenueIndex}
+          name={focusedVenue.venueName}
+          fieldCount={fieldCountByVenueId[focusedVenue.venueId] ?? 0}
+          activeFieldCount={focusedFields.filter((field) => field.status === "active").length}
+          status={focusedVenue.status}
+          onOpenMenu={onOpenMenu}
+        />
+        <View style={styles.sectionHeading}>
+          <CustomText text="Canchas" variant="sectionHeading" style={styles.sectionTitle} />
+          <CustomText text={String(fieldCountByVenueId[focusedVenue.venueId] ?? 0).padStart(2, "0")} variant="label" style={styles.sectionCount} />
+        </View>
+      </>
+    ) : null}
+  </View>
+);
+
+const VenueSelectorSeparator = () => <View style={styles.selectorSeparator} />;
+const FieldSeparator = () => <View style={styles.fieldSeparator} />;
 
 const EmptyVenues = () => (
   <View style={styles.empty}>
@@ -113,12 +215,26 @@ const EmptyVenues = () => (
   </View>
 );
 
+const EmptyFields = () => (
+  <View style={styles.emptyFields}>
+    <CustomText text="Aún no hay canchas en esta sede" variant="body" style={styles.emptyFieldsText} />
+  </View>
+);
+
 export default BusinessFieldsView;
 
 const styles = StyleSheet.create({
   content: { flexGrow: 1, paddingHorizontal: theme.spacing.lg },
-  separator: { height: theme.spacing.md },
-  message: { marginBottom: theme.spacing.lg, color: theme.colors.authTextSecondary, textAlign: "center" },
+  selectorList: { marginHorizontal: -theme.layout.screenGutter },
+  selectorContent: { paddingHorizontal: theme.layout.screenGutter, paddingBottom: theme.spacing.md },
+  selectorSeparator: { width: theme.spacing.sm },
+  sectionHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: theme.spacing.xxl, paddingBottom: theme.spacing.md },
+  sectionTitle: { color: theme.colors.white },
+  sectionCount: { color: theme.colors.authTextSecondary, letterSpacing: 0.8, includeFontPadding: true },
+  fieldSeparator: { height: theme.spacing.md },
+  message: { marginBottom: theme.spacing.md, color: theme.colors.errorSoft, textAlign: "center" },
   empty: { flex: 1, minHeight: 360, alignItems: "center", justifyContent: "center", gap: theme.spacing.xl },
   emptyTitle: { color: theme.colors.white },
+  emptyFields: { minHeight: 180, alignItems: "center", justifyContent: "center" },
+  emptyFieldsText: { color: theme.colors.authTextSecondary, textAlign: "center" },
 });

@@ -6,7 +6,8 @@ import SettlementPreview from "@/src/features/dashboard/components/SettlementPre
 import TodayAgendaPreview from "@/src/features/dashboard/components/TodayAgendaPreview";
 import TodaySummaryCard from "@/src/features/dashboard/components/TodaySummaryCard";
 import type { Settlement } from "@/src/features/payments/types/businessPayments";
-import type { AvailabilityBlock, ReservationRecord } from "@/src/features/reservations/types/reservation";
+import type { ReservationRecord } from "@/src/features/reservations/types/reservation";
+import { isActiveReservation } from "@/src/features/reservations/utils/isActiveReservation";
 import type { BusinessOnboardingDraft } from "@/src/features/venues/types/businessOnboarding";
 import { theme } from "@/src/theme";
 import { StyleSheet, View } from "react-native";
@@ -18,11 +19,16 @@ interface BusinessDashboardOverviewProps {
   onOpenAnalytics: () => void;
   onOpenPayments: () => void;
   onOpenReservations: () => void;
+  onOpenReservation: (reservation: ReservationRecord) => void;
   todayReservations: ReservationRecord[];
-  todayBlocks: AvailabilityBlock[];
   availableHours: number;
   settlement: Settlement;
 }
+
+const getStartMinutes = (startTime: string) => {
+  const [hours, minutes] = startTime.split(":").map(Number);
+  return hours * 60 + minutes;
+};
 
 const BusinessDashboardOverview = ({
   draft,
@@ -31,29 +37,38 @@ const BusinessDashboardOverview = ({
   onOpenAnalytics,
   onOpenPayments,
   onOpenReservations,
+  onOpenReservation,
   todayReservations,
-  todayBlocks,
   availableHours,
   settlement,
-}: BusinessDashboardOverviewProps) => (
-  <View style={styles.container}>
-    <AppSection title="Hoy" actionLabel="Ver rendimiento" onAction={onOpenAnalytics}>
-      <TodaySummaryCard
-        revenue={todayReservations.filter((reservation) => reservation.status === "confirmed").reduce((total, reservation) => total + reservation.amount, 0)}
-        reservationCount={todayReservations.filter((reservation) => reservation.status !== "canceled").length}
-        pendingCount={todayReservations.filter((reservation) => reservation.status === "pending").length}
-      />
-    </AppSection>
+}: BusinessDashboardOverviewProps) => {
+  const activeReservations = todayReservations.filter(isActiveReservation);
+  const confirmedRevenue = todayReservations
+    .filter((reservation) => reservation.status === "confirmed")
+    .reduce((total, reservation) => total + reservation.amount, 0);
+  const pendingReservations = todayReservations
+    .filter((reservation) => reservation.status === "pending")
+    .sort((first, second) => getStartMinutes(first.startTime) - getStartMinutes(second.startTime));
+  const nextPendingReservation = pendingReservations[0];
 
-    {todayReservations.find((reservation) => reservation.status === "pending") ? (
+  return (
+  <View style={styles.container}>
+    <TodaySummaryCard
+      revenue={confirmedRevenue}
+      reservationCount={activeReservations.length}
+      pendingCount={pendingReservations.length}
+      onPress={onOpenAnalytics}
+    />
+
+    {nextPendingReservation ? (
       <BusinessAttentionCard
-        reservation={todayReservations.find((reservation) => reservation.status === "pending")!}
-        count={todayReservations.filter((reservation) => reservation.status === "pending").length}
-        onPress={onOpenReservations}
+        reservation={nextPendingReservation}
+        count={pendingReservations.length}
+        onPress={() => onOpenReservation(nextPendingReservation)}
       />
     ) : null}
 
-    <TodayAgendaPreview reservations={todayReservations.filter((reservation) => reservation.status !== "canceled")} blocks={todayBlocks} onOpenAll={onOpenReservations} />
+    <TodayAgendaPreview reservations={activeReservations} onOpenAll={onOpenReservations} onOpenReservation={onOpenReservation} />
 
     {availableHours > 0 ? (
       <AppSection title="Oportunidad de hoy">
@@ -67,7 +82,8 @@ const BusinessDashboardOverview = ({
 
     <FieldsCarousel fields={draft.fields} venues={draft.venues} onOpenAll={onOpenFields} onOpenField={onOpenField} />
   </View>
-);
+  );
+};
 
 export default BusinessDashboardOverview;
 

@@ -3,13 +3,23 @@ import BusinessHighlightSurface from "@/src/features/dashboard/components/Busine
 import { theme } from "@/src/theme";
 import { StyleSheet } from "react-native";
 
-const BusinessOpportunityCard = ({ availableHours, onPress }: { availableHours: number; onPress: () => void }) => (
+const BusinessOpportunityCard = ({
+  availableHours,
+  onPress,
+}: {
+  availableHours: number;
+  onPress: () => void;
+}) => (
   <BusinessHighlightSurface
     accessibilityLabel={`${availableHours} horas disponibles hoy`}
     onPress={onPress}
     tone="navy"
   >
-    <CustomText text={`${availableHours} h disponibles`} variant="subtitle" style={styles.title} />
+    <CustomText
+      text={`${availableHours} h disponibles`}
+      variant="subtitle"
+      style={styles.title}
+    />
   </BusinessHighlightSurface>
 );
 

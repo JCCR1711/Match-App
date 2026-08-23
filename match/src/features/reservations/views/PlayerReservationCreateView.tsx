@@ -38,19 +38,15 @@ const PlayerReservationCreateView = () => {
   const field = venue?.fields.find((item) => item.id === fieldId);
   const selectedDate = getReservationDate(dateId);
   const total = useMemo(
-    () => (field ? Math.round((field.hourlyPrice * durationMinutes) / 60) : 0),
+    () => (field ? Math.round((field.hourlyPrice * durationMinutes) / 60 * 100) / 100 : 0),
     [durationMinutes, field],
   );
 
   const handleConfirm = () => {
     if (!venue || !field || !slot) return;
 
-    if (reservationsStore.isTimeRangeUnavailable(field.id, selectedDate.dateKey, slot, durationMinutes)) {
-      setAvailabilityError("Ese horario ya no está disponible. Elige otro.");
-      return;
-    }
-
-    reservationsStore.createReservation({
+    const reservation = reservationsStore.createReservation({
+      customerId: user?.id ?? null,
       venueId: venue.id,
       venueName: venue.name,
       fieldId: field.id,
@@ -61,7 +57,12 @@ const PlayerReservationCreateView = () => {
       durationMinutes,
       amount: total,
       customerName: user?.displayName ?? "Jugador Match",
+      status: "pending",
     });
+    if (!reservation) {
+      setAvailabilityError("Ese horario ya no está disponible. Elige otro.");
+      return;
+    }
 
     router.replace({
       pathname: "/reservations/confirmation",

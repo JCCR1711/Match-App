@@ -1,7 +1,6 @@
-import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
+import BusinessCardArrow from "@/src/features/dashboard/components/BusinessCardArrow";
 import { theme } from "@/src/theme";
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Pressable, StyleSheet, View } from "react-native";
 
 type BusinessHighlightCardTone = "blue" | "green";
@@ -60,14 +59,7 @@ const BusinessHighlightCard = ({
         </View>
       </View>
 
-      <View style={styles.action}>
-        <CustomIcon
-          icon={ArrowRight01Icon}
-          color={isGreen ? theme.colors.white : theme.colors.accent}
-          size={24}
-          strokeWidth={2.5}
-        />
-      </View>
+      <BusinessCardArrow backgroundColor={theme.colors.black} color={isGreen ? theme.colors.white : theme.colors.accent} />
     </Pressable>
   );
 };
@@ -116,14 +108,6 @@ const styles = StyleSheet.create({
   },
   greenValue: {
     color: theme.colors.black,
-  },
-  action: {
-    width: 48,
-    height: 48,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.black,
   },
   pressed: {
     opacity: 0.78,

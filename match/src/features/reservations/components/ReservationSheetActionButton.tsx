@@ -1,17 +1,18 @@
 import CustomButton, { type CustomButtonProps } from "@/src/components/ui/CustomButton";
 import { theme } from "@/src/theme";
 import { memo } from "react";
-import { StyleSheet } from "react-native";
+import { type StyleProp, StyleSheet, type ViewStyle } from "react-native";
 
 interface ReservationSheetActionButtonProps extends Omit<CustomButtonProps, "variant" | "style" | "labelStyle"> {
   tone?: "primary" | "secondary" | "destructive";
+  style?: StyleProp<ViewStyle>;
 }
 
-const ReservationSheetActionButton = ({ tone = "primary", ...props }: ReservationSheetActionButtonProps) => (
+const ReservationSheetActionButton = ({ tone = "primary", style, ...props }: ReservationSheetActionButtonProps) => (
   <CustomButton
     {...props}
     variant={tone === "primary" ? "light" : "secondary"}
-    style={styles.button}
+    style={[styles.button, style]}
     labelStyle={tone === "destructive" ? styles.destructiveLabel : undefined}
   />
 );

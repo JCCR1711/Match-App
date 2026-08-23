@@ -7,13 +7,13 @@ import { Pressable, StyleSheet, View } from "react-native";
 const SettlementSummaryLink = ({ onPress }: { onPress: () => void }) => (
   <Pressable accessibilityRole="button" accessibilityLabel="Ver próxima liquidación de S/ 1,840" onPress={onPress} style={({ pressed }) => [styles.container, pressed && styles.pressed]}>
     <View style={styles.icon}>
-      <CustomIcon icon={BankIcon} color={theme.colors.black} size={23} strokeWidth={2.2} />
+      <CustomIcon icon={BankIcon} color={theme.colors.black} size={23} />
     </View>
     <View style={styles.copy}>
       <CustomText text="Próxima liquidación" variant="caption" style={styles.label} />
       <CustomText text="S/ 1,840" variant="subtitle" style={styles.value} />
     </View>
-    <CustomIcon icon={ArrowRight01Icon} color={theme.colors.black} size={24} strokeWidth={2.4} />
+    <CustomIcon icon={ArrowRight01Icon} color={theme.colors.black} size={24} />
   </Pressable>
 );
 

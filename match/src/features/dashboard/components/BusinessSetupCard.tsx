@@ -1,12 +1,9 @@
 import AppSurface from "@/src/components/ui/AppSurface";
-import CustomIcon from "@/src/components/ui/CustomIcon";
+import BusinessCardArrow from "@/src/features/dashboard/components/BusinessCardArrow";
 import { theme } from "@/src/theme";
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
+import { Image, type ImageSource } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
-
-const setupHero = require("@/src/assets/Omboarding/match3.png");
 
 export type BusinessSetupKind = "venue" | "field" | "availability";
 
@@ -17,37 +14,46 @@ interface BusinessSetupCardProps {
   onPress: () => void;
 }
 
-const BusinessSetupCard = ({ title, accessibilityLabel, onPress }: BusinessSetupCardProps) => (
-  <AppSurface variant="blue" onPress={onPress} accessibilityLabel={accessibilityLabel} style={styles.card}>
-    <Svg pointerEvents="none" width="100%" height="100%" viewBox="0 0 360 232" preserveAspectRatio="xMidYMid slice" style={StyleSheet.absoluteFill}>
-      <Defs>
-        <LinearGradient id="businessSetupBlue" x1="0" y1="1" x2="1" y2="0">
-          <Stop offset="0" stopColor={theme.colors.authBlueDeep} />
-          <Stop offset="0.54" stopColor={theme.colors.authBlue} />
-          <Stop offset="1" stopColor={theme.colors.authBlueSoft} />
-        </LinearGradient>
-      </Defs>
-      <Rect width="360" height="232" fill="url(#businessSetupBlue)" />
-    </Svg>
-    <Image source={setupHero} contentFit="contain" contentPosition="bottom right" transition={180} accessible={false} style={styles.heroImage} />
-    <View style={styles.content}>
-      <View style={styles.footer}>
-        <Text style={styles.title}>{title}</Text>
-        <View style={styles.action}>
-          <CustomIcon icon={ArrowRight01Icon} color={theme.colors.black} size={24} strokeWidth={2.5} />
+const setupVisuals: Record<BusinessSetupKind, { image: ImageSource; colors: readonly [string, string] }> = {
+  venue: {
+    image: require("@/src/assets/venues/characters/venue-player-teal-v2.png") as ImageSource,
+    colors: ["#07373B", "#0FA9B5"],
+  },
+  field: {
+    image: require("@/src/assets/venues/characters/venue-player-coral-v2.png") as ImageSource,
+    colors: ["#4A1E18", "#F05A35"],
+  },
+  availability: {
+    image: require("@/src/assets/venues/characters/venue-player-cobalt-v2.png") as ImageSource,
+    colors: ["#17143F", "#4D3DDB"],
+  },
+};
+
+const BusinessSetupCard = ({ kind, title, accessibilityLabel, onPress }: BusinessSetupCardProps) => {
+  const visual = setupVisuals[kind];
+
+  return (
+    <AppSurface onPress={onPress} accessibilityLabel={accessibilityLabel} style={styles.card}>
+      <LinearGradient colors={[visual.colors[0], visual.colors[1]]} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+      <Image source={visual.image} contentFit="cover" contentPosition="center" transition={180} accessible={false} style={styles.heroImage} />
+      <LinearGradient colors={["transparent", "rgba(8, 8, 10, 0.84)"]} locations={[0.34, 1]} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <View style={styles.content}>
+        <View style={styles.footer}>
+          <Text style={styles.title}>{title}</Text>
+          <BusinessCardArrow backgroundColor={theme.colors.white} color={theme.colors.black} style={styles.action} />
         </View>
       </View>
-    </View>
-  </AppSurface>
-);
+    </AppSurface>
+  );
+};
 
 export default BusinessSetupCard;
 
 const styles = StyleSheet.create({
   card: { minHeight: 232 },
   content: { flex: 1, minHeight: 232, justifyContent: "flex-end", padding: theme.spacing.xxl },
-  heroImage: { position: "absolute", right: -30, bottom: -14, width: 224, height: 246 },
+  heroImage: { ...StyleSheet.absoluteFillObject },
   footer: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", gap: theme.spacing.xl },
   title: { flex: 1, maxWidth: 170, color: theme.colors.white, fontFamily: theme.fontFamilies.poppinsBold, fontSize: 24, lineHeight: 30, fontWeight: theme.fontWeights.bold },
-  action: { zIndex: 2, width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: theme.radius.pill, backgroundColor: theme.colors.white },
+  action: { zIndex: 2, width: 44, height: 44 },
 });

@@ -2,7 +2,7 @@ import CustomText from "@/src/components/ui/CustomText";
 import ReservationSheetFrame from "@/src/features/reservations/components/ReservationSheetFrame";
 import { addDays, formatMonthYear, toDateKey } from "@/src/features/reservations/utils/reservationDate";
 import { theme } from "@/src/theme";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 interface ReservationMonthSheetProps {
   visible: boolean;
@@ -28,8 +28,8 @@ const ReservationMonthSheet = ({ visible, selectedDateKey, activityCounts, onSel
   const dates = Array.from({ length: cellCount }, (_, index) => addDays(gridStart, index));
 
   return (
-    <ReservationSheetFrame visible={visible} title={formatMonthYear(selectedDate)} collapsedHeight={580} onClose={onClose}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+    <ReservationSheetFrame visible={visible} title={formatMonthYear(selectedDate)} collapsedHeight={640} onClose={onClose}>
+      <View style={styles.content}>
         <View style={styles.weekdays}>
           {weekdays.map((weekday, index) => <CustomText key={`${weekday}-${index}`} text={weekday} variant="label" style={styles.weekday} />)}
         </View>
@@ -47,7 +47,7 @@ const ReservationMonthSheet = ({ visible, selectedDateKey, activityCounts, onSel
             );
           })}
         </View>
-      </ScrollView>
+      </View>
     </ReservationSheetFrame>
   );
 };

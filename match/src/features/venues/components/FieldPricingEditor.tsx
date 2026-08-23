@@ -55,7 +55,7 @@ const FieldPricingEditor = ({ dayHourlyPrice, nightHourlyPrice, nightStartsAt, d
             style={({ pressed }) => [styles.timeButton, disabled && styles.disabled, pressed && styles.pressed]}
           >
             <CustomText text={nightStartsAt} variant="body" style={styles.timeValue} />
-            <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={18} strokeWidth={2.2} />
+            <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={18} />
           </Pressable>
         </View>
       </View>

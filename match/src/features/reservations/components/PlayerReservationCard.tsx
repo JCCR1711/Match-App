@@ -1,9 +1,12 @@
 import AppSurface from "@/src/components/ui/AppSurface";
 import CustomText from "@/src/components/ui/CustomText";
 import ScheduleStatusLabel from "@/src/features/reservations/components/ScheduleStatusLabel";
+import type { ReservationCreateStatus } from "@/src/features/reservations/types/reservation";
 import { formatBookingDuration } from "@/src/features/reservations/utils/formatBookingDuration";
+import { formatTimeRange } from "@/src/features/reservations/utils/reservationTime";
 import { getVenueImageByName } from "@/src/features/venues/data/venueImages";
 import { theme } from "@/src/theme";
+import { formatSoles } from "@/src/utils/formatMoney";
 import { Image } from "expo-image";
 import { StyleSheet, View } from "react-native";
 
@@ -14,8 +17,8 @@ interface PlayerReservationCardRecord {
   dateLabel: string;
   startTime: string;
   durationMinutes: number;
-  status: "confirmed" | "pending";
-  total: number;
+  status: ReservationCreateStatus;
+  amount: number;
 }
 
 const PlayerReservationCard = ({ reservation }: { reservation: PlayerReservationCardRecord }) => {
@@ -27,10 +30,10 @@ const PlayerReservationCard = ({ reservation }: { reservation: PlayerReservation
           <CustomText text={reservation.venueName} variant="action" style={styles.venueName} numberOfLines={1} />
           <ScheduleStatusLabel status={reservation.status} />
         </View>
-        <CustomText text={`${reservation.dateLabel} · ${reservation.startTime}`} variant="caption" style={styles.date} numberOfLines={1} />
+        <CustomText text={`${reservation.dateLabel} · ${formatTimeRange(reservation.startTime, reservation.durationMinutes)}`} variant="caption" style={styles.date} numberOfLines={1} />
         <CustomText text={`${reservation.fieldName} · ${formatBookingDuration(reservation.durationMinutes)}`} variant="caption" style={styles.meta} numberOfLines={1} />
       </View>
-      <CustomText text={`S/ ${reservation.total}`} variant="actionSecondary" style={styles.total} />
+      <CustomText text={formatSoles(reservation.amount)} variant="actionSecondary" style={styles.total} />
     </AppSurface>
   );
 };

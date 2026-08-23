@@ -19,7 +19,7 @@ const CustomIcon = ({
   colorToken = "primary",
   size,
   sizeToken = "medium",
-  strokeWidth = 2.2,
+  strokeWidth = 3,
 }: CustomIconProps) => (
   <HugeiconsIcon
     icon={icon}

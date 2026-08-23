@@ -17,9 +17,9 @@ interface ReservationSheetDetailsProps {
 const ReservationSheetDetails = ({ items, align = "start", divided = true }: ReservationSheetDetailsProps) => (
   <View style={[styles.grid, !divided && styles.continuation, align === "center" && styles.centeredGrid]}>
     {items.map((item, index) => (
-      <View key={item.label} style={[styles.item, index === 0 && styles.primaryItem, align === "center" && styles.centeredItem]}>
+      <View key={item.label} style={[styles.item, index % 2 === 1 && styles.trailingItem, align === "center" && styles.centeredItem]}>
         <CustomText text={item.label} variant="caption" style={styles.label} />
-        <CustomText text={item.value} variant={index === 0 ? "sectionHeading" : "actionSecondary"} style={[styles.value, align === "center" && styles.centeredText]} numberOfLines={2} />
+        <CustomText text={item.value} variant="bodyStrong" style={[styles.value, index % 2 === 1 && styles.trailingText, align === "center" && styles.centeredText]} numberOfLines={2} />
       </View>
     ))}
   </View>
@@ -37,8 +37,9 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: theme.colors.dividerOnDark,
   },
-  item: { minWidth: 0, flexGrow: 1, flexBasis: "36%", gap: theme.spacing.xs },
-  primaryItem: { flexGrow: 1.35, flexBasis: "48%" },
+  item: { minWidth: 0, flexGrow: 1, flexBasis: "42%", justifyContent: "center", gap: theme.spacing.xs },
+  trailingItem: { alignItems: "flex-end" },
+  trailingText: { textAlign: "right" },
   label: { color: theme.colors.authTextSecondary },
   value: { color: theme.colors.white },
   centeredGrid: { justifyContent: "center" },

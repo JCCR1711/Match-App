@@ -64,7 +64,7 @@ const TimeRow = ({ label, value, onPress, disabled }: { label: string; value: st
     <CustomText text={label} variant="caption" style={styles.timeLabel} />
     <View style={styles.timeValue}>
       <CustomText text={value} variant="body" style={styles.selectedTime} />
-      <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={20} strokeWidth={2.2} />
+      <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={20} />
     </View>
   </Pressable>
 );

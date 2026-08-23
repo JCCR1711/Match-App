@@ -24,7 +24,7 @@ const FeaturedVenueCard = ({ venue, times, selectedTime, onSelectTime, onOpen }:
     <View style={styles.copy}>
       <CustomText text={venue.name} variant="sectionHeading" style={styles.title} numberOfLines={1} />
       <View style={styles.location}>
-        <CustomIcon icon={Location01Icon} color={theme.colors.authTextSecondary} size={16} strokeWidth={2.2} />
+        <CustomIcon icon={Location01Icon} color={theme.colors.authTextSecondary} size={16} />
         <CustomText text={`${venue.district} · ${venue.distanceLabel}`} variant="caption" style={styles.metadata} numberOfLines={1} />
       </View>
     </View>
@@ -46,7 +46,7 @@ const FeaturedVenueCard = ({ venue, times, selectedTime, onSelectTime, onOpen }:
         <CustomText text="S/ 90 por hora" variant="caption" style={styles.actionMeta} />
       </View>
       <View style={styles.actionIcon}>
-        <CustomIcon icon={ArrowRight01Icon} color={theme.colors.white} size={21} strokeWidth={2.5} />
+        <CustomIcon icon={ArrowRight01Icon} color={theme.colors.white} size={21} />
       </View>
     </Pressable>
   </View>

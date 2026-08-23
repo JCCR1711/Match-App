@@ -10,6 +10,7 @@ import { publicVenuesPreview } from "@/src/features/venues/data/publicVenuesPrev
 import { getVenueImage } from "@/src/features/venues/data/venueImages";
 import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
+import { formatSoles } from "@/src/utils/formatMoney";
 import { Location01Icon } from "@hugeicons/core-free-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -94,7 +95,7 @@ const PlayerVenueDetailView = () => {
                           <CustomText text={field.name} variant="action" style={styles.fieldName} />
                           <CustomText text={field.format} variant="caption" style={styles.format} />
                         </View>
-                        <CustomText text={`S/ ${field.hourlyPrice}`} variant="actionSecondary" style={styles.price} />
+                        <CustomText text={formatSoles(field.hourlyPrice)} variant="actionSecondary" style={styles.price} />
                       </View>
                       <View style={styles.slotRow}>
                         {availableSlots.map((slot) => (
