@@ -5,18 +5,19 @@ import VenueTextField from "@/src/features/venues/components/VenueTextField";
 import { theme } from "@/src/theme";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Keyboard, Pressable, StyleSheet, View } from "react-native";
 
 interface FieldPricingEditorProps {
   dayHourlyPrice: string;
   nightHourlyPrice: string;
   nightStartsAt: string;
   disabled?: boolean;
+  showTitle?: boolean;
   onChange: (pricing: { dayHourlyPrice: string; nightHourlyPrice: string; nightStartsAt: string }) => void;
 }
 
 /** Shared business pricing controls for new and existing sports fields. */
-const FieldPricingEditor = ({ dayHourlyPrice, nightHourlyPrice, nightStartsAt, disabled = false, onChange }: FieldPricingEditorProps) => {
+const FieldPricingEditor = ({ dayHourlyPrice, nightHourlyPrice, nightStartsAt, disabled = false, showTitle = true, onChange }: FieldPricingEditorProps) => {
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const update = (next: Partial<{ dayHourlyPrice: string; nightHourlyPrice: string; nightStartsAt: string }>) => {
     onChange({ dayHourlyPrice, nightHourlyPrice, nightStartsAt, ...next });
@@ -24,23 +25,27 @@ const FieldPricingEditor = ({ dayHourlyPrice, nightHourlyPrice, nightStartsAt, d
 
   return (
     <View style={styles.container}>
-      <CustomText text="Tarifas" variant="body" style={styles.title} />
+      {showTitle ? <CustomText text="Tarifas" variant="body" style={styles.title} /> : null}
       <VenueTextField
         label="Tarifa diurna por hora"
+        prefix="S/"
         value={dayHourlyPrice}
         onChangeText={(value) => update({ dayHourlyPrice: value.replace(/[^0-9.,]/g, "") })}
-        placeholder="S/ 120"
-        keyboardType="decimal-pad"
+        placeholder="0.00"
+        returnKeyType="done"
+        onSubmitEditing={Keyboard.dismiss}
         editable={!disabled}
         accessibilityLabel="Tarifa diurna por hora en soles"
       />
       <View style={styles.row}>
         <VenueTextField
           label="Tarifa nocturna"
+          prefix="S/"
           value={nightHourlyPrice}
           onChangeText={(value) => update({ nightHourlyPrice: value.replace(/[^0-9.,]/g, "") })}
-          placeholder="S/ 140"
-          keyboardType="decimal-pad"
+          placeholder="0.00"
+          returnKeyType="done"
+          onSubmitEditing={Keyboard.dismiss}
           editable={!disabled}
           containerStyle={styles.priceField}
           accessibilityLabel="Tarifa nocturna por hora en soles"

@@ -4,13 +4,16 @@ export type ReservationCreateStatus = Exclude<ReservationStatus, "canceled">;
 export interface ReservationCustomer {
   id: string;
   displayName: string;
+  username: string;
   email: string;
 }
 export type AvailabilityBlockKind = "blocked" | "maintenance";
 
 export interface ReservationRecord {
   id: string;
+  referenceCode: string;
   customerId: string | null;
+  customerDisplayName: string;
   venueId: string;
   venueName: string;
   fieldId: string;

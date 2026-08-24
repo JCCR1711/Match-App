@@ -1,46 +1,30 @@
-import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
+import type { PaymentOverview } from "@/src/features/payments/types/businessPayments";
 import { theme } from "@/src/theme";
-import { BanknoteIcon, Clock01Icon, Money03Icon, PercentCircleIcon } from "@hugeicons/core-free-icons";
+import { formatSoles } from "@/src/utils/formatMoney";
 import { StyleSheet, View } from "react-native";
 
-const metrics = [
-  { id: "received", label: "Cobrado", value: "S/ 4,260", note: "+12%", icon: Money03Icon },
-  { id: "fees", label: "Comisiones", value: "S/ 320", note: "7.5%", icon: PercentCircleIcon },
-  { id: "pending", label: "Pendiente", value: "S/ 410", note: "3 pagos", icon: Clock01Icon },
-  { id: "settled", label: "Liquidado", value: "S/ 2,260", note: "+6%", icon: BanknoteIcon },
-];
+const FinanceMetricGrid = ({ overview }: { overview: PaymentOverview }) => (
+  <View style={styles.summary}>
+    <Metric label="Cobrado" value={formatSoles(overview.collectedThisMonth)} />
+    <View style={styles.divider} />
+    <Metric label="Comisiones" value={formatSoles(overview.feesThisMonth)} />
+  </View>
+);
 
-const FinanceMetricGrid = () => (
-  <View style={styles.list}>
-    {metrics.map((metric, index) => (
-      <View key={metric.id} style={[styles.row, index < metrics.length - 1 && styles.separator]}>
-        <View style={styles.identity}>
-          <View style={styles.icon}>
-            <CustomIcon icon={metric.icon} color={theme.colors.white} size={21} strokeWidth={2.1} />
-          </View>
-          <CustomText text={metric.label} variant="body" style={styles.label} />
-        </View>
-        <View style={styles.amountGroup}>
-          <CustomText text={metric.value} variant="body" style={styles.value} numberOfLines={1} />
-          <CustomText text={metric.note} variant="caption" style={metric.note.startsWith("+") ? styles.positive : styles.note} />
-        </View>
-      </View>
-    ))}
+const Metric = ({ label, value }: { label: string; value: string }) => (
+  <View style={styles.metric}>
+    <CustomText text={value} variant="actionSecondary" style={styles.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} />
+    <CustomText text={label} variant="caption" style={styles.label} numberOfLines={1} />
   </View>
 );
 
 export default FinanceMetricGrid;
 
 const styles = StyleSheet.create({
-  list: { borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.dividerOnDark },
-  row: { minHeight: 82, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.lg, paddingVertical: theme.spacing.md },
-  separator: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.dividerOnDark },
-  identity: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: theme.spacing.md },
-  icon: { width: 42, height: 42, alignItems: "center", justifyContent: "center", borderRadius: theme.radius.pill, backgroundColor: theme.colors.businessBlueSurface },
-  label: { color: theme.colors.white },
-  amountGroup: { alignItems: "flex-end", gap: theme.spacing.xxs },
-  value: { color: theme.colors.white, fontFamily: theme.fontFamilies.poppinsBold },
-  note: { color: theme.colors.authTextSecondary },
-  positive: { color: theme.colors.accent },
+  summary: { minHeight: 76, flexDirection: "row", alignItems: "center", paddingVertical: theme.spacing.sm },
+  metric: { flex: 1, minWidth: 0, gap: theme.spacing.xxs },
+  divider: { width: StyleSheet.hairlineWidth, height: 42, marginHorizontal: theme.spacing.lg, backgroundColor: theme.colors.dividerOnDark },
+  value: { color: theme.colors.white },
+  label: { color: theme.colors.authTextSecondary },
 });

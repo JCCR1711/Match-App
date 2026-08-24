@@ -32,10 +32,13 @@ export interface User {
   id: string;
   email: string;
   displayName: string;
+  username: string;
   availableModes: UserMode[];
   activeMode: UserMode;
 }
 ```
+
+`username` es la identidad pública única de la cuenta. Se almacena normalizado y sin el prefijo `@`; la interfaz añade el prefijo al mostrarlo. El correo permanece como dato privado de autenticación y no debe mostrarse en búsquedas públicas de jugadores.
 
 ### 3.3 Organización
 

@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   pendingSelected: { backgroundColor: theme.colors.pendingSurface },
   confirmedSelected: { backgroundColor: theme.colors.confirmedSurface },
-  label: { color: theme.colors.textOnDarkSecondary, textTransform: "uppercase", letterSpacing: 0.8 },
+  label: { color: theme.colors.textOnDarkSecondary, letterSpacing: 0 },
   pendingLabel: { color: theme.colors.pendingLimeText },
   confirmedLabel: { color: theme.colors.accent },
   pressed: { opacity: 0.74 },

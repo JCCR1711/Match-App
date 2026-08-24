@@ -16,9 +16,20 @@ interface ReservationCustomerPickerProps {
 
 const ReservationCustomerPicker = ({ customers, query, selectedCustomerId, onChangeQuery, onSelect }: ReservationCustomerPickerProps) => {
   const normalizedQuery = query.trim().toLocaleLowerCase("es-PE");
+  const normalizedUsernameQuery = normalizedQuery.startsWith("@") ? normalizedQuery.slice(1) : normalizedQuery;
   const results = useMemo(
-    () => customers.filter((customer) => !normalizedQuery || `${customer.displayName} ${customer.email}`.toLocaleLowerCase("es-PE").includes(normalizedQuery)).slice(0, 5),
-    [customers, normalizedQuery],
+    () => customers.filter((customer) => {
+      if (!normalizedQuery) return true;
+
+      const normalizedName = customer.displayName.toLocaleLowerCase("es-PE");
+      const normalizedEmail = customer.email.toLocaleLowerCase("es-PE");
+      const normalizedUsername = customer.username.toLocaleLowerCase("es-PE");
+
+      return normalizedName.includes(normalizedQuery)
+        || normalizedUsername.startsWith(normalizedUsernameQuery)
+        || normalizedEmail === normalizedQuery;
+    }).slice(0, 5),
+    [customers, normalizedQuery, normalizedUsernameQuery],
   );
 
   return (
@@ -27,7 +38,7 @@ const ReservationCustomerPicker = ({ customers, query, selectedCustomerId, onCha
         label="Jugador"
         value={query}
         onChangeText={onChangeQuery}
-        placeholder="Buscar por nombre o correo"
+        placeholder="Buscar por nombre o @usuario"
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
@@ -42,13 +53,13 @@ const ReservationCustomerPicker = ({ customers, query, selectedCustomerId, onCha
               onPress={() => onSelect(customer)}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              accessibilityLabel={`Seleccionar a ${customer.displayName}`}
+              accessibilityLabel={`Seleccionar a ${customer.displayName}, arroba ${customer.username}`}
               style={({ pressed }) => [styles.customer, selected && styles.customerSelected, pressed && styles.pressed]}
             >
               <SportsAvatar seed={customer.id} size={44} />
               <View style={styles.customerCopy}>
-                <CustomText text={customer.displayName} variant="bodyStrong" style={styles.customerName} numberOfLines={1} />
-                <CustomText text={customer.email} variant="caption" style={styles.customerEmail} numberOfLines={1} />
+                <CustomText text={customer.displayName} variant="bodyStrong" style={styles.customerName} numberOfLines={1} ellipsizeMode="tail" />
+                <CustomText text={`@${customer.username}`} variant="caption" style={styles.username} numberOfLines={1} ellipsizeMode="tail" />
               </View>
               <View style={[styles.selectionMark, selected && styles.selectionMarkSelected]} />
             </Pressable>
@@ -64,14 +75,14 @@ export default memo(ReservationCustomerPicker);
 
 const styles = StyleSheet.create({
   container: { gap: theme.spacing.md },
-  results: { gap: theme.spacing.xs },
-  customer: { minHeight: 60, flexDirection: "row", alignItems: "center", gap: theme.spacing.md, paddingHorizontal: theme.spacing.sm, borderRadius: theme.radius.extraLarge },
-  customerSelected: { backgroundColor: theme.colors.surface },
+  results: { gap: theme.spacing.sm },
+  customer: { minHeight: 72, flexDirection: "row", alignItems: "center", gap: theme.spacing.md, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, borderRadius: theme.radius.extraLarge },
+  customerSelected: { backgroundColor: theme.colors.businessBlueSurface },
   customerCopy: { flex: 1, minWidth: 0 },
   customerName: { color: theme.colors.white },
-  customerEmail: { color: theme.colors.textOnDarkSecondary },
+  username: { color: theme.colors.textOnDarkSecondary },
   selectionMark: { width: 10, height: 10, borderRadius: 100, backgroundColor: theme.colors.surfaceMuted },
-  selectionMarkSelected: { backgroundColor: theme.colors.accent },
+  selectionMarkSelected: { backgroundColor: theme.colors.electricBlue },
   empty: { paddingVertical: theme.spacing.md, color: theme.colors.textOnDarkSecondary },
   pressed: { opacity: 0.72 },
 });

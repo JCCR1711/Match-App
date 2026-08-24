@@ -1,16 +1,17 @@
 import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
+import AppSection from "@/src/components/ui/AppSection";
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomText from "@/src/components/ui/CustomText";
+import FieldContextHeader from "@/src/features/venues/components/FieldContextHeader";
 import FieldPricingEditor from "@/src/features/venues/components/FieldPricingEditor";
-import VenueChoicePill from "@/src/features/venues/components/VenueChoicePill";
+import UnsavedChangesSheet from "@/src/features/venues/components/UnsavedChangesSheet";
+import VenueChoiceGroup from "@/src/features/venues/components/VenueChoiceGroup";
 import VenueTextField from "@/src/features/venues/components/VenueTextField";
-import WeeklyScheduleEditor from "@/src/features/venues/components/WeeklyScheduleEditor";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
+import useUnsavedChangesGuard from "@/src/features/venues/hooks/useUnsavedChangesGuard";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import type {
   FieldFormat,
-  FieldScheduleMode,
-  WeeklySchedule,
 } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
@@ -24,12 +25,6 @@ const formats: { value: FieldFormat; label: string }[] = [
   { value: "11v11", label: "Fútbol 11" },
 ];
 
-const initialSchedule: WeeklySchedule = {
-  weekdays: [],
-  openingTime: "08:00",
-  closingTime: "23:00",
-};
-
 const FieldEditView = () => {
   const { fieldId } = useLocalSearchParams<{ fieldId: string }>();
   const { accessToken } = useAuth();
@@ -38,37 +33,31 @@ const FieldEditView = () => {
   const venue = draft?.venues.find((item) => item.venueId === field?.venueId);
   const [name, setName] = useState("");
   const [format, setFormat] = useState<FieldFormat>("5v5");
-  const [scheduleMode, setScheduleMode] =
-    useState<FieldScheduleMode>("custom");
-  const [schedule, setSchedule] = useState<WeeklySchedule>(initialSchedule);
   const [dayPrice, setDayPrice] = useState("");
   const [nightPrice, setNightPrice] = useState("");
   const [nightStartsAt, setNightStartsAt] = useState("18:00");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [formInitialized, setFormInitialized] = useState(false);
+  const hasUnsavedChanges = Boolean(formInitialized && field && (
+    name.trim() !== field.fieldName
+    || format !== field.format
+    || dayPrice !== String(field.hourlyPrice)
+    || nightPrice !== String(field.nightHourlyPrice ?? field.hourlyPrice)
+    || nightStartsAt !== (field.nightStartsAt ?? "18:00")
+  ));
+  const unsavedChanges = useUnsavedChangesGuard(hasUnsavedChanges && !saving);
 
   useEffect(() => {
     if (!field) return;
 
-    const currentSchedule =
-      field.scheduleOverride ?? field.availability ?? venue?.defaultSchedule;
-
     setName(field.fieldName);
     setFormat(field.format);
-    setScheduleMode(field.scheduleMode);
-    setSchedule(
-      currentSchedule
-        ? {
-            weekdays: currentSchedule.weekdays,
-            openingTime: currentSchedule.openingTime,
-            closingTime: currentSchedule.closingTime,
-          }
-        : initialSchedule,
-    );
     setDayPrice(String(field.hourlyPrice));
     setNightPrice(String(field.nightHourlyPrice ?? field.hourlyPrice));
     setNightStartsAt(field.nightStartsAt ?? "18:00");
-  }, [field, venue?.defaultSchedule]);
+    setFormInitialized(true);
+  }, [field]);
 
   const clearMessage = () => setMessage(null);
 
@@ -89,20 +78,6 @@ const FieldEditView = () => {
       return;
     }
 
-    if (scheduleMode === "inherit" && !venue?.defaultSchedule) {
-      setMessage("Esta sede no tiene horario general.");
-      return;
-    }
-
-    if (
-      scheduleMode === "custom" &&
-      (schedule.weekdays.length === 0 ||
-        schedule.openingTime >= schedule.closingTime)
-    ) {
-      setMessage("Revisa los días y las horas de la cancha.");
-      return;
-    }
-
     setSaving(true);
     setMessage(null);
 
@@ -114,14 +89,14 @@ const FieldEditView = () => {
         {
           fieldName: name,
           format,
-          scheduleMode,
-          scheduleOverride: scheduleMode === "custom" ? schedule : null,
+          scheduleMode: field.scheduleMode,
+          scheduleOverride: field.scheduleOverride,
           hourlyPrice: dayHourlyPrice,
           nightHourlyPrice,
           nightStartsAt,
         },
       );
-      router.back();
+      unsavedChanges.leaveWithoutPrompt(() => router.back());
     } catch (saveError) {
       setMessage(
         saveError instanceof Error
@@ -134,10 +109,24 @@ const FieldEditView = () => {
   };
 
   return (
+    <>
     <AppScreenLayout
       title="Editar cancha"
-      backgroundVariant="dashboard"
+      headerTitleAlign="center"
+      headerTitleSize="compact"
+      backgroundVariant="solid"
+      keyboardAware
       onBack={() => router.back()}
+      backAccessibilityLabel="Volver a detalles de cancha"
+      footer={field ? (
+        <CustomButton
+          label={saving ? "Guardando..." : "Guardar cambios"}
+          variant="primary"
+          onPress={save}
+          disabled={saving || loading}
+          style={styles.button}
+        />
+      ) : undefined}
     >
       {loading ? (
         <CustomText text="Cargando..." variant="body" style={styles.muted} />
@@ -149,86 +138,42 @@ const FieldEditView = () => {
         />
       ) : (
         <View style={styles.content}>
-          <VenueTextField
-            label="Nombre de la cancha"
-            value={name}
-            onChangeText={(value) => {
-              setName(value);
-              clearMessage();
-            }}
-            editable={!saving}
-          />
+          <FieldContextHeader fieldName={field.fieldName} venueName={venue?.venueName ?? "Sede"} />
 
-          <View style={styles.group}>
-            <CustomText text="Formato" variant="body" style={styles.title} />
-            <View style={styles.pills}>
-              {formats.map((item) => (
-                <VenueChoicePill
-                  key={item.value}
-                  label={item.label}
-                  selected={format === item.value}
-                  onPress={() => {
-                    setFormat(item.value);
-                    clearMessage();
-                  }}
-                  disabled={saving}
-                />
-              ))}
+          <View style={styles.sectionContent}>
+            <VenueTextField
+              label="Nombre"
+              value={name}
+              onChangeText={(value) => {
+                setName(value);
+                clearMessage();
+              }}
+              autoCapitalize="words"
+              editable={!saving}
+              accessibilityLabel="Nombre de la cancha"
+            />
+
+            <View style={styles.group}>
+              <CustomText text="Formato" variant="body" style={styles.title} />
+              <VenueChoiceGroup options={formats} value={format} disabled={saving} onChange={(value) => { setFormat(value); clearMessage(); }} />
             </View>
           </View>
 
-          <View style={styles.group}>
-            <CustomText text="Horario" variant="body" style={styles.title} />
-            <View style={styles.pills}>
-              <VenueChoicePill
-                label="Usar sede"
-                selected={scheduleMode === "inherit"}
-                onPress={() => {
-                  setScheduleMode("inherit");
-                  clearMessage();
-                }}
-                disabled={saving || !venue?.defaultSchedule}
-              />
-              <VenueChoicePill
-                label="Personalizar"
-                selected={scheduleMode === "custom"}
-                onPress={() => {
-                  setScheduleMode("custom");
-                  clearMessage();
-                }}
-                disabled={saving}
-              />
-            </View>
-            {scheduleMode === "custom" ? (
-              <WeeklyScheduleEditor
-                value={schedule}
-                onChange={(nextSchedule) => {
-                  setSchedule(nextSchedule);
-                  clearMessage();
-                }}
-                disabled={saving}
-              />
-            ) : (
-              <CustomText
-                text={`Usa el horario general de ${venue?.venueName ?? "la sede"}.`}
-                variant="caption"
-                style={styles.muted}
-              />
-            )}
-          </View>
-
-          <FieldPricingEditor
-            dayHourlyPrice={dayPrice}
-            nightHourlyPrice={nightPrice}
-            nightStartsAt={nightStartsAt}
-            disabled={saving}
-            onChange={(pricing) => {
-              setDayPrice(pricing.dayHourlyPrice);
-              setNightPrice(pricing.nightHourlyPrice);
-              setNightStartsAt(pricing.nightStartsAt);
-              clearMessage();
-            }}
-          />
+          <AppSection title="Tarifas">
+            <FieldPricingEditor
+              dayHourlyPrice={dayPrice}
+              nightHourlyPrice={nightPrice}
+              nightStartsAt={nightStartsAt}
+              disabled={saving}
+              showTitle={false}
+              onChange={(pricing) => {
+                setDayPrice(pricing.dayHourlyPrice);
+                setNightPrice(pricing.nightHourlyPrice);
+                setNightStartsAt(pricing.nightStartsAt);
+                clearMessage();
+              }}
+            />
+          </AppSection>
 
           {message ? (
             <CustomText
@@ -239,29 +184,24 @@ const FieldEditView = () => {
             />
           ) : null}
 
-          <CustomButton
-            label={saving ? "Guardando..." : "Guardar cambios"}
-            variant="primary"
-            onPress={save}
-            disabled={saving}
-            style={styles.button}
-          />
         </View>
       )}
     </AppScreenLayout>
+    <UnsavedChangesSheet visible={unsavedChanges.confirmationVisible} onKeepEditing={unsavedChanges.keepEditing} onDiscard={unsavedChanges.discardChanges} />
+    </>
   );
 };
 
 export default FieldEditView;
 
 const styles = StyleSheet.create({
-  content: { gap: theme.layout.groupGap },
+  content: { gap: theme.layout.sectionGap },
+  sectionContent: { gap: theme.layout.groupGap },
   group: { gap: theme.spacing.md },
   title: {
     color: theme.colors.white,
     fontFamily: theme.fontFamilies.poppinsBold,
   },
-  pills: { flexDirection: "row", gap: theme.spacing.sm },
   muted: { color: theme.colors.authTextSecondary },
   error: { color: theme.colors.errorSoft, textAlign: "center" },
   button: { minHeight: 56, borderRadius: theme.radius.pill },

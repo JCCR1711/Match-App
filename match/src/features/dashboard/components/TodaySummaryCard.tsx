@@ -1,5 +1,6 @@
 import CustomText from "@/src/components/ui/CustomText";
 import { theme } from "@/src/theme";
+import { formatMoneyParts } from "@/src/utils/formatMoney";
 import { Pressable, StyleSheet, View } from "react-native";
 
 interface TodaySummaryCardProps {
@@ -9,19 +10,8 @@ interface TodaySummaryCardProps {
   onPress: () => void;
 }
 
-const formatRevenue = (revenue: number) => {
-  const safeRevenue = Number.isFinite(revenue) ? revenue : 0;
-  const [integerPart, fractionPart] = Math.abs(safeRevenue).toFixed(2).split(".");
-  const groupedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-  return {
-    whole: `${safeRevenue < 0 ? "-" : ""}${groupedInteger}`,
-    decimals: `.${fractionPart}`,
-  };
-};
-
 const TodaySummaryCard = ({ revenue, reservationCount, pendingCount, onPress }: TodaySummaryCardProps) => {
-  const formattedRevenue = formatRevenue(revenue);
+  const formattedRevenue = formatMoneyParts(revenue);
 
   return (
     <View style={styles.summary}>

@@ -1,13 +1,6 @@
-import { StyleSheet } from "react-native";
-import Svg, {
-  Defs,
-  Ellipse,
-  LinearGradient,
-  RadialGradient,
-  Rect,
-  Stop,
-} from "react-native-svg";
 import { theme } from "@/src/theme";
+import { StyleSheet } from "react-native";
+import Svg, { Defs, Ellipse, LinearGradient, RadialGradient, Rect, Stop } from "react-native-svg";
 
 const OnboardingBackground = () => {
   return (
@@ -22,7 +15,7 @@ const OnboardingBackground = () => {
       <Defs>
         <LinearGradient id="canvas" x1="0%" y1="0%" x2="100%" y2="100%">
           <Stop offset="0%" stopColor={theme.colors.black} />
-          <Stop offset="52%" stopColor="#050A16" />
+          <Stop offset="52%" stopColor={theme.colors.onboardingCanvasDeep} />
           <Stop offset="100%" stopColor={theme.colors.black} />
         </LinearGradient>
         <RadialGradient id="heroGlow" cx="50%" cy="44%" rx="50%" ry="50%">
@@ -42,16 +35,9 @@ const OnboardingBackground = () => {
           <Stop offset="100%" stopColor={theme.colors.black} stopOpacity={0.9} />
         </LinearGradient>
       </Defs>
-
       <Rect width="390" height="844" fill="url(#canvas)" />
       <Ellipse cx="190" cy="310" rx="320" ry="330" fill="url(#heroGlow)" />
-      <Ellipse
-        cx="386"
-        cy="180"
-        rx="180"
-        ry="230"
-        fill="url(#accentGlow)"
-      />
+      <Ellipse cx="386" cy="180" rx="180" ry="230" fill="url(#accentGlow)" />
       <Rect width="390" height="844" fill="url(#vignette)" />
     </Svg>
   );

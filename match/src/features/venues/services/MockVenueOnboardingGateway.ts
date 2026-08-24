@@ -3,6 +3,7 @@ import {
   BusinessOnboardingDraft,
   SportsFieldInput,
   UpdateSportsFieldInput,
+  UpdateVenueLocationInput,
   VenueLocationInput,
   VenueOnboardingGateway,
 } from "@/src/features/venues/types/businessOnboarding";
@@ -97,6 +98,38 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       field: this.draft.field,
     };
 
+    await this.draftStore.save(ownerId, this.draft);
+    return this.draft;
+  }
+
+  async updateVenueLocation(
+    accessToken: string,
+    organizationId: string,
+    venueId: string,
+    input: UpdateVenueLocationInput,
+  ) {
+    await wait(300);
+    const ownerId = this.getOwnerId(accessToken);
+    await this.hydrateDraft(ownerId);
+    if (!this.draft || this.draft.organizationId !== organizationId) {
+      throw new Error("No encontramos el club.");
+    }
+    if (!this.draft.venues.some((venue) => venue.venueId === venueId)) {
+      throw new Error("No encontramos la sede.");
+    }
+    const venues = this.draft.venues.map((venue) => venue.venueId === venueId ? {
+      ...venue,
+      ...input,
+      venueName: input.venueName.trim(),
+      address: input.address.trim(),
+      district: input.district.trim(),
+      city: input.city.trim(),
+    } : venue);
+    this.draft = {
+      ...this.draft,
+      venues,
+      location: venues.find((venue) => venue.venueId === this.draft?.location?.venueId) ?? venues[0] ?? null,
+    };
     await this.draftStore.save(ownerId, this.draft);
     return this.draft;
   }

@@ -1,14 +1,12 @@
-import CustomIcon from "@/src/components/ui/CustomIcon";
+import AppBottomSheet from "@/src/components/ui/AppBottomSheet";
+import AppSheetActionButton from "@/src/components/ui/AppSheetActionButton";
 import CustomText from "@/src/components/ui/CustomText";
+import ResourceStatusLabel from "@/src/features/venues/components/ResourceStatusLabel";
 import { theme } from "@/src/theme";
-import type { IconSvgElement } from "@hugeicons/react-native";
-import { ArrowRight01Icon, Delete02Icon, Settings02Icon } from "@hugeicons/core-free-icons";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
 
 interface SecondaryResourceAction {
   label: string;
-  icon: IconSvgElement;
   onPress: () => void;
 }
 
@@ -24,41 +22,30 @@ interface ResourceActionsMenuProps {
 }
 
 const ResourceActionsMenu = ({ visible, title, active, onClose, onToggleStatus, onDelete, secondaryAction, disabled }: ResourceActionsMenuProps) => (
-  <Modal visible={visible} transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
-    <View style={styles.overlay}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Cerrar opciones" />
-      <SafeAreaView style={styles.sheet} edges={["bottom"]}>
-        <CustomText text={title} variant="body" style={styles.title} numberOfLines={1} />
-        <View style={styles.actions}>
-          <MenuAction label={active ? "Desactivar" : "Activar"} icon={Settings02Icon} onPress={onToggleStatus} disabled={disabled} />
-          {secondaryAction ? <MenuAction label={secondaryAction.label} icon={secondaryAction.icon} onPress={secondaryAction.onPress} disabled={disabled} /> : null}
-          <MenuAction label="Eliminar" icon={Delete02Icon} onPress={onDelete} disabled={disabled} destructive />
-        </View>
-      </SafeAreaView>
+  <AppBottomSheet
+    visible={visible}
+    title="Opciones"
+    collapsedHeight={secondaryAction ? 470 : 390}
+    onClose={onClose}
+    footer={(
+      <View style={styles.actions}>
+        {secondaryAction ? <AppSheetActionButton label={secondaryAction.label} onPress={secondaryAction.onPress} disabled={disabled} /> : null}
+        <AppSheetActionButton label={active ? "Desactivar" : "Activar"} tone="light" onPress={onToggleStatus} disabled={disabled} />
+        <AppSheetActionButton label="Eliminar" tone="text" onPress={onDelete} disabled={disabled} />
+      </View>
+    )}
+  >
+    <View style={styles.summary}>
+      <CustomText text={title} variant="subtitle" style={styles.name} numberOfLines={2} />
+      <ResourceStatusLabel status={active ? "active" : "inactive"} />
     </View>
-  </Modal>
-);
-
-interface MenuActionProps { label: string; icon: IconSvgElement; onPress: () => void; disabled?: boolean; destructive?: boolean }
-
-const MenuAction = ({ label, icon, onPress, disabled, destructive }: MenuActionProps) => (
-  <Pressable disabled={disabled} onPress={onPress} accessibilityRole="button" style={({ pressed }) => [styles.action, disabled && styles.disabled, pressed && styles.pressed]}>
-    <CustomIcon icon={icon} color={destructive ? theme.colors.error : theme.colors.white} size={27} />
-    <CustomText text={label} variant="body" style={[styles.actionLabel, destructive && styles.deleteLabel]} />
-    {!destructive ? <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={23} /> : null}
-  </Pressable>
+  </AppBottomSheet>
 );
 
 export default ResourceActionsMenu;
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0, 0, 0, 0.68)" },
-  sheet: { gap: theme.spacing.xl, paddingHorizontal: theme.spacing.xl, paddingTop: theme.spacing.xl, paddingBottom: theme.spacing.lg, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet, borderCurve: "continuous", backgroundColor: theme.colors.backgroundAlt },
-  title: { color: theme.colors.white, fontSize: 22, lineHeight: 28, fontFamily: theme.fontFamilies.poppinsBold },
-  actions: { gap: theme.spacing.xxs },
-  action: { minHeight: 66, flexDirection: "row", alignItems: "center", gap: theme.spacing.md, paddingHorizontal: theme.spacing.xs },
-  actionLabel: { flex: 1, color: theme.colors.white, fontFamily: theme.fontFamilies.poppinsBold },
-  deleteLabel: { color: theme.colors.error },
-  disabled: { opacity: 0.4 },
-  pressed: { opacity: 0.68 },
+  summary: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: theme.spacing.md, paddingBottom: theme.spacing.md },
+  name: { flex: 1, minWidth: 0, color: theme.colors.white },
+  actions: { gap: theme.spacing.sm, paddingBottom: theme.spacing.sm },
 });

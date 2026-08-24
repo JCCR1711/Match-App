@@ -11,9 +11,16 @@ import {
   RESERVATIONS_PREVIEW_VERSION,
 } from "@/src/features/reservations/data/reservationsPreview";
 import { isSlotUnavailable } from "@/src/features/reservations/utils/isSlotUnavailable";
+import { createReservationReferenceCode, getCompactCustomerName } from "@/src/features/reservations/utils/reservationIdentity";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STORAGE_KEY = "match:reservations:v1";
+
+const normalizeReservation = (reservation: ReservationRecord): ReservationRecord => ({
+  ...reservation,
+  referenceCode: reservation.referenceCode || createReservationReferenceCode(reservation.id),
+  customerDisplayName: reservation.customerDisplayName || getCompactCustomerName(reservation.customerName),
+});
 
 let reservations: ReservationRecord[] = [...reservationsPreview];
 
@@ -61,7 +68,7 @@ export class MockReservationsStore {
             .filter((reservation) => !shouldRefreshPreview || !previewIds.has(reservation.id));
           const persistedIds = new Set(persistedReservations.map((reservation) => reservation.id));
           reservations = [
-            ...persistedReservations,
+            ...persistedReservations.map(normalizeReservation),
             ...reservationsPreview.filter((reservation) => !persistedIds.has(reservation.id)),
           ];
         }
@@ -109,8 +116,11 @@ export class MockReservationsStore {
       return null;
     }
 
+    const reservationId = `reservation-${Date.now()}`;
     const reservation: ReservationRecord = {
-      id: `reservation-${Date.now()}`,
+      id: reservationId,
+      referenceCode: createReservationReferenceCode(reservationId),
+      customerDisplayName: getCompactCustomerName(input.customerName),
       ...input,
     };
     reservations.unshift(reservation);

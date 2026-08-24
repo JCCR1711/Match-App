@@ -3,6 +3,7 @@ import {
   BusinessOnboardingDraft,
   SportsFieldInput,
   UpdateSportsFieldInput,
+  UpdateVenueLocationInput,
   VenueLocationInput,
   VenueOnboardingGateway,
 } from "@/src/features/venues/types/businessOnboarding";
@@ -70,6 +71,15 @@ export class HttpVenueOnboardingGateway implements VenueOnboardingGateway {
       },
     );
 
+    return this.readDraftResponse(response);
+  }
+
+  async updateVenueLocation(accessToken: string, organizationId: string, venueId: string, input: UpdateVenueLocationInput) {
+    const response = await fetch(`${this.baseUrl}/venue-organizations/${organizationId}/venues/${venueId}`, {
+      method: "PATCH",
+      headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
     return this.readDraftResponse(response);
   }
 

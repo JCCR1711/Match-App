@@ -3,6 +3,7 @@ import SportsAvatar from "@/src/components/ui/SportsAvatar";
 import ScheduleStatusLabel from "@/src/features/reservations/components/ScheduleStatusLabel";
 import type { AvailabilityBlock, ReservationRecord } from "@/src/features/reservations/types/reservation";
 import { isActiveReservation } from "@/src/features/reservations/utils/isActiveReservation";
+import { getReservationCustomerLabel } from "@/src/features/reservations/utils/reservationIdentity";
 import { theme } from "@/src/theme";
 import { formatMoneyAmount } from "@/src/utils/formatMoney";
 import { memo } from "react";
@@ -73,7 +74,7 @@ const BusinessAgendaTimeline = ({ reservations, blocks, openingTime = "16:00", c
   const events: ScheduleEvent[] = [
     ...reservations
       .filter(isActiveReservation)
-      .map((reservation) => ({ startTime: reservation.startTime, durationMinutes: reservation.durationMinutes, title: reservation.customerName, status: reservation.status, amount: reservation.amount, reservation })),
+      .map((reservation) => ({ startTime: reservation.startTime, durationMinutes: reservation.durationMinutes, title: getReservationCustomerLabel(reservation), status: reservation.status, amount: reservation.amount, reservation })),
     ...blocks.map((block) => ({ startTime: block.startTime, durationMinutes: block.durationMinutes, title: block.label, status: block.kind === "maintenance" || block.label.toLocaleLowerCase().includes("mantenimiento") ? ("maintenance" as const) : ("blocked" as const), block })),
   ];
   const rows = buildRows(events, openingTime, closingTime);
@@ -119,7 +120,7 @@ const ScheduleRow = ({ startTime, endTime, title, status, amount, focused = fals
       <View style={[styles.row, isReservation && styles.reservationCard, status === "confirmed" && styles.confirmedCard]}>
         {isReservation ? <SportsAvatar seed={title ?? "Cliente"} /> : null}
         <View style={styles.copy}>
-          {isReservation ? <CustomText text={title ?? "Cliente"} variant="body" style={[styles.eventTitle, styles[`${status}Title`]]} numberOfLines={1} /> : null}
+          {isReservation ? <CustomText text={title ?? "Cliente"} variant="body" style={[styles.eventTitle, styles[`${status}Title`]]} numberOfLines={1} ellipsizeMode="tail" /> : null}
           <ScheduleStatusLabel status={status} variant={usesStatusBadge ? "badge" : "text"} emphasis={isReservation ? "regular" : "compact"} />
         </View>
         {isReservation && amount !== undefined ? (
@@ -151,14 +152,14 @@ const styles = StyleSheet.create({
   availableNode: { backgroundColor: theme.colors.surfaceMuted },
   confirmedNode: { backgroundColor: theme.colors.accent },
   pendingNode: { backgroundColor: theme.colors.pendingLimeText },
-  blockedNode: { backgroundColor: theme.colors.errorSoft },
+  blockedNode: { backgroundColor: theme.colors.error },
   maintenanceNode: { backgroundColor: theme.colors.warmAmber },
   row: { flex: 1, minWidth: 0, minHeight: 88, alignSelf: "center", flexDirection: "row", alignItems: "center", gap: theme.spacing.md, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.md },
   rowSeparator: { position: "absolute", right: 0, bottom: 0, left: 80, height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.separatorOnDark },
   reservationCard: { borderRadius: theme.radius.extraLarge, borderCurve: "continuous", backgroundColor: theme.colors.surface },
   confirmedCard: { backgroundColor: theme.colors.reservedSurface },
   copy: { flex: 1, minWidth: 0, gap: theme.spacing.xxs },
-  eventTitle: { color: theme.colors.white },
+  eventTitle: { flexShrink: 1, color: theme.colors.white },
   availableTitle: { color: theme.colors.authTextSecondary },
   confirmedTitle: { color: theme.colors.white },
   pendingTitle: { color: theme.colors.white },

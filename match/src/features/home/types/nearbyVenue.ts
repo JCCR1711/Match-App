@@ -14,4 +14,4 @@ export interface NearbyAvailableVenue {
   startingPrice: number;
 }
 
-export type PlayerLocationSource = "device" | "mock";
+export type PlayerLocationSource = "device" | "fallback";

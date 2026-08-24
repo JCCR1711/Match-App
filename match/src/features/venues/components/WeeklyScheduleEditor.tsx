@@ -13,11 +13,12 @@ interface WeeklyScheduleEditorProps {
   value: WeeklySchedule;
   onChange: (value: WeeklySchedule) => void;
   disabled?: boolean;
+  readOnly?: boolean;
 }
 
 type Picker = "opening" | "closing" | null;
 
-const WeeklyScheduleEditor = ({ value, onChange, disabled = false }: WeeklyScheduleEditorProps) => {
+const WeeklyScheduleEditor = ({ value, onChange, disabled = false, readOnly = false }: WeeklyScheduleEditorProps) => {
   const [picker, setPicker] = useState<Picker>(null);
   const updateTime = (time: string) => {
     onChange({
@@ -32,14 +33,14 @@ const WeeklyScheduleEditor = ({ value, onChange, disabled = false }: WeeklySched
     <View style={styles.container}>
       <View style={styles.block}>
         <CustomText text="Días activos" variant="body" style={styles.sectionTitle} />
-        <WeekdaySelector value={value.weekdays} disabled={disabled} onChange={(weekdays) => onChange({ ...value, weekdays })} />
+        <WeekdaySelector value={value.weekdays} disabled={disabled} readOnly={readOnly} onChange={(weekdays) => onChange({ ...value, weekdays })} />
       </View>
       <View style={styles.block}>
         <CustomText text="Horario" variant="body" style={styles.sectionTitle} />
         <AppSurface style={styles.timeGroup}>
-          <TimeRow label="Apertura" value={value.openingTime} onPress={() => setPicker("opening")} disabled={disabled} />
+          <TimeRow label="Apertura" value={value.openingTime} onPress={() => setPicker("opening")} disabled={disabled} readOnly={readOnly} />
           <View style={styles.divider} />
-          <TimeRow label="Cierre" value={value.closingTime} onPress={() => setPicker("closing")} disabled={disabled} />
+          <TimeRow label="Cierre" value={value.closingTime} onPress={() => setPicker("closing")} disabled={disabled} readOnly={readOnly} />
         </AppSurface>
       </View>
       <TimePickerSheet
@@ -53,21 +54,29 @@ const WeeklyScheduleEditor = ({ value, onChange, disabled = false }: WeeklySched
   );
 };
 
-const TimeRow = ({ label, value, onPress, disabled }: { label: string; value: string; onPress: () => void; disabled: boolean }) => (
-  <Pressable
-    disabled={disabled}
-    onPress={onPress}
-    style={({ pressed }) => [styles.timeRow, disabled && styles.disabled, pressed && styles.pressed]}
-    accessibilityRole="button"
-    accessibilityLabel={`${label}: ${value}`}
-  >
+const TimeRow = ({ label, value, onPress, disabled, readOnly }: { label: string; value: string; onPress: () => void; disabled: boolean; readOnly: boolean }) => {
+  const content = (
+    <>
     <CustomText text={label} variant="caption" style={styles.timeLabel} />
     <View style={styles.timeValue}>
       <CustomText text={value} variant="body" style={styles.selectedTime} />
-      <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={20} />
+      {!readOnly ? <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={20} /> : null}
     </View>
-  </Pressable>
-);
+    </>
+  );
+  if (readOnly) return <View style={styles.timeRow} accessible accessibilityLabel={`${label}: ${value}`}>{content}</View>;
+  return (
+    <Pressable
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [styles.timeRow, disabled && styles.disabled, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}`}
+    >
+      {content}
+    </Pressable>
+  );
+};
 
 export default WeeklyScheduleEditor;
 

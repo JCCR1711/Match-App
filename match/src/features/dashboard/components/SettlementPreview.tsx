@@ -2,6 +2,7 @@ import CustomText from "@/src/components/ui/CustomText";
 import BusinessHighlightSurface from "@/src/features/dashboard/components/BusinessHighlightSurface";
 import type { Settlement } from "@/src/features/payments/types/businessPayments";
 import { theme } from "@/src/theme";
+import { formatMoneyAmount, formatSoles } from "@/src/utils/formatMoney";
 import { StyleSheet, View } from "react-native";
 
 interface SettlementPreviewProps {
@@ -10,11 +11,11 @@ interface SettlementPreviewProps {
 }
 
 const SettlementPreview = ({ settlement, onPress }: SettlementPreviewProps) => {
-  const amount = settlement.amount.replace(/^S\/\s*/, "");
+  const amount = formatMoneyAmount(settlement.amount);
 
   return (
     <BusinessHighlightSurface
-      accessibilityLabel={`Ver próximo abono de ${settlement.amount}`}
+      accessibilityLabel={`Ver próximo abono de ${formatSoles(settlement.amount)}`}
       onPress={onPress}
       tone="light"
     >

@@ -2,16 +2,22 @@ export type PaymentStatus = "pending" | "paid" | "failed";
 
 export interface FinancialMovement {
   id: string;
-  title: string;
-  detail: string;
-  amount: string;
-  status: PaymentStatus;
+  customerName: string;
+  dateLabel: string;
+  amount: number;
+  reservationStatus: "confirmed" | "pending" | "canceled";
 }
 
 export interface Settlement {
   id: string;
   period: string;
-  amount: string;
+  amount: number;
   status: PaymentStatus;
-  destination: string;
+  accountLastDigits: string;
+}
+
+export interface PaymentOverview {
+  availableBalance: number;
+  collectedThisMonth: number;
+  feesThisMonth: number;
 }

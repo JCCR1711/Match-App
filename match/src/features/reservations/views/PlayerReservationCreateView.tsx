@@ -73,6 +73,7 @@ const PlayerReservationCreateView = () => {
         startTime: slot,
         durationMinutes: String(durationMinutes),
         total: String(total),
+        referenceCode: reservation.referenceCode,
       },
     });
   };

@@ -1,4 +1,3 @@
-import CustomIcon from "@/src/components/ui/CustomIcon";
 import ReservationSheetActionButton from "@/src/features/reservations/components/ReservationSheetActionButton";
 import ReservationSheetActions from "@/src/features/reservations/components/ReservationSheetActions";
 import ReservationSheetFrame from "@/src/features/reservations/components/ReservationSheetFrame";
@@ -8,7 +7,6 @@ import ScheduleStatusLabel from "@/src/features/reservations/components/Schedule
 import type { AvailabilityBlock, AvailabilityBlockKind } from "@/src/features/reservations/types/reservation";
 import { addMinutesToTime } from "@/src/features/reservations/utils/reservationTime";
 import { theme } from "@/src/theme";
-import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import * as Haptics from "expo-haptics";
 import { StyleSheet, View } from "react-native";
 
@@ -58,7 +56,7 @@ const AvailabilityBlockActionsSheet = ({ action, dateLabel, fieldName, onClose, 
     <ReservationSheetFrame
       visible
       title="Horario"
-      collapsedHeight={isBlocked ? 560 : 660}
+      collapsedHeight={isBlocked ? 560 : 730}
       tone={isBlocked ? blockedStatus : "available"}
       onClose={onClose}
       footer={(
@@ -67,10 +65,10 @@ const AvailabilityBlockActionsSheet = ({ action, dateLabel, fieldName, onClose, 
               <ReservationSheetActionButton label="Liberar horario" onPress={handleRelease} />
             ) : (
               <>
-                <ReservationSheetActionButton label="Crear reserva" trailingIcon={<CustomIcon icon={CheckmarkCircle02Icon} color={theme.colors.black} size={22} strokeWidth={2.4} />} onPress={handleReserve} />
+                <ReservationSheetActionButton label="Crear reserva" onPress={handleReserve} />
                 <View style={styles.secondaryActions}>
-                  <ReservationSheetActionButton label="Bloquear" tone="secondary" style={styles.secondaryButton} onPress={() => handleBlock("blocked")} accessibilityLabel="Bloquear horario" />
-                  <ReservationSheetActionButton label="Mantenimiento" tone="secondary" style={styles.secondaryButton} onPress={() => handleBlock("maintenance")} accessibilityLabel="Marcar horario en mantenimiento" />
+                  <ReservationSheetActionButton label="Bloquear" tone="blocked" style={styles.secondaryButton} onPress={() => handleBlock("blocked")} accessibilityLabel="Bloquear horario" />
+                  <ReservationSheetActionButton label="Mantenimiento" tone="maintenance" style={styles.secondaryButton} onPress={() => handleBlock("maintenance")} accessibilityLabel="Marcar horario en mantenimiento" />
                 </View>
               </>
             )}
@@ -80,7 +78,7 @@ const AvailabilityBlockActionsSheet = ({ action, dateLabel, fieldName, onClose, 
       <>
       <View style={styles.summary}>
         <View style={styles.timeBlock}>
-          <ScheduleStatusLabel status={isBlocked ? blockedStatus : "available"} />
+          <ScheduleStatusLabel status={isBlocked ? blockedStatus : "available"} tone={isBlocked ? "default" : "accent"} />
           <ReservationTimeRange startTime={startTime} endTime={endTime} tone={isBlocked ? blockedStatus : "available"} />
         </View>
         <ReservationSheetDetails
@@ -101,6 +99,6 @@ export default AvailabilityBlockActionsSheet;
 const styles = StyleSheet.create({
   summary: { gap: theme.spacing.lg },
   timeBlock: { alignItems: "center", gap: theme.spacing.sm },
-  secondaryActions: { flexDirection: "row", gap: theme.spacing.sm },
-  secondaryButton: { flex: 1, paddingHorizontal: theme.spacing.sm },
+  secondaryActions: { gap: theme.spacing.md },
+  secondaryButton: { width: "100%" },
 });

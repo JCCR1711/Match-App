@@ -1,4 +1,4 @@
-import BusinessCardArrow from "@/src/features/dashboard/components/BusinessCardArrow";
+import AppCardArrow from "@/src/components/ui/AppCardArrow";
 import { theme } from "@/src/theme";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -30,9 +30,9 @@ const BusinessHighlightSurface = ({
       ]}
     >
       <View style={styles.content}>{children}</View>
-      <BusinessCardArrow
+      <AppCardArrow
         backgroundColor={isLight ? theme.colors.black : theme.colors.white}
-        color={isLight ? theme.colors.white : theme.colors.black}
+        color={isLight ? theme.colors.pendingLimeText : theme.colors.black}
       />
     </Pressable>
   );

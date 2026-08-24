@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 const WEEKDAYS: { value: Weekday; shortLabel: string; label: string }[] = [
   { value: "monday", shortLabel: "L", label: "Lunes" },
   { value: "tuesday", shortLabel: "M", label: "Martes" },
-  { value: "wednesday", shortLabel: "X", label: "Miércoles" },
+  { value: "wednesday", shortLabel: "M", label: "Miércoles" },
   { value: "thursday", shortLabel: "J", label: "Jueves" },
   { value: "friday", shortLabel: "V", label: "Viernes" },
   { value: "saturday", shortLabel: "S", label: "Sábado" },
@@ -16,12 +16,13 @@ const WEEKDAYS: { value: Weekday; shortLabel: string; label: string }[] = [
 interface WeekdaySelectorProps {
   value: Weekday[];
   disabled?: boolean;
-  onChange: (weekdays: Weekday[]) => void;
+  readOnly?: boolean;
+  onChange?: (weekdays: Weekday[]) => void;
 }
 
-const WeekdaySelector = ({ value, disabled, onChange }: WeekdaySelectorProps) => {
+const WeekdaySelector = ({ value, disabled, readOnly = false, onChange }: WeekdaySelectorProps) => {
   const toggle = (weekday: Weekday) => {
-    onChange(
+    onChange?.(
       value.includes(weekday)
         ? value.filter((item) => item !== weekday)
         : [...value, weekday],
@@ -32,6 +33,25 @@ const WeekdaySelector = ({ value, disabled, onChange }: WeekdaySelectorProps) =>
     <View style={styles.container}>
       {WEEKDAYS.map((weekday) => {
         const selected = value.includes(weekday.value);
+        const content = (
+          <CustomText
+            text={weekday.shortLabel}
+            variant="body"
+            style={[styles.label, selected && styles.labelSelected]}
+          />
+        );
+        if (readOnly) {
+          return (
+            <View
+              key={weekday.value}
+              accessible
+              accessibilityLabel={`${weekday.label}: ${selected ? "disponible" : "no disponible"}`}
+              style={[styles.day, selected && styles.daySelected]}
+            >
+              {content}
+            </View>
+          );
+        }
         return (
           <Pressable
             key={weekday.value}
@@ -46,11 +66,7 @@ const WeekdaySelector = ({ value, disabled, onChange }: WeekdaySelectorProps) =>
               pressed && styles.pressed,
             ]}
           >
-            <CustomText
-              text={weekday.shortLabel}
-              variant="body"
-              style={[styles.label, selected && styles.labelSelected]}
-            />
+            {content}
           </Pressable>
         );
       })}
@@ -74,16 +90,16 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.pill,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.07)",
+    backgroundColor: theme.colors.surfaceOnDarkSubtle,
   },
   daySelected: {
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.authBlue,
   },
   label: {
     color: theme.colors.authTextSecondary,
   },
   labelSelected: {
-    color: theme.colors.black,
+    color: theme.colors.white,
     fontFamily: theme.fontFamilies.poppinsBold,
   },
   pressed: {

@@ -1,4 +1,3 @@
-import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import ReservationBookingDetails from "@/src/features/reservations/components/ReservationBookingDetails";
 import SportsAvatar from "@/src/components/ui/SportsAvatar";
@@ -10,9 +9,9 @@ import ReservationSheetHeroValue from "@/src/features/reservations/components/Re
 import ScheduleStatusLabel from "@/src/features/reservations/components/ScheduleStatusLabel";
 import type { ReservationRecord } from "@/src/features/reservations/types/reservation";
 import { formatTimeRange } from "@/src/features/reservations/utils/reservationTime";
+import { getReservationReferenceLabel } from "@/src/features/reservations/utils/reservationIdentity";
 import { theme } from "@/src/theme";
 import { formatMoneyAmount } from "@/src/utils/formatMoney";
-import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import * as Haptics from "expo-haptics";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -24,6 +23,19 @@ interface ReservationActionsSheetProps {
   onConfirm: (reservationId: string) => void;
   onCancel: (reservationId: string) => void;
 }
+
+const ReservationCustomerSummary = ({ reservation }: { reservation: ReservationRecord }) => (
+  <View style={styles.customer}>
+    <SportsAvatar seed={reservation.customerName} />
+    <View style={styles.customerCopy}>
+      <CustomText text={reservation.customerName} variant="sectionHeading" style={styles.title} numberOfLines={2} ellipsizeMode="tail" />
+      <View style={styles.statusRow}>
+        <ScheduleStatusLabel status={reservation.status} />
+        <CustomText text={getReservationReferenceLabel(reservation)} variant="label" style={styles.reference} />
+      </View>
+    </View>
+  </View>
+);
 
 const ReservationActionsSheet = ({ reservation, onClose, onConfirm, onCancel }: ReservationActionsSheetProps) => {
   const [confirmingCancellation, setConfirmingCancellation] = useState(false);
@@ -72,7 +84,7 @@ const ReservationActionsSheet = ({ reservation, onClose, onConfirm, onCancel }: 
             </>
           ) : (
             <>
-              {reservation.status === "pending" ? <ReservationSheetActionButton label="Confirmar" trailingIcon={<CustomIcon icon={CheckmarkCircle02Icon} color={theme.colors.black} size={22} strokeWidth={2.4} />} onPress={handleConfirm} /> : null}
+              {reservation.status === "pending" ? <ReservationSheetActionButton label="Confirmar" onPress={handleConfirm} /> : null}
               <ReservationSheetActionButton label="Cancelar reserva" tone={confirmed ? "secondary" : "destructive"} onPress={handleCancelRequest} accessibilityLabel="Cancelar reserva" />
             </>
           )}
@@ -81,14 +93,11 @@ const ReservationActionsSheet = ({ reservation, onClose, onConfirm, onCancel }: 
     >
       {confirmingCancellation ? (
         <Animated.View entering={FadeIn.duration(180).reduceMotion(ReduceMotion.System)} style={styles.cancelConfirmation}>
-          <View style={styles.cancelCopy}>
-            <CustomText text="¿Cancelar esta reserva?" variant="heading" style={styles.cancelTitle} />
-            <CustomText text="El horario quedará disponible nuevamente." variant="body" style={styles.cancelDescription} />
-          </View>
+          <ReservationCustomerSummary reservation={reservation} />
+          <CustomText text="El horario quedará disponible nuevamente." variant="body" style={styles.cancelDescription} />
           <ReservationSheetDetails
-            divided={false}
             items={[
-              { label: "Cliente", value: reservation.customerName },
+              { label: "Reserva", value: getReservationReferenceLabel(reservation) },
               { label: "Cancha", value: reservation.fieldName },
               { label: "Fecha", value: reservation.dateLabel },
               { label: "Horario", value: formatTimeRange(reservation.startTime, reservation.durationMinutes) },
@@ -97,11 +106,7 @@ const ReservationActionsSheet = ({ reservation, onClose, onConfirm, onCancel }: 
         </Animated.View>
       ) : (
         <View style={styles.summary}>
-          <View style={styles.customer}>
-            <SportsAvatar seed={reservation.customerName} />
-            <CustomText text={reservation.customerName} variant="sectionHeading" style={styles.title} numberOfLines={1} />
-            <ScheduleStatusLabel status={reservation.status} />
-          </View>
+          <ReservationCustomerSummary reservation={reservation} />
           <View style={styles.amount}>
             <CustomText text="Total" variant="caption" style={styles.amountLabel} />
             <ReservationSheetHeroValue value={formatMoneyAmount(reservation.amount)} prefix="S/" accessibilityLabel={`Precio S/ ${formatMoneyAmount(reservation.amount)}`} />
@@ -118,11 +123,12 @@ export default ReservationActionsSheet;
 const styles = StyleSheet.create({
   summary: { gap: theme.spacing.lg },
   customer: { flexDirection: "row", alignItems: "center", gap: theme.spacing.md },
-  title: { flex: 1, minWidth: 0, color: theme.colors.white },
+  customerCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xxs },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
+  reference: { color: theme.colors.textOnDarkSecondary },
+  title: { color: theme.colors.white },
   amount: { gap: theme.spacing.xxs },
   amountLabel: { color: theme.colors.textOnDarkSecondary },
-  cancelConfirmation: { gap: theme.layout.sectionGap },
-  cancelCopy: { gap: theme.spacing.sm },
-  cancelTitle: { color: theme.colors.white },
+  cancelConfirmation: { gap: theme.spacing.lg },
   cancelDescription: { maxWidth: 320, color: theme.colors.textOnDarkSecondary },
 });

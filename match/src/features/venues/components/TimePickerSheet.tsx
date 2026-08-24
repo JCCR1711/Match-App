@@ -1,8 +1,9 @@
-import CustomButton from "@/src/components/ui/CustomButton";
+import AppBottomSheet from "@/src/components/ui/AppBottomSheet";
+import AppSheetActionButton from "@/src/components/ui/AppSheetActionButton";
 import CustomText from "@/src/components/ui/CustomText";
 import { theme } from "@/src/theme";
-import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
-import { useEffect, useRef, useState } from "react";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useEffect, useState } from "react";
 import { Modal, Platform, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,40 +25,56 @@ const timeToDate = (time: string) => {
 const dateToTime = (date: Date) =>
   `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 
+const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
+  const hours = Math.floor(index / 2);
+  const minutes = index % 2 === 0 ? "00" : "30";
+  return `${String(hours).padStart(2, "0")}:${minutes}`;
+});
+
 const TimePickerSheet = ({ visible, title, value, onSelect, onClose }: TimePickerSheetProps) => {
   const [draftTime, setDraftTime] = useState(() => timeToDate(value));
-  const onSelectRef = useRef(onSelect);
-  const onCloseRef = useRef(onClose);
-
-  useEffect(() => {
-    onSelectRef.current = onSelect;
-    onCloseRef.current = onClose;
-  });
 
   useEffect(() => {
     if (!visible) return;
-
-    const selectedTime = timeToDate(value);
-    setDraftTime(selectedTime);
-
-    if (Platform.OS === "android") {
-      DateTimePickerAndroid.open({
-        value: selectedTime,
-        mode: "time",
-        is24Hour: true,
-        minuteInterval: 30,
-        onChange: (event, date) => {
-          if (event.type === "set" && date) {
-            onSelectRef.current(dateToTime(date));
-            return;
-          }
-          onCloseRef.current();
-        },
-      });
-    }
+    setDraftTime(timeToDate(value));
   }, [value, visible]);
 
-  if (Platform.OS === "android" || Platform.OS === "web") return null;
+  if (Platform.OS !== "ios") {
+    const selectedTime = dateToTime(draftTime);
+    return (
+      <AppBottomSheet
+        visible={visible}
+        title={title}
+        collapsedHeight={590}
+        onClose={onClose}
+        footer={(
+          <AppSheetActionButton
+            label="Confirmar hora"
+            onPress={() => onSelect(selectedTime)}
+          />
+        )}
+      >
+        <CustomText text="Elige una hora" variant="caption" style={styles.androidHint} />
+        <View style={styles.timeGrid}>
+          {TIME_OPTIONS.map((time) => {
+            const selected = time === selectedTime;
+            return (
+              <Pressable
+                key={time}
+                onPress={() => setDraftTime(timeToDate(time))}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={`${time}${selected ? ", seleccionada" : ""}`}
+                style={({ pressed }) => [styles.timeOption, selected && styles.timeOptionSelected, pressed && styles.timeOptionPressed]}
+              >
+                <CustomText text={time} variant="caption" style={[styles.timeOptionText, selected && styles.timeOptionTextSelected]} />
+              </Pressable>
+            );
+          })}
+        </View>
+      </AppBottomSheet>
+    );
+  }
 
   return (
     <Modal visible={visible} transparent animationType="slide" presentationStyle="overFullScreen" onRequestClose={onClose}>
@@ -80,11 +97,9 @@ const TimePickerSheet = ({ visible, title, value, onSelect, onClose }: TimePicke
             onChange={(_, date) => date && setDraftTime(date)}
             style={styles.picker}
           />
-          <CustomButton
+          <AppSheetActionButton
             label="Confirmar hora"
-            variant="light"
             onPress={() => onSelect(dateToTime(draftTime))}
-            style={styles.confirmButton}
           />
         </SafeAreaView>
       </View>
@@ -116,5 +131,20 @@ const styles = StyleSheet.create({
   title: { color: theme.colors.white, fontSize: 18, fontFamily: theme.fontFamilies.poppinsBold },
   subtitle: { color: theme.colors.authTextSecondary },
   picker: { alignSelf: "stretch", height: 216, marginVertical: theme.spacing.lg },
-  confirmButton: { minHeight: 58, borderRadius: theme.radius.pill },
+  androidHint: { color: theme.colors.authTextSecondary },
+  timeGrid: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.sm },
+  timeOption: {
+    width: "22%",
+    minWidth: 68,
+    minHeight: 48,
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: theme.radius.standard,
+    backgroundColor: theme.colors.authSurface,
+  },
+  timeOptionSelected: { backgroundColor: theme.colors.businessBlueSurface },
+  timeOptionPressed: { opacity: 0.76 },
+  timeOptionText: { color: theme.colors.authText },
+  timeOptionTextSelected: { color: theme.colors.white, fontFamily: theme.fontFamilies.poppinsBold },
 });

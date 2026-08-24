@@ -1,4 +1,7 @@
 import { AuthProvider } from "@/src/context/AuthProvider";
+import DeviceLocationProvider from "@/src/context/DeviceLocationProvider";
+import AuthNavigationGuard from "@/src/features/auth/components/AuthNavigationGuard";
+import { OnboardingProvider } from "@/src/features/auth/context/OnboardingProvider";
 import { authGateway } from "@/src/features/auth/services";
 import LaunchSplash from "@/src/features/launch/components/LaunchSplash";
 import { sessionStore } from "@/src/services/storage";
@@ -11,6 +14,7 @@ import * as SystemUI from "expo-system-ui";
 import { useCallback, useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 
 SplashScreen.preventAutoHideAsync();
 void SystemUI.setBackgroundColorAsync(theme.colors.appCanvas);
@@ -38,9 +42,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
+    <KeyboardProvider>
+    <DeviceLocationProvider>
     <AuthProvider gateway={authGateway} sessionStore={sessionStore}>
+      <OnboardingProvider>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }}>
+      <AuthNavigationGuard>
+        <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen
           name="auth/welcome"
           options={{
@@ -115,8 +123,10 @@ export default function RootLayout() {
         <Stack.Screen
           name="business/fields/[fieldId]"
           options={{
-            animation: "ios_from_right",
+            animation: "slide_from_bottom",
+            presentation: "card",
             gestureEnabled: true,
+            gestureDirection: "vertical",
             contentStyle: { backgroundColor: theme.colors.black },
           }}
         />
@@ -129,10 +139,26 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="business/venues/[venueId]/edit"
+          options={{
+            animation: "ios_from_right",
+            gestureEnabled: true,
+            contentStyle: { backgroundColor: theme.colors.black },
+          }}
+        />
+        <Stack.Screen
           name="business/reservations/new"
           options={{
             animation: "slide_from_bottom",
             presentation: "modal",
+            gestureEnabled: true,
+            contentStyle: { backgroundColor: theme.colors.black },
+          }}
+        />
+        <Stack.Screen
+          name="business/fields/[fieldId]/availability"
+          options={{
+            animation: "ios_from_right",
             gestureEnabled: true,
             contentStyle: { backgroundColor: theme.colors.black },
           }}
@@ -177,11 +203,15 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: theme.colors.black },
           }}
         />
-      </Stack>
+        </Stack>
+      </AuthNavigationGuard>
       {showLaunchSplash ? (
         <LaunchSplash onComplete={handleLaunchComplete} />
       ) : null}
+      </OnboardingProvider>
     </AuthProvider>
+    </DeviceLocationProvider>
+    </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

@@ -1,5 +1,5 @@
+import AppCardArrow from "@/src/components/ui/AppCardArrow";
 import CustomText from "@/src/components/ui/CustomText";
-import BusinessCardArrow from "@/src/features/dashboard/components/BusinessCardArrow";
 import { theme } from "@/src/theme";
 import { Pressable, StyleSheet, View } from "react-native";
 
@@ -59,7 +59,10 @@ const BusinessHighlightCard = ({
         </View>
       </View>
 
-      <BusinessCardArrow backgroundColor={theme.colors.black} color={isGreen ? theme.colors.white : theme.colors.accent} />
+      <AppCardArrow
+        backgroundColor={theme.colors.black}
+        color={isGreen ? theme.colors.white : theme.colors.accent}
+      />
     </Pressable>
   );
 };

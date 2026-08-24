@@ -14,9 +14,8 @@ interface BusinessReservationCalendarProps {
 }
 
 const weekdayFormatter = new Intl.DateTimeFormat("es-PE", { weekday: "short" });
-const monthFormatter = new Intl.DateTimeFormat("es-PE", { month: "short" });
-const DAY_WIDTH = 66;
-const DAY_GAP = theme.spacing.sm;
+const DAY_WIDTH = 72;
+const DAY_GAP = theme.spacing.md;
 
 const parseDateKey = (dateKey: string) => {
   const [year, month, day] = dateKey.split("-").map(Number);
@@ -73,13 +72,11 @@ const BusinessReservationCalendar = ({ selectedDateKey, activityCounts, onSelect
             const dateKey = toDateKey(date);
             const selected = dateKey === selectedDateKey;
             const count = activityCounts.get(dateKey) ?? 0;
-            const weekday = weekdayFormatter.format(date).replace(".", "").slice(0, 2);
-            const month = monthFormatter.format(date).replace(".", "");
+            const weekday = weekdayFormatter.format(date).replace(".", "").slice(0, 1);
             return (
               <Pressable key={dateKey} accessibilityRole="tab" accessibilityState={{ selected }} accessibilityLabel={`${weekday} ${date.getDate()}, ${count} reservas`} onPress={() => onSelectDate(dateKey)} style={({ pressed }) => [styles.day, selected && styles.daySelected, pressed && styles.pressed]}>
                 <CustomText text={weekday} variant="label" style={[styles.weekday, selected && styles.dayTextSelected]} />
                 <CustomText text={String(date.getDate())} variant="action" style={[styles.dayNumber, selected && styles.dayTextSelected]} />
-                <CustomText text={month} variant="label" style={[styles.month, selected && styles.dayTextSelected]} />
                 {count > 0 ? (
                   <View style={[styles.countBadge, styles.countBadgeActive, selected && styles.countBadgeSelected]}>
                     <CustomText text={String(count)} variant="label" style={[styles.count, styles.countActive, selected && styles.countSelected]} />
@@ -115,18 +112,17 @@ const styles = StyleSheet.create({
   edgeFade: { position: "absolute", top: 0, bottom: 0, width: 34 },
   leftFade: { left: 0 },
   rightFade: { right: 0 },
-  day: { width: DAY_WIDTH, height: 120, alignItems: "center", justifyContent: "center", gap: theme.spacing.xxs, borderRadius: theme.radius.pill },
-  daySelected: { backgroundColor: theme.colors.accent },
+  day: { width: DAY_WIDTH, height: 104, alignItems: "center", justifyContent: "center", gap: theme.spacing.xxs, borderRadius: theme.radius.pill },
+  daySelected: { backgroundColor: theme.colors.authBlue },
   weekday: { color: theme.colors.authTextSecondary, textTransform: "uppercase", includeFontPadding: false, textAlignVertical: "center" },
   dayNumber: { color: theme.colors.white, includeFontPadding: false, textAlignVertical: "center" },
-  month: { color: theme.colors.authTextSecondary, textTransform: "uppercase", includeFontPadding: false, textAlignVertical: "center" },
-  countBadge: { minWidth: 22, height: 20, alignItems: "center", justifyContent: "center", borderRadius: theme.radius.pill },
-  countBadgeActive: { backgroundColor: theme.colors.businessBlueSurface },
-  countBadgeSelected: { backgroundColor: theme.colors.black },
-  countPlaceholder: { width: 22, height: 20 },
+  countBadge: { minWidth: 26, height: 24, alignItems: "center", justifyContent: "center", borderRadius: theme.radius.pill },
+  countBadgeActive: { backgroundColor: theme.colors.confirmedSurface },
+  countBadgeSelected: { backgroundColor: theme.colors.white },
+  countPlaceholder: { width: 26, height: 24 },
   count: { color: theme.colors.authTextSecondary, includeFontPadding: false, textAlignVertical: "center" },
-  countActive: { color: theme.colors.white },
-  countSelected: { color: theme.colors.white },
-  dayTextSelected: { color: theme.colors.black },
+  countActive: { color: theme.colors.accent, fontFamily: theme.fontFamilies.poppinsBold, fontSize: 13, lineHeight: 16 },
+  countSelected: { color: theme.colors.authBlue },
+  dayTextSelected: { color: theme.colors.white },
   pressed: { opacity: 0.7 },
 });

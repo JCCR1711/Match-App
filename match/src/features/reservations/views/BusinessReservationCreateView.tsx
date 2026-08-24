@@ -1,7 +1,8 @@
-import CustomButton from "@/src/components/ui/CustomButton";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
+import AppKeyboardAwareScrollView from "@/src/components/ui/AppKeyboardAwareScrollView";
 import ReservationCustomerPicker from "@/src/features/reservations/components/ReservationCustomerPicker";
+import ReservationSheetActionButton from "@/src/features/reservations/components/ReservationSheetActionButton";
 import ReservationStatusSelector from "@/src/features/reservations/components/ReservationStatusSelector";
 import ReservationSheetDetails from "@/src/features/reservations/components/ReservationSheetDetails";
 import ReservationSheetHeroValue from "@/src/features/reservations/components/ReservationSheetHeroValue";
@@ -16,7 +17,7 @@ import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useMemo, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type RouteParams = {
@@ -81,7 +82,7 @@ const BusinessReservationCreateView = () => {
     <View style={styles.root}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-        <KeyboardAvoidingView style={styles.keyboardArea} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <View style={styles.keyboardArea}>
           <View style={styles.modalHeader}>
             <Pressable
               onPress={() => router.back()}
@@ -96,15 +97,13 @@ const BusinessReservationCreateView = () => {
             </View>
           </View>
 
-          <ScrollView
+          <AppKeyboardAwareScrollView
             style={styles.scroll}
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
           >
         <View style={styles.context}>
-          <ScheduleStatusLabel status="available" />
+          <ScheduleStatusLabel status="available" tone="accent" />
           <ReservationTimeRange startTime={params.startTime ?? "--:--"} endTime={params.endTime} tone="available" />
           <ReservationSheetDetails
             divided={false}
@@ -141,9 +140,11 @@ const BusinessReservationCreateView = () => {
           <ReservationSheetHeroValue value={formatMoneyAmount(amount)} prefix="S/" accessibilityLabel={`Precio S/ ${formatMoneyAmount(amount)}`} />
         </View>
 
-            <CustomButton label="Crear reserva" variant="light" onPress={handleCreate} disabled={!hasContext || !selectedCustomer} style={styles.submit} />
-          </ScrollView>
-        </KeyboardAvoidingView>
+          </AppKeyboardAwareScrollView>
+          <View style={styles.footer}>
+            <ReservationSheetActionButton label="Crear reserva" onPress={handleCreate} disabled={!hasContext || !selectedCustomer} />
+          </View>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -191,21 +192,19 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: theme.layout.screenGutter,
     paddingTop: theme.spacing.lg,
-    paddingBottom: theme.spacing.huge,
+    paddingBottom: theme.spacing.lg,
     gap: theme.layout.sectionGap,
   },
   context: { gap: theme.spacing.lg },
   form: { gap: theme.spacing.sm },
-  error: { color: theme.colors.textOnDarkSecondary },
+  error: { color: theme.colors.error },
   totalRow: {
     flexDirection: "row",
     alignItems: "baseline",
     justifyContent: "space-between",
     gap: theme.spacing.lg,
     paddingTop: theme.spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: theme.colors.dividerOnDark,
   },
   totalLabel: { color: theme.colors.textOnDarkSecondary },
-  submit: { minHeight: 60, borderRadius: theme.radius.pill },
+  footer: { paddingHorizontal: theme.layout.screenGutter, paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.md },
 });

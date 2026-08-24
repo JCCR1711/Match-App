@@ -1,4 +1,5 @@
 import AuthButton from "@/src/features/auth/components/AuthButton";
+import { useOnboarding } from "@/src/features/auth/context/OnboardingProvider";
 import { theme } from "@/src/theme";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -7,15 +8,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import OnboardingBackground from "../components/OnboardingBackground";
 import OnboardingSlide from "../components/OnboardingSlide";
 
-const heroImage = require("../../../assets/Omboarding/match3.png");
+const heroImage = require("../../../assets/Omboarding/onboarding-players-v3.png");
 
 const OnboardingView = () => {
-  const openWelcome = () => {
-    router.push("/auth/welcome");
+  const { completeOnboarding } = useOnboarding();
+
+  const openWelcome = async () => {
+    await completeOnboarding();
+    router.replace("/auth/welcome");
   };
 
-  const openSignIn = () => {
-    router.push("/auth/email");
+  const openSignIn = async () => {
+    await completeOnboarding();
+    router.replace("/auth/email");
   };
 
   return (
@@ -24,29 +29,27 @@ const OnboardingView = () => {
       <OnboardingBackground />
 
       <SafeAreaView style={styles.container}>
-        <View style={styles.hero}>
-          <OnboardingSlide
-            image={heroImage}
-            imageAccessibilityLabel="Jugador de fútbol y gestor deportivo"
-            title={"Tu partido\nempieza aquí"}
-            description="Encuentra cancha, reúne a tu equipo y juega."
-          />
-        </View>
+        <OnboardingSlide
+          image={heroImage}
+          imageAccessibilityLabel="Dos jugadores de fútbol caminando juntos"
+          title="Tu próximo partido empieza aquí"
+          description="Reserva una cancha, invita a tu equipo y juega."
+        />
 
         <View style={styles.footer}>
           <AuthButton
-            label="Continuar"
+            label="Empezar"
             variant="light"
-            onPress={openWelcome}
+            onPress={() => void openWelcome()}
             style={styles.primaryButton}
             labelStyle={styles.primaryButtonLabel}
             accessibilityLabel="Continuar con Match"
           />
           <AuthButton
-            label="Ya tengo una cuenta"
+            label="Iniciar sesión"
             textSize="secondary"
             variant="inverse"
-            onPress={openSignIn}
+            onPress={() => void openSignIn()}
             style={styles.signInButton}
             labelStyle={styles.signInButtonLabel}
             accessibilityLabel="Iniciar sesión con una cuenta existente"
@@ -66,26 +69,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  hero: {
-    ...StyleSheet.absoluteFillObject,
-  },
   footer: {
-    marginTop: "auto",
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
     paddingBottom: theme.spacing.lg,
     gap: theme.spacing.sm,
     zIndex: 2,
   },
   primaryButton: {
-    height: 60,
+    height: 56,
     borderRadius: theme.radius.pill,
     borderWidth: 0,
-    backgroundColor: theme.colors.authPrimary,
-    shadowColor: theme.colors.white,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 18,
-    elevation: 6,
+    backgroundColor: theme.colors.white,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   primaryButtonLabel: {
     ...theme.typography.action,

@@ -1,9 +1,8 @@
 import CustomText from "@/src/components/ui/CustomText";
-import GlassHeader from "@/src/components/ui/GlassHeader";
-import BusinessDashboardHeader, { BUSINESS_DASHBOARD_HEADER_HEIGHT } from "@/src/features/dashboard/components/BusinessDashboardHeader";
+import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
+import SportsAvatar from "@/src/components/ui/SportsAvatar";
 import BusinessDashboardOverview from "@/src/features/dashboard/components/BusinessDashboardOverview";
-import type { BusinessSetupKind } from "@/src/features/dashboard/components/BusinessSetupCard";
-import BusinessSetupCard from "@/src/features/dashboard/components/BusinessSetupCard";
+import BusinessSetupCard, { type BusinessSetupKind } from "@/src/features/venues/components/BusinessSetupCard";
 import AppBackground from "@/src/components/ui/AppBackground";
 import { useReservations } from "@/src/features/reservations/hooks/useReservations";
 import { reservationDates } from "@/src/features/reservations/data/reservationDates";
@@ -11,11 +10,12 @@ import type { ReservationRecord } from "@/src/features/reservations/types/reserv
 import { settlements } from "@/src/features/payments/data/paymentsPreview";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { useAuth } from "@/src/hooks/useAuth";
+import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, View } from "react-native";
-import Animated from "react-native-reanimated";
+import { Pressable, StyleSheet, View } from "react-native";
+import Animated, { Extrapolation, interpolate, useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const DashboardView = () => {
@@ -23,6 +23,10 @@ const DashboardView = () => {
   const { user } = useAuth();
   const { reservations, blocks } = useReservations();
   const insets = useSafeAreaInsets();
+  const { scrollY, onScroll, headerContentInset } = useCollapsibleHeader();
+  const avatarScaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(scrollY.value, [0, 72], [1, 0.84], Extrapolation.CLAMP) }],
+  }));
   const businessName = draft?.businessName || "Match Arena";
   const venues = draft?.venues ?? [];
   const fields = draft?.fields ?? [];
@@ -96,23 +100,32 @@ const DashboardView = () => {
     <View style={styles.root}>
       <StatusBar style="light" />
       <AppBackground variant="dashboard" />
-      <GlassHeader topInset={insets.top} contentHeight={BUSINESS_DASHBOARD_HEADER_HEIGHT}>
-        <BusinessDashboardHeader
-          businessName={businessName}
-          profileName={user?.displayName || "Propietario"}
-          profileSeed={user?.id || user?.displayName || "business-owner"}
-          avatarId={user?.avatarId}
-          onOpenProfile={() => router.navigate("/(tabs)/business-profile")}
-        />
-      </GlassHeader>
+      <AppScreenHeader
+        title={businessName}
+        scrollY={scrollY}
+        action={(
+          <Animated.View style={avatarScaleStyle}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Abrir perfil de ${user?.displayName || "Propietario"}`}
+              onPress={() => router.navigate("/(tabs)/business-profile")}
+              style={({ pressed }) => [styles.avatar, pressed && styles.avatarPressed]}
+            >
+              <SportsAvatar seed={user?.id || user?.displayName || "business-owner"} avatarId={user?.avatarId} size={40} />
+            </Pressable>
+          </Animated.View>
+        )}
+      />
       <Animated.ScrollView
         contentContainerStyle={[
           styles.scrollContent,
           {
-            paddingTop: insets.top + BUSINESS_DASHBOARD_HEADER_HEIGHT + theme.spacing.xl,
+            paddingTop: headerContentInset + theme.layout.headerContentGap,
             paddingBottom: insets.bottom + theme.layout.tabBarClearance,
           },
         ]}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
         {loading ? (
@@ -183,4 +196,14 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: theme.layout.sectionGap,
   },
+  avatar: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: theme.radius.pill,
+    overflow: "hidden",
+    backgroundColor: theme.colors.authSurface,
+  },
+  avatarPressed: { opacity: 0.72 },
 });

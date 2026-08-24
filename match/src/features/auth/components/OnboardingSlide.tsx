@@ -2,6 +2,7 @@ import CustomText from "@/src/components/ui/CustomText";
 import { theme } from "@/src/theme";
 import { Image, ImageSource } from "expo-image";
 import { StyleSheet, View } from "react-native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
 type OnboardingImageSource = ImageSource | number;
 
@@ -22,7 +23,7 @@ const OnboardingSlide = ({
     <View style={styles.container}>
       <View style={styles.contentWrapper}>
         {image ? (
-          <View style={styles.imageArea}>
+          <Animated.View entering={FadeIn.duration(520)} style={styles.imageArea}>
             <Image
               source={image}
               style={styles.image}
@@ -31,16 +32,16 @@ const OnboardingSlide = ({
               transition={150}
               accessibilityLabel={imageAccessibilityLabel}
             />
-          </View>
+          </Animated.View>
         ) : null}
-        <View style={styles.content}>
+        <Animated.View entering={FadeInDown.delay(120).duration(420)} style={styles.content}>
           <CustomText text={title} variant="h1" style={styles.title} />
           <CustomText
             text={description}
             variant="body"
             style={styles.description}
           />
-        </View>
+        </Animated.View>
       </View>
     </View>
   );
@@ -51,46 +52,51 @@ export default OnboardingSlide;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingTop: theme.spacing.huge,
-    paddingBottom: 220,
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.xl,
   },
   contentWrapper: {
     flex: 1,
-    alignItems: "center",
-    gap: theme.spacing.xxl,
+    alignItems: "stretch",
+    gap: theme.spacing.md,
   },
   imageArea: {
     flex: 1,
     minHeight: 0,
     width: "100%",
-    justifyContent: "center",
+    justifyContent: "flex-end",
     alignItems: "center",
     overflow: "visible",
   },
   image: {
-    width: "92%",
-    height: "96%",
-    transform: [{ translateY: 8 }],
+    width: "78%",
+    height: "88%",
+    alignSelf: "center",
   },
   content: {
     width: "100%",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: theme.spacing.sm,
   },
   title: {
     color: theme.colors.text,
     ...theme.typography.heroTitle,
+    fontSize: 32,
+    lineHeight: 37,
+    letterSpacing: -0.45,
     width: "100%",
     paddingVertical: 2,
     includeFontPadding: true,
-    textAlign: "center",
+    textAlign: "left",
     textTransform: "none",
   },
   description: {
-    color: "rgba(255, 255, 255, 0.62)",
+    color: theme.colors.textOnMediaSecondary,
     paddingBottom: 2,
-    maxWidth: 320,
-    textAlign: "center",
+    maxWidth: 310,
+    fontSize: 16,
+    lineHeight: 22,
+    textAlign: "left",
   },
 });

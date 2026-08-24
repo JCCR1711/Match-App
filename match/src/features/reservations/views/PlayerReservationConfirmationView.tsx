@@ -14,13 +14,14 @@ import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const PlayerReservationConfirmationView = () => {
-  const { venueName, fieldName, dateLabel, startTime, durationMinutes, total } = useLocalSearchParams<{
+  const { venueName, fieldName, dateLabel, startTime, durationMinutes, total, referenceCode } = useLocalSearchParams<{
     venueName: string;
     fieldName: string;
     dateLabel: string;
     startTime: string;
     durationMinutes: string;
     total: string;
+    referenceCode: string;
   }>();
 
   return (
@@ -40,7 +41,7 @@ const PlayerReservationConfirmationView = () => {
               <CustomText text="Tu cancha ya está lista." variant="body" style={styles.subtitle} />
             </View>
           </View>
-          <PlayerBookingSummaryCard venueName={venueName || "Cancha"} fieldName={fieldName || ""} dateLabel={dateLabel || ""} startTime={startTime || ""} durationMinutes={Number(durationMinutes) || 60} total={Number(total) || 0} />
+          <PlayerBookingSummaryCard venueName={venueName || "Cancha"} fieldName={fieldName || ""} dateLabel={dateLabel || ""} startTime={startTime || ""} durationMinutes={Number(durationMinutes) || 60} total={Number(total) || 0} referenceCode={referenceCode || ""} />
           <View style={styles.footer}>
             <CustomButton label="Ver mis reservas" variant="primary" onPress={() => router.replace("/(tabs)/player-reservations")} accessibilityLabel="Ver mis reservas" />
             <CustomButton label="Volver al inicio" variant="inverse" onPress={() => router.replace("/(tabs)")} accessibilityLabel="Volver al inicio" />

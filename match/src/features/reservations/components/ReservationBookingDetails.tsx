@@ -11,7 +11,11 @@ const ReservationBookingDetails = ({ reservation }: { reservation: ReservationRe
     <View style={styles.primaryRow}>
       <View style={styles.field}>
         <CustomText text="Cancha" variant="caption" style={styles.label} />
-        <CustomText text={reservation.fieldName} variant="subtitle" style={styles.fieldName} numberOfLines={2} />
+        <CustomText
+          text={reservation.fieldName}
+          variant="bodyStrong"
+          style={styles.fieldName}
+        />
       </View>
       <View style={styles.durationBlock}>
         <CustomText text={formatBookingDuration(reservation.durationMinutes)} variant="body" style={styles.duration} />
@@ -21,11 +25,11 @@ const ReservationBookingDetails = ({ reservation }: { reservation: ReservationRe
     <View style={styles.meta}>
       <View style={styles.dateBlock}>
         <CustomText text="Fecha" variant="caption" style={styles.label} />
-        <CustomText text={reservation.dateLabel} variant="sectionHeading" style={styles.date} numberOfLines={2} />
+        <CustomText text={reservation.dateLabel} variant="bodyStrong" style={styles.date} />
       </View>
       <View style={styles.venueBlock}>
         <CustomText text="Sede" variant="caption" style={styles.label} />
-        <CustomText text={reservation.venueName} variant="actionSecondary" style={styles.venue} numberOfLines={2} />
+        <CustomText text={reservation.venueName} variant="bodyStrong" style={styles.venue} />
       </View>
     </View>
   </View>

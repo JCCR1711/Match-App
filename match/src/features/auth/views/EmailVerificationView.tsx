@@ -1,4 +1,5 @@
 import AuthButton from "@/src/features/auth/components/AuthButton";
+import AppKeyboardAwareScrollView from "@/src/components/ui/AppKeyboardAwareScrollView";
 import CustomText from "@/src/components/ui/CustomText";
 import AuthBackButton from "@/src/features/auth/components/AuthBackButton";
 import AuthFlowBackground from "@/src/features/auth/components/AuthFlowBackground";
@@ -8,7 +9,7 @@ import { theme } from "@/src/theme";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const EmailVerificationView = () => {
@@ -102,12 +103,12 @@ const EmailVerificationView = () => {
           <AuthBackButton accessibilityLabel="Cambiar correo" />
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.content}>
+        <AppKeyboardAwareScrollView
+            style={styles.keyboardArea}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.content}>
             <View style={styles.message}>
               <Text style={styles.title}>Tu código</Text>
               <CustomText
@@ -156,8 +157,8 @@ const EmailVerificationView = () => {
                 accessibilityLabel="Reenviar código de acceso"
               />
             </View>
-          </View>
-        </ScrollView>
+            </View>
+        </AppKeyboardAwareScrollView>
       </SafeAreaView>
     </View>
   );
@@ -173,6 +174,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  keyboardArea: { flex: 1 },
   header: {
     minHeight: 56,
     paddingHorizontal: theme.spacing.lg,

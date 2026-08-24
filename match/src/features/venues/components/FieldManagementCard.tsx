@@ -1,5 +1,6 @@
 import AppSurface from "@/src/components/ui/AppSurface";
 import CustomText from "@/src/components/ui/CustomText";
+import ResourceStatusLabel from "@/src/features/venues/components/ResourceStatusLabel";
 import { getVenueImage } from "@/src/features/venues/data/venueImages";
 import type { SportsFieldDraft } from "@/src/features/venues/types/businessOnboarding";
 import { theme } from "@/src/theme";
@@ -30,10 +31,10 @@ const FieldManagementCard = ({ field, disabled, subtitle, style, presentation = 
       ]}
       onPress={onPress}
       disabled={disabled}
-      accessibilityLabel={`Abrir ${field.fieldName}, fútbol ${field.format}, precio ${formatSoles(field.hourlyPrice)}`}
+      accessibilityLabel={`Abrir ${field.fieldName}, estado ${field.status === "active" ? "activa" : "inactiva"}, fútbol ${field.format}, precio ${formatSoles(field.hourlyPrice)}`}
     >
       {isFeatured ? (
-        <FeaturedField field={field} venueName={subtitle} />
+        <FeaturedField field={field} />
       ) : (
         <CompactField field={field} venueName={subtitle} />
       )}
@@ -41,7 +42,7 @@ const FieldManagementCard = ({ field, disabled, subtitle, style, presentation = 
   );
 };
 
-const FeaturedField = ({ field, venueName }: { field: SportsFieldDraft; venueName?: string }) => (
+const FeaturedField = ({ field }: { field: SportsFieldDraft }) => (
   <View style={styles.featuredContent}>
     <Image source={getVenueImage(field.venueId)} style={styles.featuredImage} contentFit="cover" transition={180} cachePolicy="memory-disk" />
     <LinearGradient
@@ -52,15 +53,8 @@ const FeaturedField = ({ field, venueName }: { field: SportsFieldDraft; venueNam
     />
     <View style={styles.featuredBody}>
       <View style={styles.featuredCopy}>
-        <View style={styles.featuredTitleRow}>
-          <CustomText text={field.fieldName} variant="sectionHeading" style={styles.featuredName} numberOfLines={1} />
-          <CustomText text={field.status === "active" ? "ACTIVA" : "INACTIVA"} variant="label" style={[styles.featuredStatusText, field.status === "inactive" && styles.featuredInactiveText]} />
-        </View>
-        <View style={styles.featuredMeta}>
-          <CustomText text={venueName ?? "Cancha deportiva"} variant="caption" style={styles.featuredVenue} numberOfLines={1} />
-          <CustomText text="·" variant="caption" style={styles.featuredMetaDivider} />
-          <CustomText text={field.format} variant="caption" style={styles.featuredFormat} />
-        </View>
+        <ResourceStatusLabel status={field.status} style={styles.cardStatus} />
+        <CustomText text={field.fieldName} variant="sectionHeading" style={styles.featuredName} numberOfLines={1} />
       </View>
       <View style={styles.featuredPrice}>
         <View style={styles.featuredPriceRow}>
@@ -86,6 +80,7 @@ const CompactField = ({ field, venueName }: { field: SportsFieldDraft; venueName
     </View>
     <View style={styles.compactBody}>
       <View style={styles.compactCopy}>
+        <ResourceStatusLabel status={field.status} style={styles.cardStatus} />
         <CustomText text={field.fieldName} variant="subtitle" style={styles.compactName} numberOfLines={1} />
         <View style={styles.compactMeta}>
           {venueName ? <CustomText text={venueName} variant="caption" style={styles.compactSubtitle} numberOfLines={1} /> : null}
@@ -115,18 +110,12 @@ const styles = StyleSheet.create({
   featuredFade: { position: "absolute", right: 0, bottom: 0, left: 0, height: "66%" },
   featuredBody: { zIndex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
   featuredCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xxs },
-  featuredTitleRow: { minWidth: 0, flexDirection: "row", alignItems: "center", gap: theme.spacing.sm },
   featuredName: { flexShrink: 1, minWidth: 0, color: theme.colors.white },
-  featuredMeta: { minWidth: 0, flexDirection: "row", alignItems: "center", gap: theme.spacing.xs },
-  featuredVenue: { flexShrink: 1, color: theme.colors.textOnMediaSecondary },
-  featuredMetaDivider: { color: theme.colors.textOnMediaSecondary },
-  featuredFormat: { flexShrink: 0, color: theme.colors.white },
+  cardStatus: { alignSelf: "flex-start" },
   featuredPrice: { flexShrink: 0, alignItems: "flex-end" },
   featuredPriceRow: { flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xxs },
   featuredCurrency: { color: theme.colors.white },
   featuredPriceAmount: { color: theme.colors.white },
-  featuredStatusText: { flexShrink: 0, color: theme.colors.accent, letterSpacing: 0.8 },
-  featuredInactiveText: { color: theme.colors.warning },
   priceRow: { flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xxs },
   currency: { color: theme.colors.textOnDarkSecondary },
   priceAmount: { color: theme.colors.white },
@@ -136,7 +125,7 @@ const styles = StyleSheet.create({
   compactContent: { flex: 1, minWidth: 0, minHeight: 348, overflow: "hidden" },
   compactBody: { minHeight: 106, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.lg, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
   compactCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xxs },
-  compactName: { color: theme.colors.white, fontSize: 22, lineHeight: 28 },
+  compactName: { flexShrink: 1, minWidth: 0, color: theme.colors.white, fontSize: 22, lineHeight: 28 },
   compactMeta: { minWidth: 0, flexDirection: "row", alignItems: "center", gap: theme.spacing.xs },
   compactSubtitle: { flexShrink: 1, color: theme.colors.textOnDarkSecondary },
   compactDivider: { color: theme.colors.textOnDarkSecondary },

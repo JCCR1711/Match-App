@@ -20,7 +20,7 @@ const NearbyVenuesMap = ({ venues, playerCoordinates, locationSource, onSelectVe
       showsMyLocationButton={locationSource === "device"}
       toolbarEnabled={false}
     >
-      {locationSource === "mock" ? (
+      {locationSource === "fallback" ? (
         <Marker coordinate={playerCoordinates} title="Ubicación de referencia" pinColor={theme.colors.electricBlue} />
       ) : null}
       {venues.map(({ venue, nextAvailableSlot }) => (

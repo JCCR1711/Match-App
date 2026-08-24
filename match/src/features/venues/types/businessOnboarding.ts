@@ -22,6 +22,8 @@ export interface VenueLocation extends VenueLocationInput {
   venueId: string;
 }
 
+export type UpdateVenueLocationInput = Omit<VenueLocationInput, "status">;
+
 export type FieldFormat = "5v5" | "7v7" | "11v11";
 export type ResourceStatus = "active" | "inactive";
 export type FieldScheduleMode = "inherit" | "custom";
@@ -96,6 +98,12 @@ export interface VenueOnboardingGateway {
     accessToken: string,
     organizationId: string,
     input: VenueLocationInput,
+  ): Promise<BusinessOnboardingDraft>;
+  updateVenueLocation(
+    accessToken: string,
+    organizationId: string,
+    venueId: string,
+    input: UpdateVenueLocationInput,
   ): Promise<BusinessOnboardingDraft>;
   saveSportsField(
     accessToken: string,

@@ -1,4 +1,5 @@
 import AppRootHeader from "@/src/components/ui/AppRootHeader";
+import AppBackground from "@/src/components/ui/AppBackground";
 import CustomText from "@/src/components/ui/CustomText";
 import FeaturedVenueCard from "@/src/features/home/components/FeaturedVenueCard";
 import HomeVenueCard from "@/src/features/home/components/HomeVenueCard";
@@ -68,6 +69,7 @@ const HomeView = () => {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
+      <AppBackground variant="dashboard" />
       <ScrollView
         contentContainerStyle={[
           styles.content,

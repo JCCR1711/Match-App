@@ -3,10 +3,12 @@ import type {
   FieldAvailability,
   SportsFieldDraft,
 } from "@/src/features/venues/types/businessOnboarding";
+import { businessDemoVenues } from "@/src/features/venues/data/businessDemoVenues";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 
 const getDraftKey = (ownerId: string) => `match.mock-business.draft.${ownerId}`;
+const DEMO_BUSINESS_OWNER_ID = "mock-venue-owner-1";
 
 type LegacySportsFieldDraft = Omit<
   SportsFieldDraft,
@@ -39,7 +41,7 @@ export class MockBusinessDraftStore {
     try {
       const parsedDraft = JSON.parse(serializedDraft) as LegacyBusinessDraft;
       const { availability: legacyAvailability, ...currentDraft } = parsedDraft;
-      const venues = (
+      const storedVenues = (
         parsedDraft.venues ?? (currentDraft.location ? [currentDraft.location] : [])
       ).map((venue) => ({
         ...venue,
@@ -47,6 +49,9 @@ export class MockBusinessDraftStore {
         status: venue.status ?? "active",
         defaultSchedule: venue.defaultSchedule ?? null,
       }));
+      const venues = ownerId === DEMO_BUSINESS_OWNER_ID
+        ? appendMissingDemoVenues(storedVenues)
+        : storedVenues;
       const legacyFields = parsedDraft.fields ?? (parsedDraft.field ? [parsedDraft.field] : []);
       const fields = legacyFields.map((field) => ({
         ...field,
@@ -82,3 +87,16 @@ export class MockBusinessDraftStore {
     await AsyncStorage.setItem(getDraftKey(ownerId), JSON.stringify(draft));
   }
 }
+
+const appendMissingDemoVenues = (
+  venues: BusinessOnboardingDraft["venues"],
+) => {
+  if (venues.length >= businessDemoVenues.length) return venues;
+
+  const existingIds = new Set(venues.map((venue) => venue.venueId));
+  const missingVenues = businessDemoVenues.filter(
+    (venue) => !existingIds.has(venue.venueId),
+  );
+
+  return [...venues, ...missingVenues.slice(0, businessDemoVenues.length - venues.length)];
+};

@@ -1,9 +1,11 @@
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomText from "@/src/components/ui/CustomText";
+import AppKeyboardAwareScrollView from "@/src/components/ui/AppKeyboardAwareScrollView";
 import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
 import AppBackground from "@/src/components/ui/AppBackground";
 import VenueTextField from "@/src/features/venues/components/VenueTextField";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
+import { formatNationalPhone, isValidNationalPhone, PERU_PHONE_FORMAT, toInternationalPhone } from "@/src/features/venues/utils/phoneNumber";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
@@ -11,19 +13,10 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   View,
 } from "react-native";
-import Animated from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const normalizePhone = (phone: string) => phone.replace(/\D/g, "");
-const isValidPhone = (phone: string) => {
-  const digits = normalizePhone(phone);
-  return digits.length >= 7 && digits.length <= 15;
-};
 
 type BusinessField = "businessName" | "contactPhone";
 
@@ -78,7 +71,7 @@ const BusinessBasicsView = () => {
 
   const handleContinue = async () => {
     const normalizedName = businessName.trim();
-    const normalizedPhone = normalizePhone(contactPhone);
+    const internationalPhone = toInternationalPhone(contactPhone, PERU_PHONE_FORMAT);
 
     if (normalizedName.length < 2) {
       setFieldError("businessName");
@@ -86,7 +79,7 @@ const BusinessBasicsView = () => {
       return;
     }
 
-    if (!isValidPhone(contactPhone)) {
+    if (!isValidNationalPhone(contactPhone, PERU_PHONE_FORMAT)) {
       setFieldError("contactPhone");
       setErrorMessage("Ingresa un teléfono válido.");
       return;
@@ -105,7 +98,7 @@ const BusinessBasicsView = () => {
     try {
       await venueOnboardingGateway.saveBusinessBasics(accessToken, {
         businessName: normalizedName,
-        contactPhone: normalizedPhone,
+        contactPhone: internationalPhone,
       });
       router.replace("/(tabs)/dashboard");
     } catch (submissionError) {
@@ -126,13 +119,10 @@ const BusinessBasicsView = () => {
       <AppScreenHeader title="Tu club" onBack={() => router.back()} backAccessibilityLabel="Volver" scrollY={scrollY} />
 
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-        <KeyboardAvoidingView
-          style={styles.keyboardArea}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          <Animated.ScrollView
+        <AppKeyboardAwareScrollView
+            style={styles.keyboardArea}
             contentContainerStyle={[styles.scrollContent, { paddingTop: headerContentInset + theme.spacing.xl }]}
-            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             showsVerticalScrollIndicator={false}
             onScroll={onScroll}
             scrollEventThrottle={16}
@@ -175,14 +165,14 @@ const BusinessBasicsView = () => {
                   />
                     <VenueTextField
                     label="Teléfono de contacto"
+                    prefix={PERU_PHONE_FORMAT.callingCode}
                     value={contactPhone}
                     onChangeText={(value) => {
-                      setContactPhone(value);
+                      setContactPhone(formatNationalPhone(value, PERU_PHONE_FORMAT));
                       setFieldError(null);
                       setErrorMessage(null);
                     }}
-                    placeholder="999 999 999"
-                    keyboardType="phone-pad"
+                    placeholder="987 654 321"
                     autoComplete="tel"
                     textContentType="telephoneNumber"
                     editable={!submitting}
@@ -214,8 +204,7 @@ const BusinessBasicsView = () => {
                 </>
               )}
             </View>
-          </Animated.ScrollView>
-        </KeyboardAvoidingView>
+        </AppKeyboardAwareScrollView>
       </SafeAreaView>
     </View>
   );

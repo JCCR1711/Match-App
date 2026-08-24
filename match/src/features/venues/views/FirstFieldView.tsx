@@ -1,33 +1,21 @@
+import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
+import AppSection from "@/src/components/ui/AppSection";
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomText from "@/src/components/ui/CustomText";
-import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
-import AppBackground from "@/src/components/ui/AppBackground";
-import VenueCardOption from "@/src/features/venues/components/VenueCardOption";
-import VenueChoicePill from "@/src/features/venues/components/VenueChoicePill";
 import FieldPricingEditor from "@/src/features/venues/components/FieldPricingEditor";
+import VenueChoiceGroup from "@/src/features/venues/components/VenueChoiceGroup";
+import VenuePickerField from "@/src/features/venues/components/VenuePickerField";
 import VenueTextField from "@/src/features/venues/components/VenueTextField";
+import UnsavedChangesSheet from "@/src/features/venues/components/UnsavedChangesSheet";
 import WeeklyScheduleEditor from "@/src/features/venues/components/WeeklyScheduleEditor";
+import useUnsavedChangesGuard from "@/src/features/venues/hooks/useUnsavedChangesGuard";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
-import {
-  BusinessOnboardingDraft,
-  FieldScheduleMode,
-  FieldFormat,
-  WeeklySchedule,
-} from "@/src/features/venues/types/businessOnboarding";
+import type { BusinessOnboardingDraft, FieldFormat, FieldScheduleMode, WeeklySchedule } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
-import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
 import { router, useLocalSearchParams } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-  View,
-} from "react-native";
-import Animated from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useEffect, useRef, useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 const FIELD_FORMATS: { value: FieldFormat; label: string }[] = [
   { value: "5v5", label: "Fútbol 5" },
@@ -35,20 +23,26 @@ const FIELD_FORMATS: { value: FieldFormat; label: string }[] = [
   { value: "11v11", label: "Fútbol 11" },
 ];
 
+const SCHEDULE_MODE_OPTIONS = [
+  { value: "inherit", label: "Horario de sede" },
+  { value: "custom", label: "Personalizado" },
+] as const;
+
+const DEFAULT_SCHEDULE: WeeklySchedule = {
+  weekdays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
+  openingTime: "08:00",
+  closingTime: "23:00",
+};
+
 const FirstFieldView = () => {
   const { venueId } = useLocalSearchParams<{ venueId?: string }>();
   const { accessToken } = useAuth();
-  const { scrollY, onScroll, headerContentInset } = useCollapsibleHeader();
   const [draft, setDraft] = useState<BusinessOnboardingDraft | null>(null);
   const [fieldName, setFieldName] = useState("");
-  const [format, setFormat] = useState<FieldFormat | null>(null);
+  const [format, setFormat] = useState<FieldFormat>("5v5");
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
   const [scheduleMode, setScheduleMode] = useState<FieldScheduleMode>("inherit");
-  const [scheduleOverride, setScheduleOverride] = useState<WeeklySchedule>({
-    weekdays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
-    openingTime: "08:00",
-    closingTime: "23:00",
-  });
+  const [scheduleOverride, setScheduleOverride] = useState<WeeklySchedule>(DEFAULT_SCHEDULE);
   const [hourlyPrice, setHourlyPrice] = useState("");
   const [nightHourlyPrice, setNightHourlyPrice] = useState("");
   const [nightStartsAt, setNightStartsAt] = useState("18:00");
@@ -56,56 +50,37 @@ const FirstFieldView = () => {
   const [submitting, setSubmitting] = useState(false);
   const [fieldNameError, setFieldNameError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const initialVenueId = useRef<string | null>(null);
+  const initialScheduleMode = useRef<FieldScheduleMode>("inherit");
 
   useEffect(() => {
     if (!accessToken) {
       router.replace("/");
       return;
     }
-
     let active = true;
     const loadDraft = async () => {
       try {
-        const currentDraft =
-          await venueOnboardingGateway.getBusinessDraft(accessToken);
-        if (!active) {
-          return;
-        }
-
-        if (!currentDraft?.location) {
+        const currentDraft = await venueOnboardingGateway.getBusinessDraft(accessToken);
+        if (!active) return;
+        if (!currentDraft?.venues.length) {
           router.replace("/(tabs)/dashboard");
           return;
         }
-
         setDraft(currentDraft);
-        const venues = currentDraft.venues;
-        setSelectedVenueId(
-          venues.some((venue) => venue.venueId === venueId)
-            ? venueId ?? null
-            : venues.length === 1
-              ? venues[0].venueId
-              : null,
-        );
+        const initialVenue = currentDraft.venues.find((venue) => venue.venueId === venueId) ?? currentDraft.venues[0];
+        initialVenueId.current = initialVenue.venueId;
+        initialScheduleMode.current = initialVenue.defaultSchedule ? "inherit" : "custom";
+        setSelectedVenueId(initialVenue.venueId);
+        setScheduleMode(initialScheduleMode.current);
       } catch (loadError) {
-        if (active) {
-          setErrorMessage(
-            loadError instanceof Error
-              ? loadError.message
-              : "No pudimos cargar tu sede.",
-          );
-        }
+        if (active) setErrorMessage(loadError instanceof Error ? loadError.message : "No pudimos cargar tus sedes.");
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
-
     void loadDraft();
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [accessToken, venueId]);
 
   const clearError = () => {
@@ -113,296 +88,134 @@ const FirstFieldView = () => {
     setErrorMessage(null);
   };
 
-  const selectedVenue = draft?.venues.find((venue) => venue.venueId === selectedVenueId);
+  const venues = draft?.venues ?? [];
+  const selectedVenue = venues.find((venue) => venue.venueId === selectedVenueId);
+  const customScheduleChanged = scheduleMode === "custom" && (
+    scheduleOverride.openingTime !== DEFAULT_SCHEDULE.openingTime
+    || scheduleOverride.closingTime !== DEFAULT_SCHEDULE.closingTime
+    || scheduleOverride.weekdays.join(",") !== DEFAULT_SCHEDULE.weekdays.join(",")
+  );
+  const hasUnsavedChanges = Boolean(
+    fieldName.trim()
+    || hourlyPrice.trim()
+    || nightHourlyPrice.trim()
+    || format !== "5v5"
+    || selectedVenueId !== initialVenueId.current
+    || scheduleMode !== initialScheduleMode.current
+    || customScheduleChanged
+    || nightStartsAt !== "18:00"
+  );
+  const unsavedChanges = useUnsavedChangesGuard(hasUnsavedChanges && !submitting);
 
-  const handleSave = async () => {
-    const parsedPrice = Number(hourlyPrice.replace(",", "."));
-    const parsedNightPrice = Number(nightHourlyPrice.replace(",", "."));
+  const save = async () => {
+    const dayPrice = Number(hourlyPrice.replace(",", "."));
+    const nightPrice = Number(nightHourlyPrice.replace(",", "."));
     if (fieldName.trim().length < 2) {
       setFieldNameError(true);
       setErrorMessage("Ingresa el nombre de la cancha.");
       return;
     }
-
-    if (!format) {
-      setErrorMessage("Selecciona el formato de juego.");
+    if (!selectedVenueId || !selectedVenue) {
+      setErrorMessage("Selecciona una sede.");
       return;
     }
-    if (
-      scheduleMode === "custom" &&
-      (scheduleOverride.weekdays.length === 0 ||
-        scheduleOverride.openingTime >= scheduleOverride.closingTime)
-    ) {
-      setErrorMessage("Revisa los días y horas de la cancha.");
+    if (scheduleMode === "inherit" && !selectedVenue.defaultSchedule) {
+      setErrorMessage("Esta sede no tiene horario general. Usa un horario personalizado.");
       return;
     }
-    if (scheduleMode === "inherit" && !selectedVenue?.defaultSchedule) {
-      setErrorMessage("Esta sede no tiene horario general. Personaliza el horario de la cancha.");
+    if (scheduleMode === "custom" && (scheduleOverride.weekdays.length === 0 || scheduleOverride.openingTime >= scheduleOverride.closingTime)) {
+      setErrorMessage("Revisa los días y las horas.");
       return;
     }
-    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
-      setErrorMessage("Ingresa un precio válido por hora.");
+    if (!Number.isFinite(dayPrice) || dayPrice <= 0 || !Number.isFinite(nightPrice) || nightPrice <= 0) {
+      setErrorMessage("Revisa las tarifas.");
       return;
     }
-    if (!Number.isFinite(parsedNightPrice) || parsedNightPrice <= 0 || !/^([01]\d|2[0-3]):[0-5]\d$/.test(nightStartsAt)) {
-      setErrorMessage("Revisa la tarifa nocturna y su hora de inicio.");
-      return;
-    }
-
-    if (!selectedVenueId) {
-      setErrorMessage("Selecciona la sede de la cancha.");
-      return;
-    }
-
-    if (!draft || !accessToken) {
-      return;
-    }
+    if (!draft || !accessToken) return;
 
     setSubmitting(true);
     clearError();
-
     try {
-      await venueOnboardingGateway.saveSportsField(
-        accessToken,
-        draft.organizationId,
-        {
-          venueId: selectedVenueId,
-          fieldName: fieldName.trim(),
-          format,
-          status: "active",
-          scheduleMode,
-          scheduleOverride: scheduleMode === "custom" ? scheduleOverride : null,
-          hourlyPrice: parsedPrice,
-          nightHourlyPrice: parsedNightPrice,
-          nightStartsAt,
-          currency: "PEN",
-        },
-      );
-      router.replace("/(tabs)/dashboard");
+      await venueOnboardingGateway.saveSportsField(accessToken, draft.organizationId, {
+        venueId: selectedVenueId,
+        fieldName: fieldName.trim(),
+        format,
+        status: "active",
+        scheduleMode,
+        scheduleOverride: scheduleMode === "custom" ? scheduleOverride : null,
+        hourlyPrice: dayPrice,
+        nightHourlyPrice: nightPrice,
+        nightStartsAt,
+        currency: "PEN",
+      });
+      unsavedChanges.leaveWithoutPrompt(() => router.replace("/(tabs)/dashboard"));
     } catch (saveError) {
-      setErrorMessage(
-        saveError instanceof Error
-          ? saveError.message
-          : "No pudimos guardar la cancha.",
-      );
+      setErrorMessage(saveError instanceof Error ? saveError.message : "No pudimos crear la cancha.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const venues = draft?.venues?.length
-    ? draft.venues
-    : draft?.location
-      ? [draft.location]
-      : [];
+  const scheduleOptions = SCHEDULE_MODE_OPTIONS.map((option) => ({
+    ...option,
+    disabled: option.value === "inherit" && !selectedVenue?.defaultSchedule,
+  }));
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
-      <AppBackground />
-      <AppScreenHeader title="Nueva cancha" onBack={() => router.back()} backAccessibilityLabel="Volver al panel" scrollY={scrollY} />
+    <>
+    <AppScreenLayout
+      title="Nueva cancha"
+      keyboardAware
+      headerTitleAlign="center"
+      headerTitleSize="compact"
+      backgroundVariant="solid"
+      onBack={() => router.back()}
+      backAccessibilityLabel="Volver"
+      footer={!loading && draft ? <CustomButton label={submitting ? "Creando..." : "Crear cancha"} variant="primary" onPress={save} disabled={submitting} style={styles.saveButton} /> : undefined}
+    >
+      {loading ? <CustomText text="Cargando" variant="body" style={styles.muted} /> : !draft ? (
+        <CustomText text={errorMessage ?? "No encontramos tu club."} variant="body" style={styles.muted} />
+      ) : (
+        <View style={styles.content}>
+          {venues.length > 1 ? (
+            <AppSection title="Sede">
+              <VenuePickerField venues={venues} value={selectedVenueId} disabled={submitting} onChange={(nextVenueId) => { const nextVenue = venues.find((venue) => venue.venueId === nextVenueId); setSelectedVenueId(nextVenueId); if (!nextVenue?.defaultSchedule) setScheduleMode("custom"); clearError(); }} />
+            </AppSection>
+          ) : selectedVenue ? <CustomText text={selectedVenue.venueName} variant="caption" style={styles.venueContext} numberOfLines={1} /> : null}
 
-      <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
-        <KeyboardAvoidingView
-          style={styles.keyboardArea}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          <Animated.ScrollView
-            contentContainerStyle={[styles.scrollContent, { paddingTop: headerContentInset + theme.spacing.xl }]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            onScroll={onScroll}
-            scrollEventThrottle={16}
-          >
-            {loading ? (
-              <CustomText
-                text="Preparando la cancha..."
-                variant="body"
-                style={styles.loadingText}
-              />
-            ) : (
-              <View style={styles.content}>
-                <CustomText
-                  text="Configura lo necesario para recibir reservas."
-                  variant="body"
-                  style={styles.description}
-                />
+          <VenueTextField label="Nombre" value={fieldName} onChangeText={(value) => { setFieldName(value); clearError(); }} placeholder="Cancha principal" autoCapitalize="words" editable={!submitting} hasError={fieldNameError} accessibilityLabel="Nombre de la cancha" />
 
-                <View style={styles.form}>
-                  <View style={styles.venueGroup}>
-                    <CustomText text="Sede" variant="body" />
-                    <View style={styles.venues}>
-                      {venues.map((venue) => {
-                        const selected = venue.venueId === selectedVenueId;
-                        return (
-                          <VenueCardOption
-                            key={venue.venueId}
-                            name={venue.venueName}
-                            location={`${venue.district}, ${venue.city}`}
-                            selected={selected}
-                            onPress={() => {
-                              setSelectedVenueId(venue.venueId);
-                              clearError();
-                            }}
-                            disabled={submitting}
-                          />
-                        );
-                      })}
-                    </View>
-                  </View>
+          <View style={styles.controlGroup}>
+            <CustomText text="Formato" variant="body" style={styles.controlLabel} />
+            <VenueChoiceGroup options={FIELD_FORMATS} value={format} disabled={submitting} onChange={(value) => { setFormat(value); clearError(); }} />
+          </View>
 
-                  <VenueTextField
-                    label="Nombre de la cancha"
-                    value={fieldName}
-                    onChangeText={(value) => {
-                      setFieldName(value);
-                      clearError();
-                    }}
-                    placeholder="Ej. Cancha principal"
-                    autoCapitalize="words"
-                    editable={!submitting}
-                    hasError={fieldNameError}
-                    accessibilityLabel="Nombre de la cancha"
-                  />
+          <AppSection title="Horario">
+            <VenueChoiceGroup options={scheduleOptions} value={scheduleMode} disabled={submitting} onChange={(value) => { setScheduleMode(value); clearError(); }} />
+            {scheduleMode === "custom" ? <WeeklyScheduleEditor value={scheduleOverride} onChange={(value) => { setScheduleOverride(value); clearError(); }} disabled={submitting} /> : null}
+          </AppSection>
 
-                  <View style={styles.formatGroup}>
-                    <CustomText text="Formato" variant="body" />
-                    <View style={styles.formats}>
-                      {FIELD_FORMATS.map((option) => {
-                        const selected = option.value === format;
-                        return (
-                          <VenueChoicePill
-                            key={option.value}
-                            label={option.label}
-                            selected={selected}
-                            onPress={() => {
-                              setFormat(option.value);
-                              clearError();
-                            }}
-                            disabled={submitting}
-                          />
-                        );
-                      })}
-                    </View>
-                  </View>
+          <AppSection title="Tarifas">
+            <FieldPricingEditor showTitle={false} dayHourlyPrice={hourlyPrice} nightHourlyPrice={nightHourlyPrice} nightStartsAt={nightStartsAt} disabled={submitting} onChange={(pricing) => { setHourlyPrice(pricing.dayHourlyPrice); setNightHourlyPrice(pricing.nightHourlyPrice); setNightStartsAt(pricing.nightStartsAt); clearError(); }} />
+          </AppSection>
 
-                  <View style={styles.scheduleSection}>
-                    <View style={styles.sectionHeading}>
-                      <CustomText text="Horario" variant="body" style={styles.sectionTitle} />
-                      <CustomText
-                        text={selectedVenue?.defaultSchedule ? "Usa el horario de la sede o personalízalo." : "Esta sede aún no tiene horario general."}
-                        variant="caption"
-                        style={styles.description}
-                      />
-                    </View>
-                    <View style={styles.scheduleModes}>
-                      {(["inherit", "custom"] as const).map((mode) => {
-                        const selected = scheduleMode === mode;
-                        const disabled = mode === "inherit" && !selectedVenue?.defaultSchedule;
-                        return (
-                          <VenueChoicePill
-                            key={mode}
-                            label={mode === "inherit" ? "Usar sede" : "Personalizar"}
-                            selected={selected}
-                            disabled={disabled || submitting}
-                            onPress={() => {
-                              setScheduleMode(mode);
-                              clearError();
-                            }}
-                          />
-                        );
-                      })}
-                    </View>
-                    {scheduleMode === "custom" ? (
-                      <WeeklyScheduleEditor value={scheduleOverride} onChange={setScheduleOverride} disabled={submitting} />
-                    ) : null}
-                  </View>
-
-                  <FieldPricingEditor dayHourlyPrice={hourlyPrice} nightHourlyPrice={nightHourlyPrice} nightStartsAt={nightStartsAt} disabled={submitting} onChange={(pricing) => { setHourlyPrice(pricing.dayHourlyPrice); setNightHourlyPrice(pricing.nightHourlyPrice); setNightStartsAt(pricing.nightStartsAt); clearError(); }} />
-
-                  {errorMessage ? (
-                    <CustomText
-                      text={errorMessage}
-                      variant="caption"
-                      style={styles.errorText}
-                      accessibilityRole="alert"
-                    />
-                  ) : null}
-
-                  <CustomButton
-                    label={submitting ? "Guardando..." : "Guardar cancha"}
-                    variant="primary"
-                    onPress={handleSave}
-                    disabled={submitting}
-                    style={styles.saveButton}
-                    labelStyle={styles.saveButtonLabel}
-                  />
-                </View>
-              </View>
-            )}
-          </Animated.ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </View>
+          {errorMessage ? <CustomText text={errorMessage} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
+        </View>
+      )}
+    </AppScreenLayout>
+    <UnsavedChangesSheet visible={unsavedChanges.confirmationVisible} onKeepEditing={unsavedChanges.keepEditing} onDiscard={unsavedChanges.discardChanges} />
+    </>
   );
 };
 
 export default FirstFieldView;
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.colors.authCanvas,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  keyboardArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.huge,
-  },
-  loadingText: {
-    marginTop: "auto",
-    marginBottom: "auto",
-    color: theme.colors.authTextSecondary,
-    textAlign: "center",
-  },
-  content: {
-    flex: 1,
-    gap: theme.layout.sectionGap,
-  },
-  description: {
-    color: theme.colors.authTextSecondary,
-  },
-  form: {
-    gap: theme.layout.groupGap,
-  },
-  venueGroup: { gap: theme.spacing.md },
-  venues: { gap: theme.spacing.md },
-  formatGroup: {
-    gap: theme.spacing.md,
-  },
-  formats: {
-    flexDirection: "row",
-    gap: theme.spacing.sm,
-  },
-  scheduleSection: { gap: theme.spacing.lg, paddingTop: theme.spacing.sm },
-  sectionHeading: { gap: theme.spacing.xxs },
-  sectionTitle: { color: theme.colors.authText, fontFamily: theme.fontFamilies.poppinsBold },
-  scheduleModes: { flexDirection: "row", gap: theme.spacing.sm },
-  errorText: {
-    color: theme.colors.authTextSecondary,
-    textAlign: "center",
-  },
-  saveButton: {
-    minHeight: 62,
-    borderRadius: theme.radius.pill,
-  },
-  saveButtonLabel: {
-    ...theme.typography.action,
-  },
+  content: { gap: theme.layout.sectionGap },
+  venueContext: { color: theme.colors.authTextSecondary },
+  controlGroup: { gap: theme.spacing.md },
+  controlLabel: { color: theme.colors.white },
+  muted: { color: theme.colors.authTextSecondary, textAlign: "center" },
+  error: { color: theme.colors.errorSoft, textAlign: "center" },
+  saveButton: { minHeight: 56, borderRadius: theme.radius.pill },
 });

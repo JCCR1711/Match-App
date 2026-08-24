@@ -21,7 +21,7 @@ const PlayerProfileView = () => {
     try {
       await logout();
     } finally {
-      router.replace("/auth/onboarding");
+      router.replace("/auth/welcome");
     }
   };
 

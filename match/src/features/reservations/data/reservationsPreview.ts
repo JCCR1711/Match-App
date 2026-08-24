@@ -1,10 +1,26 @@
 import { reservationDates } from "@/src/features/reservations/data/reservationDates";
 import type { AvailabilityBlock, ReservationRecord } from "@/src/features/reservations/types/reservation";
+import { createReservationReferenceCode, getCompactCustomerName } from "@/src/features/reservations/utils/reservationIdentity";
 
-export const RESERVATIONS_PREVIEW_VERSION = 5;
+export const RESERVATIONS_PREVIEW_VERSION = 7;
 export const RESERVATIONS_PREVIEW_DATE_KEY = reservationDates[0].dateKey;
 
-export const reservationsPreview: ReservationRecord[] = [
+const reservationSeeds: Omit<ReservationRecord, "referenceCode" | "customerDisplayName">[] = [
+  {
+    id: "reservation-layout-long-pending",
+    customerId: null,
+    venueId: "arena-san-miguel",
+    venueName: "Complejo Deportivo Arena San Miguel Metropolitana",
+    fieldId: "arena-5",
+    fieldName: "Cancha Panorámica Principal de Césped Sintético",
+    dateKey: reservationDates[0].dateKey,
+    dateLabel: `${reservationDates[0].label}, ${reservationDates[0].detail}`,
+    startTime: "14:00",
+    durationMinutes: 60,
+    customerName: "María Fernanda Rodríguez de la Torre",
+    amount: 145,
+    status: "pending",
+  },
   {
     id: "reservation-1",
     customerId: "mock-player-1",
@@ -96,6 +112,21 @@ export const reservationsPreview: ReservationRecord[] = [
     status: "confirmed",
   },
   {
+    id: "reservation-layout-long-confirmed",
+    customerId: "mock-player-1",
+    venueId: "arena-san-miguel",
+    venueName: "Complejo Deportivo Arena San Miguel Metropolitana",
+    fieldId: "arena-7",
+    fieldName: "Cancha Panorámica Principal de Césped Sintético",
+    dateKey: reservationDates[1].dateKey,
+    dateLabel: `${reservationDates[1].label}, ${reservationDates[1].detail}`,
+    startTime: "16:00",
+    durationMinutes: 90,
+    customerName: "Josue",
+    amount: 185,
+    status: "confirmed",
+  },
+  {
     id: "reservation-5",
     customerId: null,
     venueId: "arena-san-miguel",
@@ -111,6 +142,12 @@ export const reservationsPreview: ReservationRecord[] = [
     status: "pending",
   },
 ];
+
+export const reservationsPreview: ReservationRecord[] = reservationSeeds.map((reservation) => ({
+  ...reservation,
+  referenceCode: createReservationReferenceCode(reservation.id),
+  customerDisplayName: getCompactCustomerName(reservation.customerName),
+}));
 
 export const availabilityBlocksPreview: AvailabilityBlock[] = [
   {

@@ -1,5 +1,6 @@
 import AuthButton from "@/src/features/auth/components/AuthButton";
 import CustomText from "@/src/components/ui/CustomText";
+import AppKeyboardAwareScrollView from "@/src/components/ui/AppKeyboardAwareScrollView";
 import AuthBackButton from "@/src/features/auth/components/AuthBackButton";
 import AuthFlowBackground from "@/src/features/auth/components/AuthFlowBackground";
 import AuthTextField from "@/src/features/auth/components/AuthTextField";
@@ -10,9 +11,6 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -65,13 +63,9 @@ const CompleteProfileView = () => {
           <AuthBackButton accessibilityLabel="Volver a verificar correo" />
         </View>
 
-        <KeyboardAvoidingView
-          style={styles.keyboardArea}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          <ScrollView
+        <AppKeyboardAwareScrollView
+            style={styles.keyboardArea}
             contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.content}>
@@ -139,8 +133,7 @@ const CompleteProfileView = () => {
                 />
               )}
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+        </AppKeyboardAwareScrollView>
       </SafeAreaView>
     </View>
   );

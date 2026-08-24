@@ -19,7 +19,7 @@ const ReservationSheetDetails = ({ items, align = "start", divided = true }: Res
     {items.map((item, index) => (
       <View key={item.label} style={[styles.item, index % 2 === 1 && styles.trailingItem, align === "center" && styles.centeredItem]}>
         <CustomText text={item.label} variant="caption" style={styles.label} />
-        <CustomText text={item.value} variant="bodyStrong" style={[styles.value, index % 2 === 1 && styles.trailingText, align === "center" && styles.centeredText]} numberOfLines={2} />
+        <CustomText text={item.value} variant="bodyStrong" style={[styles.value, index % 2 === 1 && styles.trailingText, align === "center" && styles.centeredText]} />
       </View>
     ))}
   </View>
