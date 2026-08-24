@@ -6,6 +6,8 @@ import FieldManagementCard from "@/src/features/venues/components/FieldManagemen
 import ResourceActionsMenu from "@/src/features/venues/components/ResourceActionsMenu";
 import ResourceDeleteConfirmSheet from "@/src/features/venues/components/ResourceDeleteConfirmSheet";
 import AppBackground from "@/src/components/ui/AppBackground";
+import { useReservations } from "@/src/features/reservations/hooks/useReservations";
+import { hasFieldScheduleDependencies } from "@/src/features/reservations/utils/hasFieldScheduleDependencies";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import type { ResourceStatus, SportsFieldDraft } from "@/src/features/venues/types/businessOnboarding";
@@ -24,6 +26,7 @@ const VenueDetailView = () => {
   const { venueId } = useLocalSearchParams<{ venueId: string }>();
   const { accessToken } = useAuth();
   const { draft, loading, error, reload } = useBusinessDraft();
+  const { reservations, blocks } = useReservations();
   const { scrollY, onScroll, headerContentInset } = useCollapsibleHeader();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -50,6 +53,11 @@ const VenueDetailView = () => {
   const confirmDeleteVenue = () => {
     if (!venue) return;
     setVenueMenuVisible(false);
+    if (hasFieldScheduleDependencies(fields.map((field) => field.fieldId), reservations, blocks)) {
+      setActionError("No puedes eliminar una sede con reservas o bloqueos activos.");
+      return;
+    }
+    setActionError(null);
     setDeleteVisible(true);
   };
 

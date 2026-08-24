@@ -12,29 +12,48 @@ import { useReservations } from "@/src/features/reservations/hooks/useReservatio
 import { reservationsStore } from "@/src/features/reservations/services/MockReservationsStore";
 import type { ReservationRecord } from "@/src/features/reservations/types/reservation";
 import { isActiveReservation } from "@/src/features/reservations/utils/isActiveReservation";
+import { parseBusinessAgendaParams } from "@/src/features/reservations/utils/businessAgendaRoute";
+import { createBusinessReservationHref } from "@/src/features/reservations/utils/businessReservationCreateRoute";
+import { getTimeRangeDuration } from "@/src/features/reservations/utils/reservationTime";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
+import { getEffectiveFieldSchedule } from "@/src/features/venues/utils/getEffectiveFieldSchedule";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-
-const getRouteParam = (param: string | string[] | undefined) => Array.isArray(param) ? param[0] : param;
+import { useWindowDimensions } from "react-native";
 
 const BusinessReservationsView = () => {
-  const routeParams = useLocalSearchParams<{ reservationId?: string | string[]; dateKey?: string | string[]; fieldId?: string | string[] }>();
-  const initialDateKey = getRouteParam(routeParams.dateKey) ?? reservationDates[0].dateKey;
-  const initialFieldId = getRouteParam(routeParams.fieldId) ?? null;
+  const routeParams = parseBusinessAgendaParams(useLocalSearchParams<{
+    focusReservationId?: string | string[];
+    dateKey?: string | string[];
+    fieldId?: string | string[];
+    focusStartTime?: string | string[];
+  }>());
+  const {
+    focusReservationId: routeFocusReservationId,
+    dateKey: routeDateKey,
+    fieldId: routeFieldId,
+    focusStartTime: routeFocusStartTime,
+  } = routeParams;
+  const initialDateKey = routeDateKey ?? reservationDates[0].dateKey;
+  const initialFieldId = routeFieldId ?? null;
   const { reservations, blocks } = useReservations();
+  const { height: windowHeight } = useWindowDimensions();
   const { draft } = useBusinessDraft({ redirectWhenMissing: false });
   const fields = useMemo(
     () => {
-      const configuredFields = (draft?.fields ?? []).map((field) => ({
-        id: field.fieldId,
-        name: field.fieldName,
-        venueId: field.venueId,
-        openingTime: field.availability?.openingTime,
-        closingTime: field.availability?.closingTime,
-        hourlyPrice: field.hourlyPrice,
-        venueName: draft?.venues.find((venue) => venue.venueId === field.venueId)?.venueName,
-      }));
+      const configuredFields = (draft?.fields ?? []).map((field) => {
+        const venue = draft?.venues.find((item) => item.venueId === field.venueId);
+        const schedule = getEffectiveFieldSchedule(field, venue);
+        return {
+          id: field.fieldId,
+          name: field.fieldName,
+          venueId: field.venueId,
+          openingTime: schedule?.openingTime,
+          closingTime: schedule?.closingTime,
+          hourlyPrice: field.hourlyPrice,
+          venueName: venue?.venueName,
+        };
+      });
       const knownIds = new Set(configuredFields.map((field) => field.id));
       const prototypeFields = Array.from(new Map([...reservations, ...blocks].map((item) => [item.fieldId, item])).values())
         .filter((item) => !knownIds.has(item.fieldId))
@@ -48,9 +67,17 @@ const BusinessReservationsView = () => {
   const [selectedReservation, setSelectedReservation] =
     useState<ReservationRecord | null>(null);
   const [focusedReservationId, setFocusedReservationId] = useState<string | null>(null);
+  const [focusedAvailableStartTime, setFocusedAvailableStartTime] = useState<string | null>(null);
   const [availabilityAction, setAvailabilityAction] =
     useState<AvailabilityAction | null>(null);
-  const defaultFieldId = fields.find((field) => reservations.some((reservation) => reservation.fieldId === field.id && reservation.status !== "canceled"))?.id ?? fields[0]?.id ?? null;
+  const [scrollToY, setScrollToY] = useState<number | null>(null);
+  const [scrollRequestKey, setScrollRequestKey] = useState(0);
+  const [focusRequestKey, setFocusRequestKey] = useState(0);
+  const defaultFieldId = fields.find((field) => reservations.some((reservation) =>
+    reservation.fieldId === field.id &&
+    reservation.dateKey === selectedDateKey &&
+    reservation.status !== "canceled"
+  ))?.id ?? fields[0]?.id ?? null;
   const activeFieldId = selectedFieldId ?? defaultFieldId;
   const activeField = fields.find((field) => field.id === activeFieldId);
   const activityCounts = useMemo(
@@ -80,18 +107,24 @@ const BusinessReservationsView = () => {
   const selectedDateLabel = formatSelectedDate(selectedDateKey);
 
   useEffect(() => {
-    const reservationId = getRouteParam(routeParams.reservationId);
-    if (!reservationId) return;
+    const focusReservationId = routeFocusReservationId;
+    const requestedDateKey = routeDateKey;
+    const requestedFieldId = routeFieldId;
 
-    const reservation = reservations.find((item) => item.id === reservationId);
-    if (!reservation) return;
-
-    setSelectedDateKey(getRouteParam(routeParams.dateKey) ?? reservation.dateKey);
-    setSelectedFieldId(getRouteParam(routeParams.fieldId) ?? reservation.fieldId);
-    setFocusedReservationId(reservation.id);
-    setSelectedReservation(reservation);
-    router.setParams({ reservationId: undefined });
-  }, [reservations, routeParams.dateKey, routeParams.fieldId, routeParams.reservationId]);
+    if (!requestedDateKey && !requestedFieldId && !routeFocusStartTime && !focusReservationId) return;
+    const focusedReservation = focusReservationId
+      ? reservations.find((item) => item.id === focusReservationId)
+      : null;
+    if (requestedDateKey || focusedReservation) setSelectedDateKey(requestedDateKey ?? focusedReservation!.dateKey);
+    if (requestedFieldId || focusedReservation) setSelectedFieldId(requestedFieldId ?? focusedReservation!.fieldId);
+    setFocusedReservationId(focusedReservation?.id ?? null);
+    setSelectedReservation(null);
+    setFocusedAvailableStartTime(routeFocusStartTime ?? null);
+    if (focusedReservation || routeFocusStartTime) {
+      setFocusRequestKey((current) => current + 1);
+    }
+    router.setParams({ dateKey: undefined, fieldId: undefined, focusStartTime: undefined, focusReservationId: undefined });
+  }, [reservations, routeDateKey, routeFieldId, routeFocusReservationId, routeFocusStartTime]);
 
   return (
     <>
@@ -99,14 +132,18 @@ const BusinessReservationsView = () => {
         title="Reservas"
         backgroundVariant="dashboard"
         hasTabBar
+        scrollToY={scrollToY}
+        scrollRequestKey={scrollRequestKey}
       >
         <BusinessFieldSelector fields={fields} selectedFieldId={activeFieldId} onSelectField={(fieldId) => {
           setFocusedReservationId(null);
+          setFocusedAvailableStartTime(null);
           setSelectedFieldId(fieldId);
         }} />
 
         <BusinessReservationCalendar selectedDateKey={selectedDateKey} activityCounts={activityCounts} onSelectDate={(dateKey) => {
           setFocusedReservationId(null);
+          setFocusedAvailableStartTime(null);
           setSelectedDateKey(dateKey);
         }} />
 
@@ -118,16 +155,27 @@ const BusinessReservationsView = () => {
           openingTime={openingTime}
           closingTime={closingTime}
           focusedReservationId={focusedReservationId}
+          focusedAvailableStartTime={focusedAvailableStartTime}
+          focusRequestKey={focusRequestKey}
+          onFocusedItemLayout={({ y, height }) => {
+            setScrollToY(Math.max(0, y - windowHeight * 0.5 + height * 0.5));
+            setScrollRequestKey((current) => current + 1);
+          }}
           onPressReservation={(reservation) => {
-            setFocusedReservationId(reservation.id);
+            setFocusedReservationId(null);
+            setFocusedAvailableStartTime(null);
             setSelectedReservation(reservation);
           }}
-          onPressAvailable={(slot) =>
-            setAvailabilityAction({ kind: "available", ...slot })
-          }
-          onPressBlock={(block) =>
-            setAvailabilityAction({ kind: "blocked", block })
-          }
+          onPressAvailable={(slot) => {
+            setFocusedReservationId(null);
+            setFocusedAvailableStartTime(null);
+            setAvailabilityAction({ kind: "available", ...slot });
+          }}
+          onPressBlock={(block) => {
+            setFocusedReservationId(null);
+            setFocusedAvailableStartTime(null);
+            setAvailabilityAction({ kind: "blocked", block });
+          }}
         />
       </AppScreenLayout>
 
@@ -151,9 +199,7 @@ const BusinessReservationsView = () => {
         onCreateReservation={(startTime, endTime) => {
           if (!activeField) return;
           setAvailabilityAction(null);
-          router.push({
-            pathname: "/business/reservations/new",
-            params: {
+          router.push(createBusinessReservationHref({
               venueId: activeField.venueId,
               venueName: activeField.venueName ?? "Club",
               fieldId: activeField.id,
@@ -163,26 +209,29 @@ const BusinessReservationsView = () => {
               startTime,
               endTime,
               hourlyPrice: String(activeField.hourlyPrice),
-            },
-          });
+          }));
         }}
-        onBlock={(startTime, kind) => {
-          if (!activeField) return;
-          reservationsStore.createBlock({
+        onBlock={(startTime, endTime, kind) => {
+          const durationMinutes = getTimeRangeDuration(startTime, endTime);
+          if (!activeField || durationMinutes === null) return false;
+          const block = reservationsStore.createBlock({
             venueId: activeField.venueId,
             fieldId: activeField.id,
             fieldName: activeField.name,
             dateKey: selectedDateKey,
             startTime,
-            durationMinutes: 60,
+            durationMinutes,
             label: kind === "maintenance" ? "Mantenimiento" : "Horario bloqueado",
             kind,
           });
+          if (!block) return false;
           setAvailabilityAction(null);
+          return true;
         }}
         onRelease={(blockId) => {
-          reservationsStore.deleteBlock(blockId);
+          if (!reservationsStore.deleteBlock(blockId)) return false;
           setAvailabilityAction(null);
+          return true;
         }}
       />
     </>

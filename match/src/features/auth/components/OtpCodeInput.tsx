@@ -52,10 +52,11 @@ const OtpCodeInput = ({
         autoComplete="one-time-code"
         maxLength={CODE_LENGTH}
         autoFocus
-        editable
+        editable={!disabled}
         caretHidden
         style={styles.hiddenInput}
         accessibilityLabel="Código de verificación de seis dígitos"
+        accessibilityState={{ disabled }}
       />
       <View pointerEvents="none" style={styles.digits}>
         {digits.map((digit, index) => (
@@ -68,12 +69,7 @@ const OtpCodeInput = ({
               hasError && styles.errorDigitCell,
             ]}
           >
-            <Text
-              style={[
-                styles.digit,
-                isValid && styles.validDigit,
-              ]}
-            >
+            <Text style={styles.digit}>
               {digit ?? ""}
             </Text>
           </View>
@@ -109,26 +105,22 @@ const styles = StyleSheet.create({
     borderCurve: "continuous",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: theme.colors.surfaceOnDarkSubtle,
     borderWidth: 1,
     borderColor: "transparent",
   },
   activeDigitCell: {
-    borderColor: "rgba(255, 255, 255, 0.52)",
+    borderColor: theme.colors.white,
   },
   errorDigitCell: {
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    borderColor: theme.colors.error,
+    backgroundColor: theme.colors.errorSurface,
   },
   validDigitCell: {
-    borderColor: theme.colors.accent,
-    backgroundColor: theme.colors.accent,
+    borderColor: theme.colors.controlBorderOnDark,
   },
   digit: {
     color: theme.colors.authText,
     ...theme.typography.codeDigit,
-  },
-  validDigit: {
-    color: theme.colors.black,
   },
 });

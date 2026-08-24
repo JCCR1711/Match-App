@@ -12,6 +12,7 @@ import {
 } from "@/src/features/reservations/data/reservationsPreview";
 import { isSlotUnavailable } from "@/src/features/reservations/utils/isSlotUnavailable";
 import { createReservationReferenceCode, getCompactCustomerName } from "@/src/features/reservations/utils/reservationIdentity";
+import { parseTimeToMinutes } from "@/src/features/reservations/utils/reservationTime";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STORAGE_KEY = "match:reservations:v1";
@@ -40,6 +41,12 @@ interface PersistedReservationsState {
 
 let hydrated = false;
 let hydrationPromise: Promise<void> | null = null;
+let version = 0;
+
+const emitChange = () => {
+  version += 1;
+  emit();
+};
 
 const persist = () => {
   const state: PersistedReservationsState = { previewVersion: RESERVATIONS_PREVIEW_VERSION, previewDateKey: RESERVATIONS_PREVIEW_DATE_KEY, reservations, blocks };
@@ -90,7 +97,7 @@ export class MockReservationsStore {
       })
       .finally(() => {
         hydrated = true;
-        emit();
+        emitChange();
       });
 
     return hydrationPromise;
@@ -104,6 +111,10 @@ export class MockReservationsStore {
     return [...blocks];
   }
 
+  getVersion() {
+    return version;
+  }
+
   subscribe(listener: Listener) {
     listeners.add(listener);
     return () => {
@@ -112,7 +123,16 @@ export class MockReservationsStore {
   }
 
   createReservation(input: ReservationCreateInput) {
-    if (this.isTimeRangeUnavailable(input.fieldId, input.dateKey, input.startTime, input.durationMinutes)) {
+    if (
+      !input.fieldId ||
+      !input.dateKey ||
+      parseTimeToMinutes(input.startTime) === null ||
+      !Number.isFinite(input.durationMinutes) ||
+      input.durationMinutes <= 0 ||
+      !Number.isFinite(input.amount) ||
+      input.amount < 0 ||
+      this.isTimeRangeUnavailable(input.fieldId, input.dateKey, input.startTime, input.durationMinutes)
+    ) {
       return null;
     }
 
@@ -125,12 +145,19 @@ export class MockReservationsStore {
     };
     reservations.unshift(reservation);
     persist();
-    emit();
+    emitChange();
     return reservation;
   }
 
   createBlock(input: AvailabilityBlockCreateInput) {
-    if (this.isTimeRangeUnavailable(input.fieldId, input.dateKey, input.startTime, input.durationMinutes)) {
+    if (
+      !input.fieldId ||
+      !input.dateKey ||
+      parseTimeToMinutes(input.startTime) === null ||
+      !Number.isFinite(input.durationMinutes) ||
+      input.durationMinutes <= 0 ||
+      this.isTimeRangeUnavailable(input.fieldId, input.dateKey, input.startTime, input.durationMinutes)
+    ) {
       return null;
     }
 
@@ -140,7 +167,7 @@ export class MockReservationsStore {
     };
     blocks.unshift(block);
     persist();
-    emit();
+    emitChange();
     return block;
   }
 
@@ -150,7 +177,7 @@ export class MockReservationsStore {
 
     blocks.splice(blockIndex, 1);
     persist();
-    emit();
+    emitChange();
     return true;
   }
 
@@ -160,7 +187,7 @@ export class MockReservationsStore {
 
     reservation.status = "confirmed";
     persist();
-    emit();
+    emitChange();
     return reservation;
   }
 
@@ -170,7 +197,7 @@ export class MockReservationsStore {
 
     reservation.status = "canceled";
     persist();
-    emit();
+    emitChange();
     return reservation;
   }
 

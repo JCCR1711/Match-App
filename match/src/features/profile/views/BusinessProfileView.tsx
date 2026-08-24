@@ -1,15 +1,18 @@
 import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
+import CustomText from "@/src/components/ui/CustomText";
 import { getStableSportsAvatarId } from "@/src/components/ui/SportsAvatar";
 import ProfileIdentityHero from "@/src/features/profile/components/ProfileIdentityHero";
 import ProfileActionSection, { type ProfileActionItem } from "@/src/features/profile/components/ProfileActionSection";
 import ProfileInformationSection, { type ProfileInformationItem } from "@/src/features/profile/components/ProfileInformationSection";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { useAuth } from "@/src/hooks/useAuth";
-import { Building03Icon, FootballIcon, LegalDocument01Icon, Logout01Icon, Mail01Icon, MapsLocation01Icon, Settings02Icon, UserIcon, UserShield01Icon } from "@hugeicons/core-free-icons";
+import { ArrowDataTransferHorizontalIcon, Building03Icon, FootballIcon, LegalDocument01Icon, Logout01Icon, Mail01Icon, MapsLocation01Icon, Settings02Icon, UserIcon } from "@hugeicons/core-free-icons";
 import { router } from "expo-router";
+import { theme } from "@/src/theme";
+import { StyleSheet } from "react-native";
 
 const BusinessProfileView = () => {
-  const { user, logout, status } = useAuth();
+  const { user, error, logout, selectUserMode, status } = useAuth();
   const profileSeed = user?.id || user?.displayName || "business-owner";
   const selectedAvatarId = user?.avatarId ?? getStableSportsAvatarId(profileSeed);
   const { draft } = useBusinessDraft();
@@ -18,7 +21,6 @@ const BusinessProfileView = () => {
   const experiences = user?.availableModes.includes("player") ? "Jugador y negocio" : "Negocio";
   const accountInformation: ProfileInformationItem[] = [
     { key: "email", icon: Mail01Icon, label: "Correo", value: user?.email ?? "Sin correo" },
-    { key: "role", icon: UserShield01Icon, label: "Modo actual", value: "Administrador de club" },
     { key: "experiences", icon: Settings02Icon, label: "Experiencias", value: experiences },
   ];
   const businessInformation: ProfileInformationItem[] = [
@@ -38,6 +40,17 @@ const BusinessProfileView = () => {
   const navigationActions: ProfileActionItem[] = [
     { key: "avatar", icon: UserIcon, label: "Cambiar avatar", onPress: () => router.push("/profile/avatar") },
     { key: "venues", icon: Building03Icon, label: "Gestionar sedes", onPress: () => router.navigate("/(tabs)/business-fields") },
+    ...(user?.availableModes.includes("player") ? [{
+      key: "player-mode",
+      icon: ArrowDataTransferHorizontalIcon,
+      label: status === "selectingMode" ? "Cambiando experiencia..." : "Cambiar a jugador",
+      disabled: status === "selectingMode",
+      onPress: () => {
+        void selectUserMode("player").then((selected) => {
+          if (selected) router.replace("/(tabs)");
+        });
+      },
+    }] : []),
     { key: "legal", icon: LegalDocument01Icon, label: "Términos y privacidad", onPress: () => router.push("/legal/terms-and-privacy") },
   ];
   const sessionActions: ProfileActionItem[] = [
@@ -61,11 +74,12 @@ const BusinessProfileView = () => {
         seed={profileSeed}
         avatarId={selectedAvatarId}
         displayName={user?.displayName ?? "Administrador"}
-        email={user?.email ?? ""}
+        username={user?.username ?? "administrador"}
         modeLabel="Negocio"
       />
       <ProfileInformationSection title="Cuenta" items={accountInformation} />
       <ProfileInformationSection title="Negocio" items={businessInformation} />
+      {error ? <CustomText text={error} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
       <ProfileActionSection title="Administración" items={navigationActions} />
       <ProfileActionSection title="Sesión" items={sessionActions} />
     </AppScreenLayout>
@@ -73,3 +87,7 @@ const BusinessProfileView = () => {
 };
 
 export default BusinessProfileView;
+
+const styles = StyleSheet.create({
+  error: { color: theme.colors.errorSoft },
+});

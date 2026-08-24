@@ -6,7 +6,7 @@ import { StyleSheet, View } from "react-native";
 
 const FinanceMetricGrid = ({ overview }: { overview: PaymentOverview }) => (
   <View style={styles.summary}>
-    <Metric label="Cobrado" value={formatSoles(overview.collectedThisMonth)} />
+    <Metric label="Cobrado" value={formatSoles(overview.grossCollectedThisMonth)} />
     <View style={styles.divider} />
     <Metric label="Comisiones" value={formatSoles(overview.feesThisMonth)} />
   </View>

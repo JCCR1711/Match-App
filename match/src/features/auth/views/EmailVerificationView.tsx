@@ -1,16 +1,14 @@
+import AppFormIntro from "@/src/components/ui/AppFormIntro";
+import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
 import AuthButton from "@/src/features/auth/components/AuthButton";
-import AppKeyboardAwareScrollView from "@/src/components/ui/AppKeyboardAwareScrollView";
 import CustomText from "@/src/components/ui/CustomText";
-import AuthBackButton from "@/src/features/auth/components/AuthBackButton";
-import AuthFlowBackground from "@/src/features/auth/components/AuthFlowBackground";
 import OtpCodeInput from "@/src/features/auth/components/OtpCodeInput";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
+import { backOrReplace } from "@/src/utils/routerNavigation";
 import { router } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
 
 const EmailVerificationView = () => {
   const {
@@ -94,31 +92,22 @@ const EmailVerificationView = () => {
   const countdown = `00:${secondsRemaining.toString().padStart(2, "0")}`;
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
-      <AuthFlowBackground flowVariant="verification" />
-
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-        <View style={styles.header}>
-          <AuthBackButton accessibilityLabel="Cambiar correo" />
-        </View>
-
-        <AppKeyboardAwareScrollView
-            style={styles.keyboardArea}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.content}>
-            <View style={styles.message}>
-              <Text style={styles.title}>Tu código</Text>
-              <CustomText
-                text={`Enviado a ${userEmail}`}
-                variant="body"
-                style={styles.description}
-              />
-            </View>
-
-            <View style={styles.verification}>
+    <AppScreenLayout
+      title=""
+      headerTitleAlign="center"
+      headerTitleSize="compact"
+      backgroundVariant="solid"
+      keyboardAware
+      onBack={() => backOrReplace("/auth/email")}
+      backAccessibilityLabel="Cambiar correo"
+    >
+      <View style={styles.content}>
+        <AppFormIntro
+          title="Revisa tu"
+          accentText="correo"
+          description={`Enviado a ${userEmail}`}
+        />
+        <View style={styles.verification}>
               <OtpCodeInput
                 value={code}
                 onChange={handleCodeChange}
@@ -156,57 +145,22 @@ const EmailVerificationView = () => {
                 labelStyle={styles.resendLabel}
                 accessibilityLabel="Reenviar código de acceso"
               />
-            </View>
-            </View>
-        </AppKeyboardAwareScrollView>
-      </SafeAreaView>
-    </View>
+        </View>
+      </View>
+    </AppScreenLayout>
   );
 };
 
 export default EmailVerificationView;
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.colors.authCanvas,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  keyboardArea: { flex: 1 },
-  header: {
-    minHeight: 56,
-    paddingHorizontal: theme.spacing.lg,
-    justifyContent: "center",
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl,
-  },
-  content: {
-    flex: 1,
-    paddingTop: theme.spacing.xl,
-    gap: 72,
-  },
-  message: {
-    gap: theme.spacing.sm,
-  },
-  title: {
-    color: theme.colors.authText,
-    ...theme.typography.screenTitle,
-  },
-  description: {
-    maxWidth: 330,
-    color: theme.colors.authTextSecondary,
-  },
+  content: { gap: theme.layout.sectionGap },
   verification: {
     alignItems: "center",
     gap: theme.spacing.md,
   },
   errorText: {
-    color: theme.colors.authTextSecondary,
+    color: theme.colors.errorSoft,
     textAlign: "center",
   },
   statusText: {

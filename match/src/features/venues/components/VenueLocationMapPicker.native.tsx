@@ -1,6 +1,7 @@
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
+import type { VenueLocationMapPickerProps } from "@/src/features/venues/components/VenueLocationMapPicker.types";
 import MatchMapPin from "@/src/features/venues/components/MatchMapPin";
 import { resolveVenueCoordinates, searchVenueLocation, searchVenueLocations, type DetectedVenueLocation } from "@/src/features/venues/services/detectVenueLocation";
 import type { VenueCoordinates } from "@/src/features/venues/types/businessOnboarding";
@@ -28,15 +29,6 @@ const MATCH_MAP_STYLE: MapStyleElement[] = [
   { featureType: "road.highway", elementType: "geometry", stylers: [{ color: theme.colors.surface }] },
   { featureType: "water", elementType: "geometry", stylers: [{ color: theme.colors.reservedSurface }] },
 ];
-
-interface VenueLocationMapPickerProps {
-  coordinates: VenueCoordinates | null;
-  address: string;
-  district: string;
-  city: string;
-  disabled?: boolean;
-  onSelect: (location: DetectedVenueLocation) => void;
-}
 
 const MatchLocationMarker = () => (
   <View style={styles.markerGlyph}>
@@ -260,7 +252,7 @@ const VenueLocationMapPicker = ({ coordinates, address, district, city, disabled
           {searchResults.length > 0 ? (
             <View style={[styles.searchResults, { top: insets.top + 132 }]}>
               {searchResults.map((result) => (
-                <Pressable key={`${result.coordinates.latitude}-${result.coordinates.longitude}`} onPress={() => selectSearchResult(result)} accessibilityRole="button" style={({ pressed }) => [styles.searchResult, pressed && styles.pressed]}>
+                <Pressable key={`${result.coordinates.latitude}-${result.coordinates.longitude}`} onPress={() => selectSearchResult(result)} accessibilityRole="button" accessibilityLabel={`Seleccionar ${[result.address, result.district, result.city].filter(Boolean).join(", ")}`} style={({ pressed }) => [styles.searchResult, pressed && styles.pressed]}>
                   <CustomIcon icon={PinLocation03Icon} color={theme.colors.authTextSecondary} size={22} strokeWidth={2.5} />
                   <View style={styles.resultCopy}>
                     <CustomText text={result.address || "Ubicación encontrada"} variant="bodyStrong" style={styles.resultTitle} numberOfLines={1} />

@@ -213,7 +213,7 @@ export function AuthProvider({
     }
   };
 
-  const completeSignUp = async (displayName: string) => {
+  const completeSignUp = async (displayName: string, username: string) => {
     if (!pendingSignUp) {
       setError("La verificación expiró. Solicita un código nuevo.");
       return false;
@@ -227,6 +227,7 @@ export function AuthProvider({
         pendingSignUp.enrollmentToken,
         {
           displayName: displayName.trim(),
+          username: username.trim().toLowerCase(),
           acceptedTermsVersion: pendingSignUp.termsVersion,
         },
       );

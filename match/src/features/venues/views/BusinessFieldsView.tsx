@@ -10,6 +10,8 @@ import VenueCreateMenu from "@/src/features/venues/components/VenueCreateMenu";
 import VenueSelectorItem from "@/src/features/venues/components/VenueSelectorItem";
 import VenueSpotlight from "@/src/features/venues/components/VenueSpotlight";
 import { getVenueVisual, type VenueVisual } from "@/src/features/venues/data/venueVisuals";
+import { useReservations } from "@/src/features/reservations/hooks/useReservations";
+import { hasFieldScheduleDependencies } from "@/src/features/reservations/utils/hasFieldScheduleDependencies";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import type { SportsFieldDraft, VenueLocation } from "@/src/features/venues/types/businessOnboarding";
@@ -32,6 +34,7 @@ const BusinessFieldsView = () => {
   const { accessToken } = useAuth();
   const { height: viewportHeight } = useWindowDimensions();
   const { draft, loading, error, reload } = useBusinessDraft();
+  const { reservations, blocks } = useReservations();
   const [createMenuVisible, setCreateMenuVisible] = useState(false);
   const [deletingVenueId, setDeletingVenueId] = useState<string | null>(null);
   const [selectedVenue, setSelectedVenue] = useState<VenueLocation | null>(null);
@@ -65,8 +68,16 @@ const BusinessFieldsView = () => {
 
   const confirmDelete = useCallback((venue: VenueLocation) => {
     setSelectedVenue(null);
+    const venueFieldIds = fields
+      .filter((field) => field.venueId === venue.venueId)
+      .map((field) => field.fieldId);
+    if (hasFieldScheduleDependencies(venueFieldIds, reservations, blocks)) {
+      setActionError("No puedes eliminar una sede con reservas o bloqueos activos.");
+      return;
+    }
+    setActionError(null);
     setVenueToDelete(venue);
-  }, []);
+  }, [blocks, fields, reservations]);
 
   const toggleVenueStatus = async () => {
     if (!accessToken || !draft || !selectedVenue) return;

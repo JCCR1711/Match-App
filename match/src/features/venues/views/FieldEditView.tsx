@@ -15,9 +15,10 @@ import type {
 } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { backOrReplace } from "@/src/utils/routerNavigation";
 
 const formats: { value: FieldFormat; label: string }[] = [
   { value: "5v5", label: "Fútbol 5" },
@@ -47,6 +48,7 @@ const FieldEditView = () => {
     || nightStartsAt !== (field.nightStartsAt ?? "18:00")
   ));
   const unsavedChanges = useUnsavedChangesGuard(hasUnsavedChanges && !saving);
+  const returnToField = () => backOrReplace({ pathname: "/business/fields/[fieldId]", params: { fieldId } });
 
   useEffect(() => {
     if (!field) return;
@@ -96,7 +98,7 @@ const FieldEditView = () => {
           nightStartsAt,
         },
       );
-      unsavedChanges.leaveWithoutPrompt(() => router.back());
+      unsavedChanges.leaveWithoutPrompt(returnToField);
     } catch (saveError) {
       setMessage(
         saveError instanceof Error
@@ -116,8 +118,9 @@ const FieldEditView = () => {
       headerTitleSize="compact"
       backgroundVariant="solid"
       keyboardAware
-      onBack={() => router.back()}
+      onBack={returnToField}
       backAccessibilityLabel="Volver a detalles de cancha"
+      backIconVariant="dismiss"
       footer={field ? (
         <CustomButton
           label={saving ? "Guardando..." : "Guardar cambios"}

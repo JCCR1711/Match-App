@@ -1,8 +1,8 @@
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import { theme } from "@/src/theme";
+import { backOrReplace } from "@/src/utils/routerNavigation";
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
-import { router } from "expo-router";
 import { StyleSheet } from "react-native";
 
 interface AuthBackButtonProps {
@@ -16,7 +16,7 @@ const AuthBackButton = ({
     icon={<CustomIcon icon={ArrowLeft01Icon} color={theme.colors.authText} size={24} />}
     size="icon"
     variant="inverse"
-    onPress={() => router.back()}
+    onPress={() => backOrReplace("/auth/onboarding")}
     style={styles.button}
     accessibilityLabel={accessibilityLabel}
   />

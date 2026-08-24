@@ -11,6 +11,8 @@ import ScheduleStatusLabel from "@/src/features/reservations/components/Schedule
 import { reservationCustomers } from "@/src/features/reservations/data/reservationCustomers";
 import { reservationsStore } from "@/src/features/reservations/services/MockReservationsStore";
 import type { ReservationCreateStatus, ReservationCustomer } from "@/src/features/reservations/types/reservation";
+import { parseBusinessReservationCreateParams } from "@/src/features/reservations/utils/businessReservationCreateRoute";
+import { getTimeRangeDuration } from "@/src/features/reservations/utils/reservationTime";
 import { theme } from "@/src/theme";
 import { formatMoneyAmount } from "@/src/utils/formatMoney";
 import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
@@ -20,40 +22,37 @@ import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type RouteParams = {
-  venueId?: string;
-  venueName?: string;
-  fieldId?: string;
-  fieldName?: string;
-  dateKey?: string;
-  dateLabel?: string;
-  startTime?: string;
-  endTime?: string;
-  hourlyPrice?: string;
-};
-
-const toMinutes = (time: string) => {
-  const [hour = 0, minute = 0] = time.split(":").map(Number);
-  return hour * 60 + minute;
-};
-
 const BusinessReservationCreateView = () => {
-  const params = useLocalSearchParams<RouteParams>();
+  const params = parseBusinessReservationCreateParams(useLocalSearchParams<{
+    venueId?: string | string[];
+    venueName?: string | string[];
+    fieldId?: string | string[];
+    fieldName?: string | string[];
+    dateKey?: string | string[];
+    dateLabel?: string | string[];
+    startTime?: string | string[];
+    endTime?: string | string[];
+    hourlyPrice?: string | string[];
+  }>());
   const [customerQuery, setCustomerQuery] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<ReservationCustomer | null>(null);
   const [reservationStatus, setReservationStatus] = useState<ReservationCreateStatus>("pending");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const durationMinutes = Math.max(30, toMinutes(params.endTime ?? "") - toMinutes(params.startTime ?? ""));
+  const durationMinutes = getTimeRangeDuration(params.startTime ?? "", params.endTime ?? "");
   const hourlyPrice = Number(params.hourlyPrice ?? 0);
-  const amount = useMemo(() => Math.round(hourlyPrice * durationMinutes / 60 * 100) / 100, [durationMinutes, hourlyPrice]);
-  const hasContext = Boolean(params.venueId && params.fieldId && params.dateKey && params.startTime);
+  const hasValidPrice = Number.isFinite(hourlyPrice) && hourlyPrice >= 0;
+  const amount = useMemo(
+    () => durationMinutes === null || !hasValidPrice ? 0 : Math.round(hourlyPrice * durationMinutes / 60 * 100) / 100,
+    [durationMinutes, hasValidPrice, hourlyPrice],
+  );
+  const hasContext = Boolean(params.venueId && params.fieldId && params.dateKey && params.startTime && params.endTime && durationMinutes !== null && hasValidPrice);
 
   const handleCreate = () => {
     if (!selectedCustomer) {
       setErrorMessage("Selecciona un jugador de Match.");
       return;
     }
-    if (!hasContext || !params.venueId || !params.fieldId || !params.dateKey || !params.startTime) {
+    if (!hasContext || !params.venueId || !params.fieldId || !params.dateKey || !params.startTime || durationMinutes === null) {
       setErrorMessage("No pudimos recuperar este horario.");
       return;
     }

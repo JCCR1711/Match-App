@@ -1,15 +1,19 @@
 import type { FinancialMovement, PaymentOverview, Settlement } from "@/src/features/payments/types/businessPayments";
 
+const GROSS_COLLECTED_THIS_MONTH = 4260;
+const FEES_THIS_MONTH = 320;
+const PENDING_SETTLEMENT_AMOUNT = 1840;
+
 export const paymentOverview: PaymentOverview = {
-  availableBalance: 3940,
-  collectedThisMonth: 4260,
-  feesThisMonth: 320,
+  availableBalance: GROSS_COLLECTED_THIS_MONTH - FEES_THIS_MONTH - PENDING_SETTLEMENT_AMOUNT,
+  grossCollectedThisMonth: GROSS_COLLECTED_THIS_MONTH,
+  feesThisMonth: FEES_THIS_MONTH,
 };
 
 export const financialMovements: FinancialMovement[] = [
-  { id: "m1", customerName: "Diego Ramos", dateLabel: "08 ago", amount: 120, reservationStatus: "confirmed" },
-  { id: "m2", customerName: "Marco Ruiz", dateLabel: "08 ago", amount: 90, reservationStatus: "pending" },
-  { id: "m3", customerName: "Luis Salazar", dateLabel: "07 ago", amount: 75, reservationStatus: "canceled" },
+  { id: "m1", reservationId: "reservation-1", customerName: "Josue", dateLabel: "Hoy", amount: 135, status: "paid" },
+  { id: "m2", reservationId: "reservation-2", customerName: "Josue", dateLabel: "Hoy", amount: 120, status: "pending" },
+  { id: "m3", reservationId: null, customerName: "Luis Salazar", dateLabel: "07 ago", amount: 75, status: "failed" },
 ];
 
 export const settlements: Settlement[] = [

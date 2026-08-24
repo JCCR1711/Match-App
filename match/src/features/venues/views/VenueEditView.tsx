@@ -14,9 +14,10 @@ import { detectVenueLocation } from "@/src/features/venues/services/detectVenueL
 import type { VenueCoordinates, WeeklySchedule } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { backOrReplace } from "@/src/utils/routerNavigation";
 
 const DEFAULT_SCHEDULE: WeeklySchedule = {
   weekdays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
@@ -61,6 +62,7 @@ const VenueEditView = () => {
     || (usesSchedule && JSON.stringify(schedule) !== JSON.stringify(venue.defaultSchedule))
   ));
   const unsavedChanges = useUnsavedChangesGuard(hasUnsavedChanges && !saving);
+  const returnToVenue = () => backOrReplace({ pathname: "/business/venues/[venueId]", params: { venueId } });
 
   useEffect(() => {
     if (!venue) return;
@@ -135,7 +137,7 @@ const VenueEditView = () => {
         coordinates,
         defaultSchedule: usesSchedule ? schedule : null,
       });
-      unsavedChanges.leaveWithoutPrompt(() => router.back());
+      unsavedChanges.leaveWithoutPrompt(returnToVenue);
     } catch (saveError) {
       setMessage(saveError instanceof Error ? saveError.message : "No pudimos guardar los cambios.");
     } finally {
@@ -151,8 +153,9 @@ const VenueEditView = () => {
       headerTitleSize="compact"
       backgroundVariant="solid"
       keyboardAware
-      onBack={() => router.back()}
+      onBack={returnToVenue}
       backAccessibilityLabel="Volver a la sede"
+      backIconVariant="dismiss"
       footer={venue ? (
         <CustomButton label={saving ? "Guardando..." : "Guardar cambios"} variant="primary" onPress={save} disabled={saving || loading || locating} style={styles.saveButton} />
       ) : undefined}

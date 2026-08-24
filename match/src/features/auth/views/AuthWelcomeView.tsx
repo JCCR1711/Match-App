@@ -1,15 +1,16 @@
+import AppBackground from "@/src/components/ui/AppBackground";
+import AppFormIntro from "@/src/components/ui/AppFormIntro";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import AuthBackButton from "@/src/features/auth/components/AuthBackButton";
 import AuthButton from "@/src/features/auth/components/AuthButton";
-import AuthFlowBackground from "@/src/features/auth/components/AuthFlowBackground";
 import AuthProviderButtons from "@/src/features/auth/components/AuthProviderButtons";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
 import { Building03Icon, Mail01Icon, UserIcon } from "@hugeicons/core-free-icons";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const AuthWelcomeView = () => {
@@ -31,7 +32,7 @@ const AuthWelcomeView = () => {
   return (
     <View style={styles.root}>
     <StatusBar style="light" />
-    <AuthFlowBackground />
+    <AppBackground variant="dashboard" />
 
     <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
       <View style={styles.header}>
@@ -44,14 +45,11 @@ const AuthWelcomeView = () => {
         bounces={false}
       >
         <View style={styles.content}>
-          <View style={styles.message}>
-            <Text style={styles.title}>Haz que el{"\n"}partido suceda</Text>
-            <CustomText
-              text="Entra con tu correo y encuentra tu próximo partido en minutos"
-              variant="body"
-              style={styles.description}
-            />
-          </View>
+          <AppFormIntro
+            title="Bienvenido a"
+            accentText="Match"
+            description="Juega o administra tus canchas desde una sola cuenta."
+          />
 
           <View style={styles.actions}>
             {__DEV__ ? (
@@ -120,39 +118,20 @@ const styles = StyleSheet.create({
   },
   header: {
     minHeight: 56,
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.layout.screenGutter,
     justifyContent: "center",
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: theme.spacing.lg,
+    paddingHorizontal: theme.layout.screenGutter,
     paddingBottom: theme.spacing.xl,
   },
   content: {
     flex: 1,
     justifyContent: "space-between",
-    paddingTop: theme.spacing.lg,
+    gap: theme.layout.sectionGap,
+    paddingTop: theme.spacing.xl,
     paddingBottom: theme.spacing.xl,
-  },
-  message: {
-    flex: 1,
-    minHeight: 280,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: theme.spacing.sm,
-  },
-  title: {
-    color: theme.colors.authText,
-    ...theme.typography.screenTitle,
-    textAlign: "center",
-    paddingVertical: 2,
-    includeFontPadding: true,
-  },
-  description: {
-    maxWidth: 310,
-    color: theme.colors.authText,
-    opacity: 0.64,
-    textAlign: "center",
   },
   actions: {
     width: "100%",
@@ -175,7 +154,7 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.large,
   },
   primaryButton: {
-    height: 64,
+    minHeight: 60,
     borderRadius: theme.radius.pill,
     borderCurve: "continuous",
   },

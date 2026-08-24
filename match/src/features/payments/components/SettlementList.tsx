@@ -8,9 +8,14 @@ import { formatSoles } from "@/src/utils/formatMoney";
 import { CreditCardIcon } from "@hugeicons/core-free-icons";
 import { StyleSheet, View } from "react-native";
 
-const SettlementList = ({ settlements }: { settlements: Settlement[] }) => (
-  <View style={styles.list}>
-    {settlements.map((settlement) => (
+const SettlementList = ({ settlements }: { settlements: Settlement[] }) => {
+  if (settlements.length === 0) {
+    return <CustomText text="Aun no hay liquidaciones" variant="body" style={styles.empty} />;
+  }
+
+  return (
+    <View style={styles.list}>
+      {settlements.map((settlement) => (
       <View key={settlement.id} style={[styles.card, settlement.status === "paid" && styles.paidCard]}>
         <View style={styles.accountIcon}>
           <CustomIcon icon={CreditCardIcon} color={theme.colors.iceBlue} size={22} strokeWidth={2.25} />
@@ -26,9 +31,10 @@ const SettlementList = ({ settlements }: { settlements: Settlement[] }) => (
           </View>
         </View>
       </View>
-    ))}
-  </View>
-);
+      ))}
+    </View>
+  );
+};
 
 export default SettlementList;
 
@@ -43,4 +49,5 @@ const styles = StyleSheet.create({
   period: { flex: 1, minWidth: 0, color: theme.colors.white },
   amount: { flexShrink: 0, color: theme.colors.white, textAlign: "right" },
   account: { flex: 1, minWidth: 0, color: theme.colors.textOnDarkSecondary },
+  empty: { color: theme.colors.authTextSecondary },
 });

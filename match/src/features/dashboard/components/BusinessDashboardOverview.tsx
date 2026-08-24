@@ -7,6 +7,7 @@ import TodayAgendaPreview from "@/src/features/dashboard/components/TodayAgendaP
 import TodaySummaryCard from "@/src/features/dashboard/components/TodaySummaryCard";
 import type { Settlement } from "@/src/features/payments/types/businessPayments";
 import type { ReservationRecord } from "@/src/features/reservations/types/reservation";
+import type { BusinessAvailabilityOpportunity } from "@/src/features/reservations/utils/getBusinessAvailabilityOpportunity";
 import { isActiveReservation } from "@/src/features/reservations/utils/isActiveReservation";
 import type { BusinessOnboardingDraft } from "@/src/features/venues/types/businessOnboarding";
 import { theme } from "@/src/theme";
@@ -19,10 +20,12 @@ interface BusinessDashboardOverviewProps {
   onOpenAnalytics: () => void;
   onOpenPayments: () => void;
   onOpenReservations: () => void;
+  onOpenOpportunity: () => void;
+  onOpenPendingReservations: () => void;
   onOpenReservation: (reservation: ReservationRecord) => void;
   todayReservations: ReservationRecord[];
-  availableHours: number;
-  settlement: Settlement;
+  opportunity: BusinessAvailabilityOpportunity["bestSlot"];
+  settlement: Settlement | null;
 }
 
 const getStartMinutes = (startTime: string) => {
@@ -37,9 +40,11 @@ const BusinessDashboardOverview = ({
   onOpenAnalytics,
   onOpenPayments,
   onOpenReservations,
+  onOpenOpportunity,
+  onOpenPendingReservations,
   onOpenReservation,
   todayReservations,
-  availableHours,
+  opportunity,
   settlement,
 }: BusinessDashboardOverviewProps) => {
   const activeReservations = todayReservations.filter(isActiveReservation);
@@ -64,21 +69,23 @@ const BusinessDashboardOverview = ({
       <BusinessAttentionCard
         reservation={nextPendingReservation}
         count={pendingReservations.length}
-        onPress={() => onOpenReservation(nextPendingReservation)}
+        onPress={onOpenPendingReservations}
       />
     ) : null}
 
     <TodayAgendaPreview reservations={activeReservations} onOpenAll={onOpenReservations} onOpenReservation={onOpenReservation} />
 
-    {availableHours > 0 ? (
+    {opportunity ? (
       <AppSection title="Oportunidad de hoy">
-        <BusinessOpportunityCard availableHours={availableHours} onPress={onOpenReservations} />
+        <BusinessOpportunityCard opportunity={opportunity} onPress={onOpenOpportunity} />
       </AppSection>
     ) : null}
 
-    <AppSection title="Finanzas">
-      <SettlementPreview settlement={settlement} onPress={onOpenPayments} />
-    </AppSection>
+    {settlement ? (
+      <AppSection title="Finanzas">
+        <SettlementPreview settlement={settlement} onPress={onOpenPayments} />
+      </AppSection>
+    ) : null}
 
     <FieldsCarousel fields={draft.fields} venues={draft.venues} onOpenAll={onOpenFields} onOpenField={onOpenField} />
   </View>

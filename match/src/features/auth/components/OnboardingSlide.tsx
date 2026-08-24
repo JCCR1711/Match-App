@@ -35,7 +35,12 @@ const OnboardingSlide = ({
           </Animated.View>
         ) : null}
         <Animated.View entering={FadeInDown.delay(120).duration(420)} style={styles.content}>
-          <CustomText text={title} variant="h1" style={styles.title} />
+          <CustomText
+            text={title}
+            variant="heading"
+            style={styles.title}
+            accessibilityRole="header"
+          />
           <CustomText
             text={description}
             variant="body"
@@ -59,19 +64,20 @@ const styles = StyleSheet.create({
   contentWrapper: {
     flex: 1,
     alignItems: "stretch",
-    gap: theme.spacing.md,
+    gap: theme.spacing.xl,
   },
   imageArea: {
     flex: 1,
     minHeight: 0,
     width: "100%",
-    justifyContent: "flex-end",
+    paddingTop: theme.spacing.lg,
+    justifyContent: "center",
     alignItems: "center",
     overflow: "visible",
   },
   image: {
-    width: "78%",
-    height: "88%",
+    width: "71%",
+    height: "79%",
     alignSelf: "center",
   },
   content: {
@@ -81,13 +87,12 @@ const styles = StyleSheet.create({
   },
   title: {
     color: theme.colors.text,
-    ...theme.typography.heroTitle,
-    fontSize: 32,
-    lineHeight: 37,
-    letterSpacing: -0.45,
+    fontFamily: theme.fontFamilies.poppinsBold,
+    fontSize: 28,
+    lineHeight: 36,
+    fontWeight: theme.fontWeights.bold,
+    letterSpacing: 0,
     width: "100%",
-    paddingVertical: 2,
-    includeFontPadding: true,
     textAlign: "left",
     textTransform: "none",
   },

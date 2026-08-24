@@ -4,20 +4,21 @@ import { theme } from "@/src/theme";
 import { memo } from "react";
 import { StyleSheet } from "react-native";
 
-const statusContent: Record<PaymentStatus, { label: string; color: string }> = {
-  pending: { label: "En proceso", color: theme.colors.pendingLimeText },
-  paid: { label: "Depositada", color: theme.colors.accent },
-  failed: { label: "Fallida", color: theme.colors.error },
+const statusContent: Record<PaymentStatus, { settlementLabel: string; movementLabel: string; color: string }> = {
+  pending: { settlementLabel: "En proceso", movementLabel: "En proceso", color: theme.colors.pendingLimeText },
+  paid: { settlementLabel: "Depositada", movementLabel: "Cobrado", color: theme.colors.accent },
+  failed: { settlementLabel: "Fallida", movementLabel: "Fallido", color: theme.colors.error },
 };
 
-const SettlementStatusLabel = ({ status }: { status: PaymentStatus }) => {
+const SettlementStatusLabel = ({ status, context = "settlement" }: { status: PaymentStatus; context?: "settlement" | "movement" }) => {
   const content = statusContent[status];
+  const label = context === "movement" ? content.movementLabel : content.settlementLabel;
 
   return (
     <CustomText
-      text={content.label}
+      text={label}
       variant="label"
-      accessibilityLabel={`Estado de liquidación: ${content.label}`}
+      accessibilityLabel={`Estado de ${context === "movement" ? "movimiento" : "liquidacion"}: ${label}`}
       style={[styles.label, { color: content.color }]}
       numberOfLines={1}
     />

@@ -2,10 +2,11 @@ export type PaymentStatus = "pending" | "paid" | "failed";
 
 export interface FinancialMovement {
   id: string;
+  reservationId: string | null;
   customerName: string;
   dateLabel: string;
   amount: number;
-  reservationStatus: "confirmed" | "pending" | "canceled";
+  status: PaymentStatus;
 }
 
 export interface Settlement {
@@ -17,7 +18,10 @@ export interface Settlement {
 }
 
 export interface PaymentOverview {
+  /** Neto cobrado que todavia no forma parte de una liquidacion en proceso. */
   availableBalance: number;
-  collectedThisMonth: number;
+  /** Cobros brutos aprobados durante el mes actual. */
+  grossCollectedThisMonth: number;
+  /** Comisiones descontadas de los cobros del mes actual. */
   feesThisMonth: number;
 }

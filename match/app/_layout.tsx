@@ -48,11 +48,22 @@ export default function RootLayout() {
       <OnboardingProvider>
       <StatusBar style="dark" />
       <AuthNavigationGuard>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: "slide_from_right",
+            animationTypeForReplace: "push",
+            gestureEnabled: true,
+            contentStyle: { backgroundColor: theme.colors.black },
+          }}
+        >
+        <Stack.Screen name="index" options={{ animation: "none", gestureEnabled: false }} />
+        <Stack.Screen name="(tabs)" options={{ animation: "fade", gestureEnabled: false }} />
+        <Stack.Screen name="auth/onboarding" options={{ animation: "fade", gestureEnabled: false }} />
         <Stack.Screen
           name="auth/welcome"
           options={{
-            animation: "ios_from_right",
+            animation: "slide_from_right",
             presentation: "card",
             gestureEnabled: true,
             contentStyle: { backgroundColor: theme.colors.black },
@@ -61,21 +72,21 @@ export default function RootLayout() {
         <Stack.Screen
           name="auth/email"
           options={{
-            animation: "ios_from_right",
+            animation: "slide_from_right",
             contentStyle: { backgroundColor: theme.colors.black },
           }}
         />
         <Stack.Screen
           name="auth/verify-email"
           options={{
-            animation: "ios_from_right",
+            animation: "slide_from_right",
             contentStyle: { backgroundColor: theme.colors.black },
           }}
         />
         <Stack.Screen
           name="auth/complete-profile"
           options={{
-            animation: "ios_from_right",
+            animation: "slide_from_right",
             gestureEnabled: false,
             contentStyle: { backgroundColor: theme.colors.black },
           }}
@@ -83,90 +94,15 @@ export default function RootLayout() {
         <Stack.Screen
           name="auth/select-mode"
           options={{
-            animation: "ios_from_right",
+            animation: "slide_from_right",
             gestureEnabled: false,
-            contentStyle: { backgroundColor: theme.colors.black },
-          }}
-        />
-        <Stack.Screen
-          name="business/setup"
-          options={{
-            animation: "ios_from_right",
-            gestureEnabled: false,
-            contentStyle: { backgroundColor: theme.colors.black },
-          }}
-        />
-        <Stack.Screen
-          name="business/venues/new"
-          options={{
-            animation: "ios_from_right",
-            gestureEnabled: true,
-            contentStyle: { backgroundColor: theme.colors.black },
-          }}
-        />
-        <Stack.Screen
-          name="business/venues/[venueId]"
-          options={{
-            animation: "ios_from_right",
-            gestureEnabled: true,
-            contentStyle: { backgroundColor: theme.colors.black },
-          }}
-        />
-        <Stack.Screen
-          name="business/fields/new"
-          options={{
-            animation: "ios_from_right",
-            gestureEnabled: true,
-            contentStyle: { backgroundColor: theme.colors.black },
-          }}
-        />
-        <Stack.Screen
-          name="business/fields/[fieldId]"
-          options={{
-            animation: "slide_from_bottom",
-            presentation: "card",
-            gestureEnabled: true,
-            gestureDirection: "vertical",
-            contentStyle: { backgroundColor: theme.colors.black },
-          }}
-        />
-        <Stack.Screen
-          name="business/fields/[fieldId]/edit"
-          options={{
-            animation: "ios_from_right",
-            gestureEnabled: true,
-            contentStyle: { backgroundColor: theme.colors.black },
-          }}
-        />
-        <Stack.Screen
-          name="business/venues/[venueId]/edit"
-          options={{
-            animation: "ios_from_right",
-            gestureEnabled: true,
-            contentStyle: { backgroundColor: theme.colors.black },
-          }}
-        />
-        <Stack.Screen
-          name="business/reservations/new"
-          options={{
-            animation: "slide_from_bottom",
-            presentation: "modal",
-            gestureEnabled: true,
-            contentStyle: { backgroundColor: theme.colors.black },
-          }}
-        />
-        <Stack.Screen
-          name="business/fields/[fieldId]/availability"
-          options={{
-            animation: "ios_from_right",
-            gestureEnabled: true,
             contentStyle: { backgroundColor: theme.colors.black },
           }}
         />
         <Stack.Screen
           name="venues/[venueId]"
           options={{
-            animation: "ios_from_right",
+            animation: "slide_from_right",
             gestureEnabled: true,
             contentStyle: { backgroundColor: theme.colors.black },
           }}
@@ -174,7 +110,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="reservations/new"
           options={{
-            animation: "ios_from_right",
+            animation: "slide_from_right",
             gestureEnabled: true,
             contentStyle: { backgroundColor: theme.colors.black },
           }}
@@ -190,7 +126,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="legal/terms-and-privacy"
           options={{
-            animation: "ios_from_right",
+            animation: "slide_from_right",
             gestureEnabled: true,
             contentStyle: { backgroundColor: theme.colors.black },
           }}
@@ -198,7 +134,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="profile/avatar"
           options={{
-            animation: "ios_from_right",
+            animation: "slide_from_right",
             gestureEnabled: true,
             contentStyle: { backgroundColor: theme.colors.black },
           }}

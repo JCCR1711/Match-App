@@ -64,7 +64,7 @@ const FirstFieldView = () => {
         const currentDraft = await venueOnboardingGateway.getBusinessDraft(accessToken);
         if (!active) return;
         if (!currentDraft?.venues.length) {
-          router.replace("/(tabs)/dashboard");
+          router.replace("/(tabs)/business-fields");
           return;
         }
         setDraft(currentDraft);
@@ -86,6 +86,14 @@ const FirstFieldView = () => {
   const clearError = () => {
     setFieldNameError(false);
     setErrorMessage(null);
+  };
+
+  const finishCreation = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(tabs)/business-fields");
   };
 
   const venues = draft?.venues ?? [];
@@ -148,7 +156,7 @@ const FirstFieldView = () => {
         nightStartsAt,
         currency: "PEN",
       });
-      unsavedChanges.leaveWithoutPrompt(() => router.replace("/(tabs)/dashboard"));
+      unsavedChanges.leaveWithoutPrompt(finishCreation);
     } catch (saveError) {
       setErrorMessage(saveError instanceof Error ? saveError.message : "No pudimos crear la cancha.");
     } finally {

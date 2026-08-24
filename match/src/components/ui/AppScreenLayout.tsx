@@ -3,7 +3,7 @@ import { type AppBackgroundVariant } from "@/src/components/ui/AppBackground";
 import AppKeyboardAwareScrollView from "@/src/components/ui/AppKeyboardAwareScrollView";
 import CustomText from "@/src/components/ui/CustomText";
 import { theme } from "@/src/theme";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ComponentRef, type ReactNode } from "react";
 import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -24,6 +24,8 @@ interface AppScreenLayoutProps {
   contentStyle?: StyleProp<ViewStyle>;
   hasTabBar?: boolean;
   keyboardAware?: boolean;
+  scrollToY?: number | null;
+  scrollRequestKey?: number;
 }
 
 /** Standard full-screen layout for feature views with a collapsible header and scrollable content. */
@@ -44,7 +46,19 @@ const AppScreenLayout = ({
   contentStyle,
   hasTabBar,
   keyboardAware = false,
+  scrollToY,
+  scrollRequestKey,
 }: AppScreenLayoutProps) => {
+  const scrollRef = useRef<ComponentRef<typeof AppKeyboardAwareScrollView>>(null);
+
+  useEffect(() => {
+    if (scrollToY === null || scrollToY === undefined) return;
+    const animationFrame = requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, scrollToY), animated: true });
+    });
+    return () => cancelAnimationFrame(animationFrame);
+  }, [scrollRequestKey, scrollToY]);
+
   return (
     <AppScreenFrame
       title={title}
@@ -63,6 +77,7 @@ const AppScreenLayout = ({
       {({ onScroll, headerContentInset, contentBottomInset }) => (
       <View style={styles.body}>
         <AppKeyboardAwareScrollView
+          ref={scrollRef}
           enabled={keyboardAware}
           style={styles.scroll}
           contentContainerStyle={[

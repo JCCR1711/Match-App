@@ -80,6 +80,14 @@ const VenueLocationView = () => {
     setMessage(null);
   };
 
+  const finishCreation = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/(tabs)/business-fields");
+  };
+
   const detectLocation = async () => {
     if (locating || submitting) return;
     setLocating(true);
@@ -126,7 +134,7 @@ const VenueLocationView = () => {
         status: "active",
         defaultSchedule: usesSchedule ? schedule : null,
       });
-      unsavedChanges.leaveWithoutPrompt(() => router.replace("/(tabs)/dashboard"));
+      unsavedChanges.leaveWithoutPrompt(finishCreation);
     } catch (saveError) {
       setMessage(saveError instanceof Error ? saveError.message : "No pudimos crear la sede.");
     } finally {

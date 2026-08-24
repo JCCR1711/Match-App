@@ -35,6 +35,7 @@ Usuario existente:
   "user": {
     "id": "user_123",
     "displayName": "Ana",
+    "username": "ana17",
     "email": "ana@example.com",
     "availableModes": ["player"],
     "activeMode": "player"
@@ -66,6 +67,7 @@ Usuario nuevo:
 {
   "enrollmentToken": "single-use-token",
   "displayName": "Ana",
+  "username": "ana17",
   "acceptedTermsVersion": "2026-08"
 }
 ```
@@ -73,6 +75,10 @@ Usuario nuevo:
 Devuelve `AuthenticatedSession` (los campos `user` y `tokens` del ejemplo
 anterior). En una cuenta nueva, `availableModes` debe ser `[]` y `activeMode`
 debe ser `null` hasta completar la selección inicial.
+
+`username` se envía normalizado, en minúsculas y sin `@`. El servidor debe
+validar su unicidad de forma atómica; la interfaz agrega `@` solamente al
+mostrarlo.
 
 ## Seleccionar modo inicial
 
@@ -95,6 +101,7 @@ Devuelve el usuario actualizado:
 {
   "id": "user_456",
   "displayName": "Ana",
+  "username": "ana17",
   "email": "ana@example.com",
   "availableModes": ["player"],
   "activeMode": "player"

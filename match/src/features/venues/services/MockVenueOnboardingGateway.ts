@@ -8,6 +8,8 @@ import {
   VenueOnboardingGateway,
 } from "@/src/features/venues/types/businessOnboarding";
 import { MockBusinessDraftStore } from "./MockBusinessDraftStore";
+import { resolveBusinessDraftNextStep } from "@/src/features/venues/utils/resolveBusinessDraftNextStep";
+import { isValidFieldInput, isValidVenueInput } from "@/src/features/venues/utils/businessResourceValidation";
 
 const wait = (duration: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, duration));
@@ -43,9 +45,9 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       venues: this.draft?.venues ?? [],
       field: this.draft?.field ?? null,
       fields: this.draft?.fields ?? [],
-      nextStep: this.resolveNextStep(
-        this.draft?.location ?? null,
-        this.draft?.field ?? null,
+      nextStep: resolveBusinessDraftNextStep(
+        this.draft?.venues ?? [],
+        this.draft?.fields ?? [],
       ),
     };
 
@@ -61,6 +63,10 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(350);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+
+    if (!isValidVenueInput(input)) {
+      throw new Error("Revisa los datos, la ubicacion y el horario de la sede.");
+    }
 
     if (!this.draft || this.draft.organizationId !== organizationId) {
       throw new Error("No encontramos el club que estás configurando.");
@@ -82,19 +88,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       ...this.draft,
       location,
       venues,
-      nextStep: this.resolveNextStep(
-        {
-          venueId: location.venueId,
-          venueName: input.venueName,
-          address: input.address,
-          district: input.district,
-          city: input.city,
-          coordinates: input.coordinates,
-          status: input.status,
-          defaultSchedule: input.defaultSchedule,
-        },
-        this.draft.field,
-      ),
+      nextStep: resolveBusinessDraftNextStep(venues, this.draft.fields),
       field: this.draft.field,
     };
 
@@ -111,6 +105,9 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(300);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    if (!isValidVenueInput(input)) {
+      throw new Error("Revisa los datos, la ubicacion y el horario de la sede.");
+    }
     if (!this.draft || this.draft.organizationId !== organizationId) {
       throw new Error("No encontramos el club.");
     }
@@ -125,10 +122,14 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       district: input.district.trim(),
       city: input.city.trim(),
     } : venue);
+    const fields = this.draft.fields;
     this.draft = {
       ...this.draft,
       venues,
+      fields,
       location: venues.find((venue) => venue.venueId === this.draft?.location?.venueId) ?? venues[0] ?? null,
+      field: fields.find((field) => field.fieldId === this.draft?.field?.fieldId) ?? fields[0] ?? null,
+      nextStep: resolveBusinessDraftNextStep(venues, fields),
     };
     await this.draftStore.save(ownerId, this.draft);
     return this.draft;
@@ -142,6 +143,10 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(350);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+
+    if (!isValidFieldInput(input)) {
+      throw new Error("Revisa el nombre, las tarifas y el horario de la cancha.");
+    }
 
     if (
       !this.draft ||
@@ -173,7 +178,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       nightHourlyPrice: input.nightHourlyPrice ?? input.hourlyPrice,
       nightStartsAt: input.nightStartsAt ?? "18:00",
       currency: input.currency,
-      availability: effectiveSchedule
+      availability: input.scheduleMode === "custom" && effectiveSchedule
         ? {
             ...effectiveSchedule,
             hourlyPrice: input.hourlyPrice,
@@ -189,7 +194,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       ...this.draft,
       field,
       fields,
-      nextStep: "availability",
+      nextStep: resolveBusinessDraftNextStep(this.draft.venues, fields),
     };
 
     await this.draftStore.save(ownerId, this.draft);
@@ -218,12 +223,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       ...this.draft,
       fields,
       field: fields[0] ?? null,
-      nextStep:
-        fields.length === 0
-          ? "field"
-          : fields.some((field) => !field.availability)
-            ? "availability"
-            : "complete",
+      nextStep: resolveBusinessDraftNextStep(this.draft.venues, fields),
     };
 
     await this.draftStore.save(ownerId, this.draft);
@@ -234,6 +234,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(300);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    if (!isValidFieldInput(input)) throw new Error("Revisa el nombre, las tarifas y el horario de la cancha.");
     if (!this.draft || this.draft.organizationId !== organizationId || !this.draft.fields.some((field) => field.fieldId === fieldId)) throw new Error("No encontramos la cancha.");
     const fields = this.draft.fields.map((field) => {
       if (field.fieldId !== fieldId) return field;
@@ -246,7 +247,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
         ...input,
         fieldName: input.fieldName.trim(),
         scheduleOverride: input.scheduleMode === "custom" ? input.scheduleOverride : null,
-        availability: effectiveSchedule
+        availability: input.scheduleMode === "custom" && effectiveSchedule
           ? {
               ...effectiveSchedule,
               hourlyPrice: input.hourlyPrice,
@@ -264,9 +265,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
         fields.find((field) => field.fieldId === this.draft?.field?.fieldId) ??
         fields[0] ??
         null,
-      nextStep: fields.some((field) => !field.availability)
-        ? "availability"
-        : "complete",
+      nextStep: resolveBusinessDraftNextStep(this.draft.venues, fields),
     };
     await this.draftStore.save(ownerId, this.draft);
     return this.draft;
@@ -289,7 +288,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       fields,
       location: venues[0] ?? null,
       field: fields[0] ?? null,
-      nextStep: venues.length === 0 ? "location" : fields.length === 0 ? "field" : "complete",
+      nextStep: resolveBusinessDraftNextStep(venues, fields),
     };
     await this.draftStore.save(ownerId, this.draft);
     return this.draft;
@@ -346,21 +345,6 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
       this.draft = await this.draftStore.get(ownerId);
       this.draftOwnerId = ownerId;
     }
-  }
-
-  private resolveNextStep(
-    location: BusinessOnboardingDraft["location"],
-    field: BusinessOnboardingDraft["field"],
-  ): BusinessOnboardingDraft["nextStep"] {
-    if (!location) {
-      return "location";
-    }
-
-    if (!field) {
-      return "field";
-    }
-
-    return field.availability ? "complete" : "availability";
   }
 
   private getOwnerId(accessToken: string) {

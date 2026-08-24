@@ -4,19 +4,18 @@ import CustomText from "@/src/components/ui/CustomText";
 import SettlementGradientSurface from "@/src/features/payments/components/SettlementGradientSurface";
 import SettlementList from "@/src/features/payments/components/SettlementList";
 import { settlements } from "@/src/features/payments/data/paymentsPreview";
+import { getPendingSettlementAmount } from "@/src/features/payments/utils/settlementSelectors";
 import { COLLAPSIBLE_HEADER_COLLAPSED_HEIGHT } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
+import { backOrReplace } from "@/src/utils/routerNavigation";
 import { formatMoneyParts } from "@/src/utils/formatMoney";
-import { router } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BusinessSettlementsView = () => {
   const insets = useSafeAreaInsets();
-  const pendingAmount = settlements
-    .filter((settlement) => settlement.status === "pending")
-    .reduce((total, settlement) => total + settlement.amount, 0);
+  const pendingAmount = getPendingSettlementAmount(settlements);
   const amount = formatMoneyParts(pendingAmount);
 
   return (
@@ -25,14 +24,10 @@ const BusinessSettlementsView = () => {
       headerTitleMode="scroll"
       headerGlassTint={`${theme.colors.businessBlueSurface}F2`}
       backgroundVariant="dashboard"
-      onBack={() => router.back()}
+      onBack={() => backOrReplace("/business/payments")}
     >
       {({ onScroll, contentBottomInset }) => (
-        <Animated.ScrollView
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-        >
+        <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false}>
           <SettlementGradientSurface
             style={[styles.hero, { paddingTop: insets.top + COLLAPSIBLE_HEADER_COLLAPSED_HEIGHT + theme.spacing.sm }]}
           >

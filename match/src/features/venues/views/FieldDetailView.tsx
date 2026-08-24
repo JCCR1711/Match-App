@@ -12,8 +12,11 @@ import WeekdaySelector from "@/src/features/venues/components/WeekdaySelector";
 import { reservationDates } from "@/src/features/reservations/data/reservationDates";
 import { useReservations } from "@/src/features/reservations/hooks/useReservations";
 import { isActiveReservation } from "@/src/features/reservations/utils/isActiveReservation";
+import { hasFieldScheduleDependencies } from "@/src/features/reservations/utils/hasFieldScheduleDependencies";
+import { createBusinessAgendaHref, createFocusedReservationAgendaHref } from "@/src/features/reservations/utils/businessAgendaRoute";
 import { getVenueImage } from "@/src/features/venues/data/venueImages";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
+import { getEffectiveFieldSchedule } from "@/src/features/venues/utils/getEffectiveFieldSchedule";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import type { ResourceStatus, WeeklySchedule } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -40,7 +43,7 @@ const FieldDetailView = () => {
   const [actionError, setActionError] = useState<string | null>(null);
   const field = draft?.fields.find((item) => item.fieldId === fieldId);
   const venue = draft?.venues.find((item) => item.venueId === field?.venueId);
-  const schedule = field?.scheduleOverride ?? field?.availability ?? venue?.defaultSchedule ?? null;
+  const schedule = field ? getEffectiveFieldSchedule(field, venue) : null;
   const todayReservations = field ? reservations.filter(isActiveReservation).filter((reservation) => reservation.fieldId === field.fieldId && reservation.dateKey === reservationDates[0].dateKey) : [];
   const todayBlocks = field ? blocks.filter((block) => block.fieldId === field.fieldId && block.dateKey === reservationDates[0].dateKey) : [];
 
@@ -74,6 +77,11 @@ const FieldDetailView = () => {
   const confirmDelete = () => {
     if (!field) return;
     setMenuVisible(false);
+    if (hasFieldScheduleDependencies([field.fieldId], reservations, blocks)) {
+      setActionError("No puedes eliminar una cancha con reservas o bloqueos activos.");
+      return;
+    }
+    setActionError(null);
     setDeleteVisible(true);
   };
 
@@ -91,7 +99,7 @@ const FieldDetailView = () => {
       {({ onScroll, contentBottomInset }) => (
         <>
           <Animated.ScrollView contentContainerStyle={[styles.content, { paddingBottom: contentBottomInset }]} showsVerticalScrollIndicator={false} onScroll={onScroll} scrollEventThrottle={16}>
-            {!field ? <CustomText text={loading ? "Cargando" : "No encontramos esta cancha"} variant="body" style={styles.empty} /> : (
+            {!field ? <CustomText text={loading ? "Cargando" : error ?? "No encontramos esta cancha"} variant="body" style={styles.empty} accessibilityRole={error ? "alert" : undefined} /> : (
               <>
                 <View style={styles.media}>
                   <Image source={getVenueImage(field.venueId)} style={StyleSheet.absoluteFill} contentFit="cover" transition={180} cachePolicy="memory-disk" />
@@ -121,8 +129,8 @@ const FieldDetailView = () => {
                   <FieldTodayOverview
                     reservations={todayReservations}
                     blocks={todayBlocks}
-                    onOpenAgenda={() => router.push({ pathname: "/(tabs)/business-reservations", params: { fieldId: field.fieldId } })}
-                    onOpenReservation={(reservation) => router.push({ pathname: "/(tabs)/business-reservations", params: { fieldId: field.fieldId, dateKey: reservation.dateKey, reservationId: reservation.id } })}
+                    onOpenAgenda={() => router.push(createBusinessAgendaHref({ fieldId: field.fieldId, dateKey: reservationDates[0].dateKey }))}
+                    onOpenReservation={(reservation) => router.push(createFocusedReservationAgendaHref(reservation))}
                   />
 
                   <AppSection title="Disponibilidad" actionLabel="Editar" onAction={() => router.push({ pathname: "/business/fields/[fieldId]/availability", params: { fieldId: field.fieldId } })}>

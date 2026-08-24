@@ -3,7 +3,7 @@ import type { BusinessOnboardingDraft } from "@/src/features/venues/types/busine
 import { useAuth } from "@/src/hooks/useAuth";
 import { useFocusEffect } from "@react-navigation/native";
 import { router } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 interface UseBusinessDraftOptions {
   redirectWhenMissing?: boolean;
@@ -19,6 +19,8 @@ export const useBusinessDraft = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const cachedDraft = useRef<BusinessOnboardingDraft | null>(null);
+  const cachedToken = useRef<string | null>(null);
   const reload = useCallback(() => setReloadKey((current) => current + 1), []);
 
   useFocusEffect(
@@ -35,7 +37,8 @@ export const useBusinessDraft = ({
       }
 
       let active = true;
-      setLoading(true);
+      const hasCurrentDraft = cachedToken.current === accessToken && cachedDraft.current !== null;
+      setLoading(!hasCurrentDraft);
       setError(null);
 
       const load = async () => {
@@ -47,6 +50,8 @@ export const useBusinessDraft = ({
             router.replace("/business/setup");
             return;
           }
+          cachedToken.current = accessToken;
+          cachedDraft.current = currentDraft;
           setDraft(currentDraft);
         } catch (loadError) {
           if (active) {

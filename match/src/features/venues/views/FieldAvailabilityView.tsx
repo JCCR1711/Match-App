@@ -7,13 +7,15 @@ import VenueChoiceGroup from "@/src/features/venues/components/VenueChoiceGroup"
 import WeeklyScheduleEditor from "@/src/features/venues/components/WeeklyScheduleEditor";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import useUnsavedChangesGuard from "@/src/features/venues/hooks/useUnsavedChangesGuard";
+import { getEffectiveFieldSchedule } from "@/src/features/venues/utils/getEffectiveFieldSchedule";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import type { FieldScheduleMode, WeeklySchedule } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
+import { backOrReplace } from "@/src/utils/routerNavigation";
 
 const EMPTY_SCHEDULE: WeeklySchedule = {
   weekdays: [],
@@ -37,16 +39,17 @@ const FieldAvailabilityView = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [formInitialized, setFormInitialized] = useState(false);
-  const initialSchedule = field?.scheduleOverride ?? field?.availability ?? venue?.defaultSchedule ?? EMPTY_SCHEDULE;
+  const initialSchedule = field ? getEffectiveFieldSchedule(field, venue) ?? EMPTY_SCHEDULE : EMPTY_SCHEDULE;
   const hasUnsavedChanges = Boolean(formInitialized && field && (
     scheduleMode !== field.scheduleMode
     || (scheduleMode === "custom" && JSON.stringify(schedule) !== JSON.stringify(initialSchedule))
   ));
   const unsavedChanges = useUnsavedChangesGuard(hasUnsavedChanges && !saving);
+  const returnToField = () => backOrReplace({ pathname: "/business/fields/[fieldId]", params: { fieldId } });
 
   useEffect(() => {
     if (!field) return;
-    const effectiveSchedule = field.scheduleOverride ?? field.availability ?? venue?.defaultSchedule;
+    const effectiveSchedule = getEffectiveFieldSchedule(field, venue);
     setScheduleMode(field.scheduleMode);
     setSchedule(effectiveSchedule ? {
       weekdays: effectiveSchedule.weekdays,
@@ -54,7 +57,7 @@ const FieldAvailabilityView = () => {
       closingTime: effectiveSchedule.closingTime,
     } : EMPTY_SCHEDULE);
     setFormInitialized(true);
-  }, [field, venue?.defaultSchedule]);
+  }, [field, venue]);
 
   const save = async () => {
     if (!field || !draft || !accessToken) return;
@@ -79,7 +82,7 @@ const FieldAvailabilityView = () => {
         nightHourlyPrice: field.nightHourlyPrice,
         nightStartsAt: field.nightStartsAt,
       });
-      unsavedChanges.leaveWithoutPrompt(() => router.back());
+      unsavedChanges.leaveWithoutPrompt(returnToField);
     } catch (saveError) {
       setMessage(saveError instanceof Error ? saveError.message : "No pudimos guardar la disponibilidad.");
     } finally {
@@ -94,8 +97,9 @@ const FieldAvailabilityView = () => {
       headerTitleAlign="center"
       headerTitleSize="compact"
       backgroundVariant="solid"
-      onBack={() => router.back()}
+      onBack={returnToField}
       backAccessibilityLabel="Volver a detalles de cancha"
+      backIconVariant="dismiss"
       footer={field ? (
         <CustomButton
           label={saving ? "Guardando..." : "Guardar disponibilidad"}

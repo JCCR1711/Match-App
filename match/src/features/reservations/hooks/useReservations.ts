@@ -3,7 +3,7 @@ import type {
   AvailabilityBlock,
   ReservationRecord,
 } from "@/src/features/reservations/types/reservation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 
 interface ReservationsSnapshot {
   reservations: ReservationRecord[];
@@ -18,13 +18,20 @@ const getSnapshot = (): ReservationsSnapshot => ({
 });
 
 export const useReservations = () => {
-  const [snapshot, setSnapshot] = useState<ReservationsSnapshot>(getSnapshot);
+  const version = useSyncExternalStore(
+    subscribeToReservations,
+    getReservationsVersion,
+    getReservationsVersion,
+  );
 
   useEffect(() => {
-    const unsubscribe = reservationsStore.subscribe(() => setSnapshot(getSnapshot()));
     void reservationsStore.hydrate();
-    return unsubscribe;
   }, []);
 
-  return snapshot;
+  return useMemo(getSnapshot, [version]);
 };
+
+const subscribeToReservations = (listener: () => void) =>
+  reservationsStore.subscribe(listener);
+
+const getReservationsVersion = () => reservationsStore.getVersion();

@@ -7,12 +7,12 @@ import { StyleSheet, View } from "react-native";
 interface ProfileIdentityHeroProps {
   avatarId: SportsAvatarId;
   displayName: string;
-  email: string;
+  username: string;
   modeLabel: string;
   seed: string;
 }
 
-const ProfileIdentityHero = ({ avatarId, displayName, email, modeLabel, seed }: ProfileIdentityHeroProps) => (
+const ProfileIdentityHero = ({ avatarId, displayName, username, modeLabel, seed }: ProfileIdentityHeroProps) => (
   <View style={styles.hero}>
     <View style={styles.avatarPanel}>
       <View style={styles.avatarRing}>
@@ -21,7 +21,7 @@ const ProfileIdentityHero = ({ avatarId, displayName, email, modeLabel, seed }: 
     </View>
     <View style={styles.copy}>
       <CustomText text={displayName} variant="heading" style={styles.name} numberOfLines={2} />
-      <CustomText text={email} variant="caption" style={styles.email} numberOfLines={1} />
+      <CustomText text={`@${username}`} variant="caption" style={styles.username} numberOfLines={1} />
       <CustomText text={modeLabel} variant="caption" style={styles.modeLabel} />
     </View>
   </View>
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   },
   modeLabel: { paddingTop: theme.spacing.xs, color: theme.colors.authTextSecondary, fontFamily: theme.fontFamilies.outfitSemiBold },
   name: { color: theme.colors.white, fontSize: 27, lineHeight: 32, textAlign: "center" },
-  email: { maxWidth: "100%", color: theme.colors.textOnDarkSecondary, textAlign: "center" },
+  username: { maxWidth: "100%", color: theme.colors.textOnDarkSecondary, textAlign: "center" },
   avatarPanel: {
     alignItems: "center",
     justifyContent: "center",

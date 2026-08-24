@@ -1,26 +1,23 @@
-import AuthButton from "@/src/features/auth/components/AuthButton";
+import AppFormIntro from "@/src/components/ui/AppFormIntro";
+import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
+import AppTextField from "@/src/components/ui/AppTextField";
 import CustomText from "@/src/components/ui/CustomText";
-import AppKeyboardAwareScrollView from "@/src/components/ui/AppKeyboardAwareScrollView";
-import AuthBackButton from "@/src/features/auth/components/AuthBackButton";
-import AuthFlowBackground from "@/src/features/auth/components/AuthFlowBackground";
-import AuthTextField from "@/src/features/auth/components/AuthTextField";
+import AuthButton from "@/src/features/auth/components/AuthButton";
 import TermsAcceptance from "@/src/features/auth/components/TermsAcceptance";
+import { isValidUsername, normalizeUsername } from "@/src/features/auth/utils/username";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
+import { backOrReplace } from "@/src/utils/routerNavigation";
 import { router } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
 
 const CompleteProfileView = () => {
   const [displayName, setDisplayName] = useState("");
   const [displayNameValidated, setDisplayNameValidated] = useState(false);
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const {
     pendingSignUp,
     error,
@@ -40,9 +37,14 @@ const CompleteProfileView = () => {
       return;
     }
 
+    if (!isValidUsername(username)) {
+      setUsernameError("Usa entre 3 y 20 letras, números o guiones bajos.");
+      return;
+    }
+
     setDisplayNameValidated(true);
 
-    const completed = await completeSignUp(displayName);
+    const completed = await completeSignUp(displayName, username);
     if (completed) {
       router.replace("/auth/select-mode");
     }
@@ -54,49 +56,49 @@ const CompleteProfileView = () => {
   };
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
-      <AuthFlowBackground flowVariant="profile" />
-
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-        <View style={styles.header}>
-          <AuthBackButton accessibilityLabel="Volver a verificar correo" />
-        </View>
-
-        <AppKeyboardAwareScrollView
-            style={styles.keyboardArea}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.content}>
-              <View style={styles.message}>
-                <Text style={styles.title}>
-                  {pendingSignUp
-                    ? "Crea tu perfil"
-                    : "Verificación\nexpirada"}
-                </Text>
-                <CustomText
-                  text={
-                    pendingSignUp
-                      ? "Elige cómo aparecerás en Match."
-                      : "Solicita un código nuevo para continuar."
-                  }
-                  variant="body"
-                  style={styles.description}
-                />
-              </View>
-
-              {pendingSignUp ? (
-                <View style={styles.form}>
-                <AuthTextField
-                    label="Nombre visible"
+    <AppScreenLayout
+      title=""
+      headerTitleAlign="center"
+      headerTitleSize="compact"
+      backgroundVariant="solid"
+      keyboardAware
+      onBack={() => backOrReplace("/auth/verify-email")}
+      backAccessibilityLabel="Volver a verificar correo"
+      footer={pendingSignUp ? (
+        <AuthButton
+          label={loading ? "Creando cuenta..." : "Crear cuenta"}
+          variant="primary"
+          onPress={handleSubmit}
+          disabled={loading}
+          style={styles.submitButton}
+        />
+      ) : (
+        <AuthButton
+          label="Solicitar un código nuevo"
+          variant="primary"
+          onPress={() => router.replace("/auth/email")}
+          style={styles.submitButton}
+          accessibilityLabel="Solicitar un nuevo código por correo"
+        />
+      )}
+    >
+      <View style={styles.content}>
+        <AppFormIntro
+          title={pendingSignUp ? "Crea tu" : "Verificación"}
+          accentText={pendingSignUp ? "perfil" : "expirada"}
+          description={pendingSignUp ? "Elige cómo aparecerás en Match." : "Solicita un código nuevo para continuar."}
+        />
+        {pendingSignUp ? (
+                <View style={styles.fields}>
+                <AppTextField
+                    label="Nombre"
                     value={displayName}
                     onChangeText={(value) => {
                       setDisplayName(value);
                       setDisplayNameValidated(false);
                       clearErrors();
                     }}
-                    placeholder="¿Cómo quieres que te llamemos?"
+                    placeholder="Nombre y apellido"
                     autoCapitalize="words"
                     autoComplete="name"
                     textContentType="name"
@@ -105,84 +107,62 @@ const CompleteProfileView = () => {
                       setDisplayNameValidated(displayName.trim().length >= 2)
                     }
                     isValid={isDisplayNameValid}
-                    errorMessage={fieldError ?? error}
-                    accessibilityLabel="Nombre visible"
+                    errorMessage={fieldError}
+                  accessibilityLabel="Nombre visible"
+                />
+
+                <AppTextField
+                  label="Usuario"
+                  prefix="@"
+                  value={username}
+                  onChangeText={(value) => {
+                    setUsername(normalizeUsername(value));
+                    setUsernameError(null);
+                    clearAuthError();
+                  }}
+                  placeholder="tu_usuario"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="username-new"
+                  textContentType="username"
+                  maxLength={20}
+                  editable={!loading}
+                  isValid={isValidUsername(username) && !usernameError && !error}
+                  errorMessage={usernameError}
+                  accessibilityLabel="Nombre de usuario"
+                />
+
+                {error ? (
+                  <CustomText
+                    text={error}
+                    variant="caption"
+                    style={styles.formError}
+                    accessibilityRole="alert"
                   />
+                ) : null}
 
                 <TermsAcceptance
                   onOpenTerms={() =>
                     router.push("/legal/terms-and-privacy")
                   }
                 />
-
-                <AuthButton
-                  label={loading ? "Creando cuenta..." : "Crear cuenta"}
-                  variant="primary"
-                  onPress={handleSubmit}
-                  disabled={loading}
-                  style={styles.submitButton}
-                />
                 </View>
-              ) : (
-                <AuthButton
-                  label="Solicitar un código nuevo"
-                  variant="primary"
-                  onPress={() => router.replace("/auth/email")}
-                  style={styles.submitButton}
-                  accessibilityLabel="Solicitar un nuevo código por correo"
-                />
-              )}
-            </View>
-        </AppKeyboardAwareScrollView>
-      </SafeAreaView>
-    </View>
+        ) : null}
+      </View>
+    </AppScreenLayout>
   );
 };
 
 export default CompleteProfileView;
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.colors.authCanvas,
+  content: { gap: theme.layout.sectionGap },
+  fields: {
+    gap: theme.spacing.lg,
   },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    minHeight: 56,
-    paddingHorizontal: theme.spacing.lg,
-    justifyContent: "center",
-  },
-  keyboardArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "space-between",
-    paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.xl,
-  },
-  message: {
-    gap: theme.spacing.sm,
-  },
-  title: {
-    color: theme.colors.authText,
-    ...theme.typography.screenTitle,
-  },
-  description: {
-    color: theme.colors.authTextSecondary,
-  },
-  form: {
-    gap: theme.spacing.md,
-  },
+  formError: { color: theme.colors.errorSoft },
   submitButton: {
-    height: 62,
+    minHeight: 60,
     borderRadius: theme.radius.pill,
     borderCurve: "continuous",
   },

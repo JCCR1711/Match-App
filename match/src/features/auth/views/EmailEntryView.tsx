@@ -1,21 +1,14 @@
+import AppFormIntro from "@/src/components/ui/AppFormIntro";
+import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
+import AppTextField from "@/src/components/ui/AppTextField";
 import AuthButton from "@/src/features/auth/components/AuthButton";
-import CustomText from "@/src/components/ui/CustomText";
-import AppKeyboardAwareScrollView from "@/src/components/ui/AppKeyboardAwareScrollView";
-import AuthBackButton from "@/src/features/auth/components/AuthBackButton";
-import AuthFlowBackground from "@/src/features/auth/components/AuthFlowBackground";
-import AuthTextField from "@/src/features/auth/components/AuthTextField";
 import { isValidEmail } from "@/src/features/auth/utils/isValidEmail";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
+import { backOrReplace } from "@/src/utils/routerNavigation";
 import { router } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { StyleSheet, View } from "react-native";
 
 const EmailEntryView = () => {
   const [email, setEmail] = useState("");
@@ -49,36 +42,36 @@ const EmailEntryView = () => {
     emailValidated && isValidEmail(email) && !visibleError;
 
   return (
-    <View style={styles.root}>
-      <StatusBar style="light" />
-      <AuthFlowBackground flowVariant="email" />
-
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-        <View style={styles.header}>
-          <AuthBackButton />
-        </View>
-
-        <AppKeyboardAwareScrollView
-            style={styles.keyboardArea}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.content}>
-              <View style={styles.message}>
-                <Text style={styles.title}>¿Cuál es tu{"\n"}correo?</Text>
-                <CustomText
-                  text="Lo usaremos para enviarte un código de acceso de seis dígitos"
-                  variant="body"
-                  style={styles.description}
-                />
-              </View>
-
-              <View style={styles.form}>
-                <AuthTextField
+    <AppScreenLayout
+      title=""
+      headerTitleAlign="center"
+      headerTitleSize="compact"
+      backgroundVariant="solid"
+      keyboardAware
+      onBack={() => backOrReplace("/auth/welcome")}
+      backAccessibilityLabel="Volver"
+      footer={(
+        <AuthButton
+          label={loading ? "Enviando código..." : "Continuar"}
+          variant="primary"
+          onPress={handleContinue}
+          disabled={loading}
+          style={styles.continueButton}
+          accessibilityLabel="Enviar código de acceso"
+        />
+      )}
+    >
+      <View style={styles.content}>
+        <AppFormIntro
+          title="Ingresa tu"
+          accentText="correo"
+          description="Te enviaremos un código de acceso de seis dígitos."
+        />
+        <AppTextField
                     label="Correo electrónico"
                     value={email}
                     onChangeText={handleEmailChange}
-                    placeholder="tu@correo.com"
+                    placeholder="nombre@correo.com"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
@@ -91,69 +84,18 @@ const EmailEntryView = () => {
                     isValid={isEmailValid}
                     errorMessage={visibleError}
                     accessibilityLabel="Correo electrónico"
-                  />
-
-                <AuthButton
-                  label={loading ? "Enviando código..." : "Continuar"}
-                  variant="primary"
-                  onPress={handleContinue}
-                  disabled={loading}
-                  style={styles.continueButton}
-                  accessibilityLabel="Enviar código de acceso"
-                />
-              </View>
-            </View>
-        </AppKeyboardAwareScrollView>
-      </SafeAreaView>
-    </View>
+        />
+      </View>
+    </AppScreenLayout>
   );
 };
 
 export default EmailEntryView;
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: theme.colors.authCanvas,
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    minHeight: 56,
-    paddingHorizontal: theme.spacing.lg,
-    justifyContent: "center",
-  },
-  keyboardArea: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl,
-  },
-  content: {
-    flex: 1,
-    justifyContent: "space-between",
-    paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.xl,
-  },
-  message: {
-    gap: theme.spacing.sm,
-  },
-  title: {
-    color: theme.colors.authText,
-    ...theme.typography.screenTitle,
-  },
-  description: {
-    maxWidth: 320,
-    color: theme.colors.authTextSecondary,
-  },
-  form: {
-    gap: theme.spacing.lg,
-  },
+  content: { gap: theme.layout.sectionGap },
   continueButton: {
-    height: 62,
+    minHeight: 60,
     borderRadius: theme.radius.pill,
     borderCurve: "continuous",
   },

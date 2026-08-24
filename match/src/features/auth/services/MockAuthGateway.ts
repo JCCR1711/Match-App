@@ -10,6 +10,7 @@ import { MockAuthSessionStore } from "./MockAuthSessionStore";
 const MOCK_VERIFICATION_CODE = "123456";
 const CODE_EXPIRATION_SECONDS = 30;
 const REGISTERED_EMAIL = "demo@match.app";
+const RESERVED_USERNAMES = new Set(["jugador_demo", "josue17", "josue_negocio"]);
 
 const wait = (duration: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, duration));
@@ -46,6 +47,7 @@ export class MockAuthGateway implements AuthGateway {
         ? {
             id: "mock-player-1",
             displayName: "Josue",
+            username: "josue17",
             email: "jugador@match.demo",
             availableModes: ["player"],
             activeMode: "player",
@@ -53,6 +55,7 @@ export class MockAuthGateway implements AuthGateway {
         : {
             id: "mock-venue-owner-1",
             displayName: "Josue",
+            username: "josue_negocio",
             email: "negocio@match.demo",
             availableModes: ["player", "venue_manager"],
             activeMode: "venue_manager",
@@ -97,6 +100,7 @@ export class MockAuthGateway implements AuthGateway {
       ...(await this.createSession({
         id: "mock-player-1",
         displayName: "Jugador Demo",
+        username: "jugador_demo",
         email,
         availableModes: ["player"],
         activeMode: "player",
@@ -115,11 +119,17 @@ export class MockAuthGateway implements AuthGateway {
       throw new Error("No pudimos completar el registro.");
     }
 
+    if (RESERVED_USERNAMES.has(input.username)) {
+      throw new Error("Ese nombre de usuario ya está en uso.");
+    }
+
     this.emailsByEnrollment.delete(enrollmentToken);
+    RESERVED_USERNAMES.add(input.username);
 
     return this.createSession({
       id: `mock-user-${Date.now()}`,
       displayName: input.displayName,
+      username: input.username,
       email,
       availableModes: [],
       activeMode: null,

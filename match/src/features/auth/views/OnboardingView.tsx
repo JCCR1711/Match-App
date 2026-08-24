@@ -1,3 +1,4 @@
+import AppBackground from "@/src/components/ui/AppBackground";
 import AuthButton from "@/src/features/auth/components/AuthButton";
 import { useOnboarding } from "@/src/features/auth/context/OnboardingProvider";
 import { theme } from "@/src/theme";
@@ -5,7 +6,6 @@ import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import OnboardingBackground from "../components/OnboardingBackground";
 import OnboardingSlide from "../components/OnboardingSlide";
 
 const heroImage = require("../../../assets/Omboarding/onboarding-players-v3.png");
@@ -26,7 +26,7 @@ const OnboardingView = () => {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <OnboardingBackground />
+      <AppBackground variant="dashboard" />
 
       <SafeAreaView style={styles.container}>
         <OnboardingSlide
@@ -76,7 +76,8 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   primaryButton: {
-    height: 56,
+    minHeight: 56,
+    paddingVertical: theme.spacing.md,
     borderRadius: theme.radius.pill,
     borderWidth: 0,
     backgroundColor: theme.colors.white,
@@ -92,7 +93,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   signInButtonLabel: {
-    color: "rgba(255, 255, 255, 0.76)",
+    color: theme.colors.textOnMediaSecondary,
     ...theme.typography.actionSecondary,
   },
 });

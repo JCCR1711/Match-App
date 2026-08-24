@@ -10,7 +10,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 const BusinessAttentionCard = ({ reservation, count, onPress }: { reservation: ReservationRecord; count: number; onPress: () => void }) => (
   <Pressable
     accessibilityRole="button"
-    accessibilityLabel={`${count} ${count === 1 ? "reserva pendiente" : "reservas pendientes"}. La próxima es a las ${reservation.startTime}, ${reservation.customerName}, ${reservation.fieldName}, ${formatSoles(reservation.amount)}`}
+    accessibilityLabel={`${count} ${count === 1 ? "reserva pendiente" : "reservas pendientes"}. La próxima es a las ${reservation.startTime}, ${reservation.customerName}, ${reservation.fieldName}, ${formatSoles(reservation.amount)}. Abrir listado de pendientes`}
     onPress={onPress}
     style={({ pressed }) => [styles.card, pressed && styles.pressed]}
   >

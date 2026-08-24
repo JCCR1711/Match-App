@@ -7,6 +7,7 @@ import Animated, {
   FadeInDown,
   runOnJS,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withSpring,
@@ -36,20 +37,26 @@ const BrandLetter = ({ letter, index }: BrandLetterProps) => (
 );
 
 const LaunchSplash = ({ onComplete }: LaunchSplashProps) => {
+  const reduceMotion = useReducedMotion();
   const splashOpacity = useSharedValue(1);
   const titleScale = useSharedValue(0.97);
 
   useEffect(() => {
+    if (reduceMotion) {
+      onComplete();
+      return;
+    }
+
     titleScale.value = withSpring(1, {
       damping: 16,
       stiffness: 110,
     });
     splashOpacity.value = withDelay(
-      1450,
+      760,
       withTiming(
         0,
         {
-          duration: 420,
+          duration: 240,
           easing: Easing.inOut(Easing.cubic),
         },
         (finished) => {
@@ -59,7 +66,7 @@ const LaunchSplash = ({ onComplete }: LaunchSplashProps) => {
         },
       ),
     );
-  }, [onComplete, splashOpacity, titleScale]);
+  }, [onComplete, reduceMotion, splashOpacity, titleScale]);
 
   const splashAnimatedStyle = useAnimatedStyle(() => ({
     opacity: splashOpacity.value,

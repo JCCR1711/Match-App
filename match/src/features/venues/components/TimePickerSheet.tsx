@@ -79,7 +79,7 @@ const TimePickerSheet = ({ visible, title, value, onSelect, onClose }: TimePicke
   return (
     <Modal visible={visible} transparent animationType="slide" presentationStyle="overFullScreen" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Cerrar selector" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel="Cerrar selector" />
         <SafeAreaView style={styles.sheet} edges={["bottom"]}>
           <View style={styles.handle} />
           <View style={styles.heading}>

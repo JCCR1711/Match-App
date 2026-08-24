@@ -1,3 +1,4 @@
+import CustomText from "@/src/components/ui/CustomText";
 import ReservationSheetActionButton from "@/src/features/reservations/components/ReservationSheetActionButton";
 import ReservationSheetActions from "@/src/features/reservations/components/ReservationSheetActions";
 import ReservationSheetFrame from "@/src/features/reservations/components/ReservationSheetFrame";
@@ -8,6 +9,7 @@ import type { AvailabilityBlock, AvailabilityBlockKind } from "@/src/features/re
 import { addMinutesToTime } from "@/src/features/reservations/utils/reservationTime";
 import { theme } from "@/src/theme";
 import * as Haptics from "expo-haptics";
+import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 export type AvailabilityAction =
@@ -20,11 +22,17 @@ interface AvailabilityBlockActionsSheetProps {
   fieldName?: string;
   onClose: () => void;
   onCreateReservation: (startTime: string, endTime: string) => void;
-  onBlock: (startTime: string, kind: AvailabilityBlockKind) => void;
-  onRelease: (blockId: string) => void;
+  onBlock: (startTime: string, endTime: string, kind: AvailabilityBlockKind) => boolean;
+  onRelease: (blockId: string) => boolean;
 }
 
 const AvailabilityBlockActionsSheet = ({ action, dateLabel, fieldName, onClose, onCreateReservation, onBlock, onRelease }: AvailabilityBlockActionsSheetProps) => {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setErrorMessage(null);
+  }, [action]);
+
   if (!action) return null;
 
   const isBlocked = action.kind === "blocked";
@@ -43,13 +51,17 @@ const AvailabilityBlockActionsSheet = ({ action, dateLabel, fieldName, onClose, 
   const handleBlock = (kind: AvailabilityBlockKind) => {
     if (!availableAction) return;
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    onBlock(availableAction.startTime, kind);
+    if (!onBlock(availableAction.startTime, availableAction.endTime, kind)) {
+      setErrorMessage("Este horario ya no esta disponible.");
+    }
   };
 
   const handleRelease = () => {
     if (!blockedAction) return;
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    onRelease(blockedAction.block.id);
+    if (!onRelease(blockedAction.block.id)) {
+      setErrorMessage("No pudimos liberar este horario.");
+    }
   };
 
   return (
@@ -88,6 +100,7 @@ const AvailabilityBlockActionsSheet = ({ action, dateLabel, fieldName, onClose, 
             { label: "Fecha", value: dateLabel },
           ]}
         />
+        {errorMessage ? <CustomText text={errorMessage} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
       </View>
       </>
     </ReservationSheetFrame>
@@ -101,4 +114,5 @@ const styles = StyleSheet.create({
   timeBlock: { alignItems: "center", gap: theme.spacing.sm },
   secondaryActions: { gap: theme.spacing.md },
   secondaryButton: { width: "100%" },
+  error: { color: theme.colors.error, textAlign: "center" },
 });

@@ -6,8 +6,8 @@ import { isActiveReservation } from "@/src/features/reservations/utils/isActiveR
 import { getReservationCustomerLabel } from "@/src/features/reservations/utils/reservationIdentity";
 import { theme } from "@/src/theme";
 import { formatMoneyAmount } from "@/src/utils/formatMoney";
-import { memo } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { memo, useCallback, useEffect, useRef } from "react";
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from "react-native";
 
 interface BusinessAgendaTimelineProps {
   reservations: ReservationRecord[];
@@ -15,6 +15,9 @@ interface BusinessAgendaTimelineProps {
   openingTime?: string;
   closingTime?: string;
   focusedReservationId?: string | null;
+  focusedAvailableStartTime?: string | null;
+  onFocusedItemLayout?: (layout: { y: number; height: number }) => void;
+  focusRequestKey?: number;
   onPressReservation: (reservation: ReservationRecord) => void;
   onPressAvailable: (slot: { startTime: string; endTime: string }) => void;
   onPressBlock: (block: AvailabilityBlock) => void;
@@ -70,7 +73,45 @@ const buildRows = (events: ScheduleEvent[], openingTime: string, closingTime: st
   return rows;
 };
 
-const BusinessAgendaTimeline = ({ reservations, blocks, openingTime = "16:00", closingTime = "23:00", focusedReservationId, onPressReservation, onPressAvailable, onPressBlock }: BusinessAgendaTimelineProps) => {
+const BusinessAgendaTimeline = ({ reservations, blocks, openingTime = "16:00", closingTime = "23:00", focusedReservationId, focusedAvailableStartTime, onFocusedItemLayout, focusRequestKey, onPressReservation, onPressAvailable, onPressBlock }: BusinessAgendaTimelineProps) => {
+  const scheduleY = useRef<number | null>(null);
+  const rowsY = useRef<number | null>(null);
+  const itemLayouts = useRef(new Map<string, { y: number; height: number }>());
+  const focusedItemKey = focusedReservationId
+    ? `reservation:${focusedReservationId}`
+    : focusedAvailableStartTime
+      ? `available:${focusedAvailableStartTime}`
+      : null;
+  const reportItemLayout = useCallback((itemKey: string | null) => {
+    if (scheduleY.current === null || rowsY.current === null || !itemKey) return;
+    const itemLayout = itemLayouts.current.get(itemKey);
+    if (!itemLayout) return;
+    onFocusedItemLayout?.({
+      y: scheduleY.current + rowsY.current + itemLayout.y,
+      height: itemLayout.height,
+    });
+  }, [onFocusedItemLayout]);
+  const reportFocusedLayout = useCallback(() => {
+    reportItemLayout(focusedItemKey);
+  }, [focusedItemKey, reportItemLayout]);
+
+  useEffect(() => {
+    if (!focusRequestKey) return;
+    const animationFrame = requestAnimationFrame(reportFocusedLayout);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [focusRequestKey, reportFocusedLayout]);
+  const captureScheduleLayout = (event: LayoutChangeEvent) => {
+    scheduleY.current = event.nativeEvent.layout.y;
+    reportFocusedLayout();
+  };
+  const captureRowsLayout = (event: LayoutChangeEvent) => {
+    rowsY.current = event.nativeEvent.layout.y;
+    reportFocusedLayout();
+  };
+  const captureItemLayout = (itemKey: string, event: LayoutChangeEvent) => {
+    itemLayouts.current.set(itemKey, event.nativeEvent.layout);
+    if (itemKey === focusedItemKey) reportItemLayout(itemKey);
+  };
   const events: ScheduleEvent[] = [
     ...reservations
       .filter(isActiveReservation)
@@ -80,14 +121,16 @@ const BusinessAgendaTimeline = ({ reservations, blocks, openingTime = "16:00", c
   const rows = buildRows(events, openingTime, closingTime);
 
   return (
-    <View style={styles.schedule} accessibilityLabel="Horarios del día">
+    <View style={styles.schedule} onLayout={captureScheduleLayout} accessibilityLabel="Horarios del día">
       <View style={styles.heading}>
         <CustomText text="Agenda" variant="subtitle" style={styles.title} />
       </View>
-      <View>
+      <View onLayout={captureRowsLayout}>
         {rows.map((row) => {
           if (row.kind === "available") {
-            return <Pressable key={row.startTime} onPress={() => onPressAvailable(row)} accessibilityRole="button" accessibilityLabel={`Bloquear horario de ${row.startTime} a ${row.endTime}`} style={({ pressed }) => pressed && styles.pressed}><ScheduleRow startTime={row.startTime} endTime={row.endTime} status="available" /></Pressable>;
+            const focused = row.startTime === focusedAvailableStartTime;
+            const itemKey = `available:${row.startTime}`;
+            return <Pressable key={row.startTime} onLayout={(event) => captureItemLayout(itemKey, event)} onPress={() => { reportItemLayout(itemKey); onPressAvailable(row); }} accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={`Gestionar horario disponible de ${row.startTime} a ${row.endTime}`} style={({ pressed }) => pressed && styles.pressed}><ScheduleRow startTime={row.startTime} endTime={row.endTime} status="available" focused={focused} /></Pressable>;
           }
 
           const endTime = addMinutes(row.event.startTime, row.event.durationMinutes);
@@ -95,9 +138,12 @@ const BusinessAgendaTimeline = ({ reservations, blocks, openingTime = "16:00", c
           const content = <ScheduleRow startTime={row.event.startTime} endTime={endTime} title={row.event.title} status={row.event.status} amount={row.event.amount} focused={focused} />;
           if (row.event.reservation) {
             const reservationState = row.event.reservation.status === "confirmed" ? "confirmada" : "pendiente";
-            return <Pressable key={row.event.reservation.id} onPress={() => onPressReservation(row.event.reservation!)} accessibilityRole="button" accessibilityLabel={`Gestionar reserva ${reservationState} de ${row.event.reservation.customerName}`} style={({ pressed }) => pressed && styles.pressed}>{content}</Pressable>;
+            const itemKey = `reservation:${row.event.reservation.id}`;
+            return <Pressable key={row.event.reservation.id} onLayout={(event) => captureItemLayout(itemKey, event)} onPress={() => { reportItemLayout(itemKey); onPressReservation(row.event.reservation!); }} accessibilityRole="button" accessibilityState={{ selected: focused }} accessibilityLabel={`Gestionar reserva ${reservationState} de ${row.event.reservation.customerName}`} style={({ pressed }) => pressed && styles.pressed}>{content}</Pressable>;
           }
-          return row.event.block ? <Pressable key={row.event.block.id} onPress={() => onPressBlock(row.event.block!)} accessibilityRole="button" accessibilityLabel={`Liberar horario bloqueado de ${row.event.block.startTime}`} style={({ pressed }) => pressed && styles.pressed}>{content}</Pressable> : null;
+          if (!row.event.block) return null;
+          const itemKey = `block:${row.event.block.id}`;
+          return <Pressable key={row.event.block.id} onLayout={(event) => captureItemLayout(itemKey, event)} onPress={() => { reportItemLayout(itemKey); onPressBlock(row.event.block!); }} accessibilityRole="button" accessibilityLabel={`Liberar horario bloqueado de ${row.event.block.startTime}`} style={({ pressed }) => pressed && styles.pressed}>{content}</Pressable>;
         })}
       </View>
     </View>
@@ -115,9 +161,10 @@ const ScheduleRow = ({ startTime, endTime, title, status, amount, focused = fals
       </View>
       <View style={styles.track}>
         <View style={styles.trackLine} />
-        <View style={[styles.node, styles[`${status}Node`], focused && styles.focusedNode]} />
+        <View style={[styles.node, styles[`${status}Node`]]} />
       </View>
       <View style={[styles.row, isReservation && styles.reservationCard, status === "confirmed" && styles.confirmedCard]}>
+        {focused ? <View pointerEvents="none" style={styles.focusBorder} /> : null}
         {isReservation ? <SportsAvatar seed={title ?? "Cliente"} /> : null}
         <View style={styles.copy}>
           {isReservation ? <CustomText text={title ?? "Cliente"} variant="body" style={[styles.eventTitle, styles[`${status}Title`]]} numberOfLines={1} ellipsizeMode="tail" /> : null}
@@ -148,13 +195,13 @@ const styles = StyleSheet.create({
   track: { width: 20, alignItems: "center", justifyContent: "center" },
   trackLine: { position: "absolute", top: 0, bottom: 0, width: StyleSheet.hairlineWidth, backgroundColor: theme.colors.dividerOnDark },
   node: { width: 10, height: 10, borderRadius: theme.radius.pill, borderWidth: 2, borderColor: theme.colors.black },
-  focusedNode: { width: 14, height: 14, borderWidth: 3, borderColor: theme.colors.white },
   availableNode: { backgroundColor: theme.colors.surfaceMuted },
   confirmedNode: { backgroundColor: theme.colors.accent },
   pendingNode: { backgroundColor: theme.colors.pendingLimeText },
   blockedNode: { backgroundColor: theme.colors.error },
   maintenanceNode: { backgroundColor: theme.colors.warmAmber },
   row: { flex: 1, minWidth: 0, minHeight: 88, alignSelf: "center", flexDirection: "row", alignItems: "center", gap: theme.spacing.md, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.md },
+  focusBorder: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, borderWidth: 1, borderColor: theme.colors.white, borderRadius: theme.radius.extraLarge, opacity: 0.86 },
   rowSeparator: { position: "absolute", right: 0, bottom: 0, left: 80, height: StyleSheet.hairlineWidth, backgroundColor: theme.colors.separatorOnDark },
   reservationCard: { borderRadius: theme.radius.extraLarge, borderCurve: "continuous", backgroundColor: theme.colors.surface },
   confirmedCard: { backgroundColor: theme.colors.reservedSurface },

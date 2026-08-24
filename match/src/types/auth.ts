@@ -5,6 +5,7 @@ export type UserMode = "player" | "venue_manager";
 export interface User {
   id: string;
   displayName: string;
+  username: string;
   email: string;
   availableModes: UserMode[];
   activeMode: UserMode | null;
@@ -37,6 +38,7 @@ export type VerifyEmailResult = AuthenticationSucceeded | SignUpRequired;
 
 export interface CompleteSignUpInput {
   displayName: string;
+  username: string;
   acceptedTermsVersion: string;
 }
 
@@ -95,7 +97,7 @@ export interface AuthContextType {
   pendingSignUp: SignUpRequired | null;
   requestEmailCode: (email: string) => Promise<boolean>;
   verifyEmailCode: (code: string) => Promise<VerificationOutcome>;
-  completeSignUp: (displayName: string) => Promise<boolean>;
+  completeSignUp: (displayName: string, username: string) => Promise<boolean>;
   selectUserMode: (mode: UserMode) => Promise<boolean>;
   selectAvatar: (avatarId: SportsAvatarId) => void;
   signInDemo: (mode: UserMode) => Promise<boolean>;
