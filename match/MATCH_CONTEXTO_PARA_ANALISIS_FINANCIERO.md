@@ -1,457 +1,284 @@
-# MATCH — Guía del proyecto para análisis y proyecciones financieras
+# MATCH: guía sencilla para entender el proyecto y preparar proyecciones
 
-**Fecha de revisión:** 28 de septiembre de 2026.  
-**Dirigido a:** analista financiera que se incorpora al proyecto.  
-**Base:** documentación y código actuales del repositorio, incluidos cambios locales aún no consolidados en Git.
+**Para:** la analista financiera del proyecto
+**Actualizado:** 28 de septiembre de 2026
 
-## 1. Qué es MATCH y cómo leer este documento
+## 1. MATCH en pocas palabras
 
-MATCH es una aplicación móvil para descubrir, reservar y administrar canchas deportivas, con foco de producto en fútbol y el mercado peruano. Conecta a personas que quieren jugar con negocios que alquilan canchas y necesitan organizar su operación.
+MATCH es una aplicación para encontrar y reservar canchas y para que los negocios que las alquilan organicen su operación.
 
-Combina dos propuestas:
+La aplicación conecta dos grupos:
 
-- **Plataforma de reservas:** los jugadores encuentran oferta y solicitan horarios; la visión incluye pagos y organización de partidos.
-- **Software de gestión para negocios:** los propietarios administran sedes, canchas, disponibilidad, reservas y métricas desde la misma aplicación.
+- **Jugadores**, que buscan una cancha, eligen un horario y quieren reservar.
+- **Negocios**, que publican sus canchas, administran horarios y atienden reservas.
 
-La hipótesis económica combina comisiones sobre reservas procesadas por MATCH y suscripciones empresariales. Una eventual suscripción de jugador también está contemplada, pero no tiene precio validado.
+MATCH busca ganar dinero principalmente de dos maneras: cobrando una comisión por ciertas reservas pagadas dentro de la aplicación y ofreciendo un plan mensual avanzado a los negocios.
 
-**El estado actual es un prototipo funcional, no una operación financiera productiva acreditada por este repositorio.** Hay pantallas y lógica operativa, pero las reservas utilizan servicios simulados, las suscripciones no se cobran realmente y las finanzas muestran datos de demostración. No se encontraron en las fuentes revisadas cifras verificadas de clientes, facturación, inversión, costos o tracción comercial.
+**Situación actual:** MATCH tiene una aplicación de prototipo que permite recorrer varias pantallas y probar flujos con datos de demostración. El código revisado no demuestra que haya pagos, suscripciones, depósitos o ventas reales. Tampoco contiene cifras verificadas de clientes, costos o ingresos. Por eso, este documento explica el negocio propuesto y señala qué datos hacen falta para proyectarlo; no presenta resultados reales.
 
-En este documento se distinguen cuatro niveles:
+## 2. Cómo se usa MATCH
 
-| Nivel | Qué significa |
-|---|---|
-| Implementado en prototipo | Existe código o una experiencia utilizable con datos locales o simulados. No equivale a producción. |
-| Dirección de producto | Está descrito como funcionamiento objetivo; puede requerir desarrollo. |
-| Hipótesis comercial | Precio, comisión o beneficio que debe contrastarse con clientes y costos. |
-| Propuesta de análisis | Estructura sugerida aquí para preparar el modelo financiero; no es una decisión aprobada del proyecto. |
+Una misma persona puede usar MATCH para jugar y para administrar un negocio. Dentro de la aplicación puede cambiar entre esos dos modos con su cuenta.
 
-El alcance es explicar el proyecto y preparar el trabajo de modelado. No incluye investigación de mercado, tarifas actuales de proveedores ni determinación tributaria. Las cifras ilustrativas no son pronósticos ni cotizaciones.
-
-## 2. Problema que busca resolver y propuesta de valor
-
-Para el jugador, MATCH busca facilitar encontrar una cancha disponible, conocer su precio, reservar y coordinar un partido. Para el negocio, busca centralizar reservas y horarios, reducir conflictos, identificar horas libres y dar visibilidad comercial a su oferta.
-
-Estos beneficios son objetivos por validar con usuarios. El repositorio no demuestra todavía cuánto aumentan la ocupación, cuánto tiempo ahorran o cuánto está dispuesto a pagar un establecimiento.
-
-| Participante | Valor esperado | Evidencia que conviene obtener |
-|---|---|---|
-| Jugador que organiza | Encontrar y reservar con menos coordinación | Conversión a primera reserva y repetición |
-| Jugador participante | Incorporarse a partidos y coordinar su participación | Uso real del futuro flujo de partidos |
-| Propietario | Orden operativo, más demanda y mejor visibilidad del negocio | Horas ahorradas, reservas incrementales y disposición de pago |
-| Administrador y personal | Agenda compartida y responsabilidades claras | Uso semanal y reducción de conflictos |
-
-La unidad de oferta es una **cancha durante un intervalo de tiempo**. Una cancha registrada sin horario, tarifa o disponibilidad no representa capacidad vendible. Un usuario registrado tampoco equivale a un cliente que reserva o paga.
-
-## 3. Quién usa la aplicación y cómo se organiza el negocio
-
-Una persona tiene una sola cuenta y puede usar dos modos: **jugador** y **negocio**. Cambiar de modo cambia la experiencia, no crea otra identidad ni elimina su relación con una organización.
-
-La estructura empresarial es:
+Un negocio se organiza así:
 
 ```text
-Organización o club
-  └─ Una o varias sedes físicas
-       └─ Una o varias canchas por sede
-            └─ Horarios, tarifas, reservas y bloqueos
+Negocio o club
+  └── Una o varias sedes
+       └── Una o varias canchas
+            └── Horarios, precios, reservas y bloqueos
 ```
 
-La suscripción empresarial pertenece a la organización. Por eso, en la hipótesis actual, tres sedes del mismo club no significan automáticamente tres suscripciones.
+Por ejemplo, un club podría tener dos sedes y tres canchas en cada una. La propuesta contempla que el plan del negocio corresponda al club, no que se cobre automáticamente un plan distinto por cada cancha.
 
-| Rol | Responsabilidad prevista |
+Hay tres tipos de acceso previstos:
+
+| Persona | Qué haría en MATCH |
 |---|---|
-| Propietario | Control del negocio, operación, plan y cuenta de depósito |
-| Administrador | Operación y consulta de finanzas; no modifica la cuenta de depósito |
-| Personal | Tareas operativas de reservas; sin acceso financiero ni configuración general |
+| Propietario | Administra el negocio, el plan y la cuenta donde se depositan los fondos. |
+| Administrador | Ayuda con la operación y puede consultar las finanzas. |
+| Personal | Ayuda con tareas de reservas; no tiene acceso a las finanzas del negocio. |
 
-El acceso también depende del plan: en Basic administra el propietario; el acceso empresarial de administradores y personal requiere Pro. La gestión real de invitaciones, asignación de sedes y autorización de servidor sigue pendiente.
+El sistema de invitaciones y permisos todavía requiere integración real con un servidor.
 
-**Para contar clientes:** separar cuentas personales, organizaciones, sedes, canchas y organizaciones pagadoras. No sumar jugadores y propietarios como personas diferentes si son la misma cuenta.
+## 3. El recorrido de cada cliente
 
-## 4. Cómo funcionará la experiencia del jugador
+### El jugador
 
-El recorrido objetivo es:
+El jugador abre MATCH, busca una sede, revisa las canchas y los horarios disponibles, elige cuánto tiempo quiere jugar y solicita una reserva. En la versión completa, pagaría dentro de la aplicación y recibiría la confirmación. Después podría revisar sus reservas y solicitar una cancelación según las condiciones del negocio.
 
-1. Registrarse por correo, verificarlo y completar el perfil.
-2. Entrar al modo jugador y explorar canchas.
-3. Consultar una sede, sus canchas, disponibilidad y precio.
-4. Seleccionar cancha, fecha, hora y duración.
-5. Revisar importe y condiciones; pagar mediante un proveedor integrado.
-6. Recibir confirmación y consultar la reserva en su historial.
-7. Utilizar el servicio o gestionar una cancelación según las condiciones acordadas.
+La aplicación ya muestra pantallas de búsqueda y reserva. Sin embargo, el código revisado crea la reserva con el pago pendiente. La pantalla siguiente, por sí sola, **no confirma que MATCH haya recibido dinero**. Falta conectar el cobro real y definir cómo se procesan las cancelaciones y devoluciones.
 
-**Lo que existe hoy:** inicio, detalle de sede, creación de reserva, pantalla posterior de confirmación y listado de reservas. En el código revisado, la creación del jugador registra la reserva como pendiente y el pago como pendiente. Llegar a la pantalla de confirmación no acredita un cobro.
+La visión también incluye partidos abiertos y pagos repartidos entre jugadores. Esas funciones todavía no deben contarse como actividad comercial disponible.
 
-**Lo que debe completarse:** pago real, confirmación confiable del proveedor, reglas operativas de cancelación, devoluciones y consistencia entre usuarios y dispositivos.
+### El negocio
 
-La dirección de producto también incluye pagos divididos entre jugadores, partidos abiertos para completar cupos e invitaciones por enlace. Son capacidades prioritarias previstas; no deben modelarse como servicios productivos ya disponibles. Equipos permanentes, rankings, ligas, torneos y academias corresponden a una evolución posterior.
+El propietario registra el club, agrega una sede y crea una cancha. Luego configura su ubicación, horario y precio. Una vez listo, puede administrar la agenda: revisar reservas, añadir reservas que recibió directamente y bloquear horarios en los que no alquilará la cancha.
 
-## 5. Cómo funciona el lado del negocio
+Una reserva que llega por MATCH y una que el negocio apunta manualmente son distintas:
 
-### Alta y preparación
-
-El alta busca ser progresiva: el propietario registra nombre y contacto del club, entra al panel, agrega su primera sede y después su primera cancha. Completa ubicación, horario y tarifa para habilitar la oferta.
-
-Una cancha puede heredar el horario de su sede o tener uno propio. Sedes y canchas pueden estar activas o inactivas; suspender una sede afecta la disponibilidad de sus canchas sin borrar su historial.
-
-### Operación cotidiana
-
-- El panel presenta contexto operativo y reservas que requieren atención.
-- La agenda permite consultar reservas por fecha, sede y cancha.
-- El negocio puede crear reservas manuales, incluso para clientes sin cuenta MATCH.
-- Propietario y administrador pueden bloquear o liberar horarios según sus permisos.
-- Las métricas ayudan a revisar reservas, ventas confirmadas, ocupación y horas disponibles.
-- Finanzas y liquidaciones representan cómo se consultarán cobros y depósitos cuando exista integración real.
-
-### Operar localmente y recibir reservas online son estados distintos
-
-| Estado | Consecuencia |
-|---|---|
-| Solo operación local | El negocio utiliza su agenda sin recibir nuevas reservas del marketplace |
-| Publicado | Puede recibir reservas online para recursos activos y preparados |
-| Pausado | Deja de recibir nuevas reservas online; conserva la agenda y las reservas existentes |
-
-Recibir reservas online está previsto dentro de Basic. Es parte de la captación de oferta y de la futura generación de comisiones.
-
-**Implicación financiera:** no basta con contar negocios registrados. Se necesitan organizaciones activadas, publicadas, con oferta reservable y con transacciones efectivas.
-
-## 6. Reservas, cobros y dinero: conceptos que no deben mezclarse
-
-Una reserva tiene estado operativo —pendiente, confirmada o cancelada— y estado de pago separado —pendiente, pagado, cobro en sede, devolución pendiente o devuelto—.
-
-También tiene un origen:
-
-| Origen | Funcionamiento previsto | Tratamiento en la proyección |
+| Tipo de reserva | Quién consigue o registra al jugador | ¿MATCH cobraría comisión? |
 |---|---|---|
-| MATCH | Reserva generada en la plataforma y destinada a su flujo de pago | Incluir en la base de comisión solo cuando corresponda según cobro y prestación |
-| Manual/local | Reserva registrada por el negocio; cobro gestionado en la sede | No atribuir automáticamente ingreso por comisión a MATCH |
+| Reserva de MATCH | El jugador encuentra y solicita la cancha en MATCH. | La propuesta es cobrarla si se procesa y cumple las condiciones acordadas. |
+| Reserva manual | El negocio la registra porque la recibió por su cuenta. | No necesariamente. El negocio puede cobrar directamente al jugador. |
 
-Una reserva manual puede ser una venta del establecimiento y generar valor por uso del software, sin producir una comisión para la plataforma.
+Esta diferencia es importante: una reserva registrada por el negocio puede ser una venta para el club sin ser un ingreso para MATCH.
 
-El flujo financiero objetivo documentado es:
+## 4. De quién es el dinero
+
+Hay tres cantidades que conviene mantener separadas:
+
+1. **Venta del negocio:** el importe que el jugador paga por alquilar la cancha.
+2. **Volumen procesado por MATCH:** el importe de las reservas que pasan por el cobro de la aplicación.
+3. **Ingreso de MATCH:** la comisión que le corresponde a la plataforma y los pagos de suscripciones que efectivamente reciba.
+
+El volumen procesado por MATCH **no es lo mismo que el ingreso de MATCH**. Si una persona paga S/ 100 por una cancha, el negocio es quien presta el servicio. MATCH solo registraría como ingreso propio la comisión que se haya acordado, más los ingresos por suscripción que correspondan.
+
+El flujo de dinero propuesto es:
 
 ```text
-Jugador paga mediante proveedor
-  → se registra el cobro y los cargos pendientes
-  → se realiza el servicio
-  → se confirma la comisión y el importe liquidable
-  → se agrupan movimientos en una liquidación
-  → el proveedor deposita el neto al negocio
-  → se confirma y concilia el depósito
+El jugador paga
+  → se registra el cobro de la reserva
+  → se realiza el partido
+  → se calcula cuánto corresponde a MATCH y al negocio
+  → se prepara el depósito al negocio
 ```
 
-El diseño asigna al proveedor la custodia temporal y ejecución del depósito. MATCH conserva referencias, importes y estados. Esto sigue siendo un diseño a concretar con un proveedor; no prueba que exista un acuerdo operativo.
+Un proveedor de pagos tendría que procesar el cobro y el depósito. MATCH debería guardar los importes y referencias para poder revisar las operaciones, sin guardar los datos completos de la tarjeta. Este flujo aún no está conectado a un proveedor real.
 
-Reglas propuestas en los contratos del proyecto:
+La regla propuesta es que MATCH cobre una sola comisión por la reserva, no otra comisión adicional cuando deposite el saldo al negocio. Una devolución, una cancelación con penalidad o un cobro disputado puede cambiar los importes y necesita reglas claras antes de operar.
 
-- Un pago pendiente o rechazado no genera comisión.
-- El pago registra comisión pendiente; la prestación del servicio la vuelve firme.
-- Un reembolso total revierte la comisión MATCH.
-- Una cancelación con penalidad aplica comisión solo sobre el importe retenido.
-- Un contracargo debe reflejarse como ajuste posterior.
-- No se cobra otra comisión MATCH por retirar o liquidar el dinero.
+## 5. Cómo podría ganar dinero MATCH
 
-La interfaz actual representa una cancelación pagada como devolución pendiente. No demuestra que el dinero haya sido reembolsado. Aunque el contrato contempla ajustes por contracargos, su gestión avanzada está fuera del primer MVP; hace falta definir cómo se atenderán esas incidencias al operar con dinero real.
+### Comisión por reservas
 
-## 7. Monetización y planes
+La propuesta inicial usa una comisión de **5%** sobre el importe elegible de una reserva. Por ejemplo, con una reserva de S/ 100, una comisión del 5% equivaldría a S/ 5 antes de considerar los costos de procesar el pago.
 
-### Hipótesis empresariales documentadas
+Ese porcentaje todavía es una **hipótesis**, no una tarifa cobrada. Falta confirmar qué pagos generan comisión, quién asume el costo del proveedor y qué pasa cuando hay devoluciones o cancelaciones.
 
-| Concepto | Hipótesis actual | Observación para el modelo |
-|---|---|---|
-| Basic | Permanente, con operación esencial | Modelar sin ingreso de suscripción como supuesto inicial explícito; confirmar condiciones comerciales |
-| Pro fundador | S/ 9.90 al mes | Falta fijar duración y elegibilidad de la promoción |
-| Pro regular | S/ 19.90 al mes | Precio de referencia sujeto a validación |
-| Prueba Pro | 30 días por organización | Prueba activa no equivale a suscriptor pagador |
-| Comisión MATCH | 5% sobre la base elegible de la reserva | Mismo porcentaje previsto para Basic y Pro |
-| Procesamiento | Separado, trasladado a costo real | Falta definir proveedor, tarifa, obligado al pago y presentación al cliente |
-| Liquidación o depósito | Sin comisión MATCH adicional | Un eventual costo del proveedor debe presupuestarse por separado |
-| Tarifa total alternativa | 8%–10%, solo en evaluación | No sumar esta tarifa al 5%; es otra alternativa comercial |
+El proyecto también menciona evaluar una tarifa total de 8% a 10%. Es una alternativa para estudiar; no debe sumarse al 5% en una misma proyección.
 
-No hay evidencia en lo revisado de facturación real de Pro, contratación de una pasarela ni pruebas de disposición de pago.
+### Suscripción de negocios
 
-### Diferencias de producto
+El producto contempla dos planes:
 
-Basic contempla una sede, una cancha, propietario, agenda, reservas, bloqueos y métricas esenciales de 30 días. Pro amplía sedes y canchas, acceso del equipo, análisis y reportes consolidados; el cliente configura 365 días de historia para Pro.
+| Plan | Qué incluye la propuesta | Precio documentado |
+|---|---|---:|
+| Basic | Herramientas esenciales para administrar una sede, una cancha, reservas y horarios. | Sin precio confirmado; se plantea como plan permanente. |
+| Pro | Más sedes y canchas, acceso del equipo y herramientas avanzadas de análisis. | S/ 19.90 al mes como precio de referencia. |
 
-El código actual incluye exportación CSV de reservas conectada a la pantalla de estadísticas y condicionada a Pro. Esto supera algunas descripciones antiguas que la presentan como futura. Es una exportación operativa, no una conciliación bancaria ni contabilidad completa.
+También se menciona un precio promocional de **S/ 9.90 al mes** para negocios fundadores y una prueba Pro de 30 días. El equipo aún debe decidir cuánto dura la promoción y quién puede acceder.
 
-Existen capacidades declaradas para automatización, pero una bandera de acceso no demuestra que una automatización comercial esté implementada. Las invitaciones reales de empleados y otras herramientas avanzadas requieren desarrollo.
+Las pantallas de planes existen en el prototipo; eso no quiere decir que MATCH ya cobre suscripciones. El plan Basic es importante para que un negocio pueda empezar y para que haya más canchas disponibles. MATCH podría obtener ingresos de esas canchas si generan reservas pagadas por la plataforma.
 
-Al bajar de Pro a Basic, la dirección de producto conserva los datos y plantea elegir una sede y una cancha operativas. Hay descripciones parciales diferentes sobre el tratamiento del exceso de recursos; debe cerrarse y probarse el flujo antes de asumir una experiencia de downgrade comercial completa.
+### Posibles ingresos futuros
 
-### Otras vías de ingreso
+El proyecto menciona un plan Pro para jugadores y espacios promocionados para negocios. No se han confirmado sus precios ni sus condiciones. Déjalos fuera de la proyección principal hasta que el equipo los valide.
 
-Player Pro contempla beneficios como menor comisión, recompensas o promociones negociadas, pero no tiene precio definido. La visibilidad patrocinada también está prevista como posibilidad identificable para el usuario. No incluir ingresos de estas líneas en el escenario base sin validar oferta, implementación y demanda.
+## 6. Qué está hecho y qué no
 
-Cualquier descuento debe identificar quién lo financia: MATCH, el establecimiento o ambos. Una recompensa financiada por MATCH reduce su margen; no es un beneficio gratuito para la empresa.
+| Tema | Estado encontrado en el proyecto |
+|---|---|
+| Pantallas para jugador | Hay búsqueda, detalles de sedes y creación y consulta de reservas. |
+| Herramientas para negocios | Hay pantallas para agenda, reservas, sedes, canchas y disponibilidad. |
+| Pago del jugador | No se encontró una integración de cobro real; la reserva se crea con pago pendiente. |
+| Suscripciones | Hay pantallas y reglas de prueba, pero el servicio actual usa datos simulados. |
+| Finanzas y depósitos | La aplicación muestra ejemplos de movimientos y liquidaciones; no son depósitos reales. |
+| Estadísticas | El prototipo calcula reservas, ventas confirmadas y ocupación con los datos disponibles. |
+| Exportación | Existe una exportación CSV de reservas; no equivale a una conciliación bancaria. |
+| Datos comerciales | No se encontraron cifras verificadas de usuarios, negocios, ingresos o gastos. |
 
-## 8. Estado real y distancia hasta el lanzamiento
+La aplicación puede mostrar cifras para probar cómo se vería el producto. Esas cifras de ejemplo no sirven como historial financiero de MATCH ni de un negocio real.
 
-| Área | Evidencia actual | Qué falta para considerarla operativa a escala real |
-|---|---|---|
-| Acceso y modos | Flujos y accesos demo documentados | Validación de identidad y sesiones productivas |
-| Sedes y canchas | Gestión en prototipo; adaptador HTTP de alta disponible por configuración | Verificar backend desplegado y comportamiento integrado |
-| Reservas | Gateway simulado con persistencia local | Disponibilidad compartida, concurrencia y autorización en servidor |
-| Negocio | Panel, agenda, recursos y restricciones de interfaz | Pruebas completas en Android/iOS y operación con datos reales |
-| Jugador | Descubrimiento y solicitud de reserva | Auditoría integral y pago real |
-| Suscripciones | Planes y capacidades simulados por organización | Contratación, cobro, renovación, impago y cancelación reales |
-| Finanzas | Resúmenes, movimientos y liquidaciones de demostración | Registro financiero, proveedor, conciliación y ajustes |
-| Cuenta de depósito | Datos enmascarados y estado simulado | Registro y verificación con el proveedor |
-| Analítica | Cálculos sobre reservas y exportación CSV | Datos confiables, histórico consistente y definiciones aprobadas |
-| Partidos abiertos y pago dividido | Dirección de producto | Completar implementación y validar demanda |
+También hay una diferencia entre «reserva confirmada» y «dinero cobrado»: algunas estadísticas suman el importe de reservas confirmadas sin comprobar que el pago haya llegado. Antes de proyectar con datos de uso reales, el equipo tendrá que acordar qué cuenta como venta, pago, servicio realizado y devolución.
 
-La aplicación usa una base compartida para Android e iOS, con soporte web donde corresponde. El `package.json` revisado declara Expo 57, React Native 0.86 y React 19.2; algunos documentos conservan versiones anteriores. Compartir código no elimina costos de pruebas, distribución y mantenimiento por plataforma.
+## 7. Cómo preparar una proyección
 
-No se fija una fecha de lanzamiento: el repositorio no contiene evidencia suficiente sobre equipo disponible, presupuesto ni duración de integraciones.
+Conviene proyectar cada mes por separado y preparar tres versiones: **conservadora**, **base** y **favorable**. Cada cifra debe indicar de dónde salió. Si todavía no se conoce, márcala como pendiente; no la presentes como dato real.
 
-## 9. Qué significan las métricas actuales y sus límites
+### Paso 1: estimar los negocios activos
 
-**Las pantallas del negocio no son el estado de resultados de MATCH.** Sus ventas pertenecen al establecimiento; la plataforma obtendría únicamente sus comisiones y otros ingresos propios.
-
-Hallazgos concretos de la revisión:
-
-1. Finanzas importa resúmenes, movimientos y liquidaciones de un archivo de demostración. Sus cifras no son evidencia de facturación ni de dinero depositado.
-2. Los cargos de esos ejemplos no siguen necesariamente el 5% propuesto y agrupan conceptos. No permiten inferir una tarifa real de procesamiento.
-3. La analítica suma el importe de reservas confirmadas como «Ventas confirmadas», sin exigir que estén pagadas. Puede incluir cobros en sede y servicios futuros.
-4. La ocupación se calcula con minutos reservados confirmados y horarios configurados. El cálculo revisado no descuenta bloqueos y utiliza la configuración disponible, no un histórico completo de cambios de capacidad.
-5. El CSV contiene información de reservas y estados, pero no todos los movimientos, cargos y referencias necesarios para una conciliación financiera.
-
-Antes de utilizar estos datos para proyecciones, acordar definiciones de venta, cobro, servicio realizado, reembolso, capacidad y comisión. Para comparar ocupación histórica también habrá que preservar horarios, bloqueos y estados de recursos por periodo.
-
-## 10. Información que la analista necesita solicitar
-
-El repositorio explica el producto; no reemplaza los datos comerciales y financieros del equipo.
-
-| Bloque | Información pendiente | Fuente a solicitar |
-|---|---|---|
-| Lanzamiento | Ciudad o zona, segmentos, fecha objetivo y alcance inicial | Fundadores |
-| Oferta | Clubes contactados, acuerdos, sedes y canchas publicables | Responsable comercial |
-| Capacidad | Horarios, bloqueos, duración habitual y ocupación por franja | Negocios piloto |
-| Demanda | Jugadores interesados, conversión, frecuencia y retención | Piloto y medición de uso |
-| Precio | Tarifa por hora, descuentos, ticket por reserva y estacionalidad | Negocios piloto |
-| Canal | Reservas manuales frente a reservas pagadas por MATCH | Operación piloto |
-| Pro | Disposición de pago, conversión de prueba, bajas y mezcla fundador/regular | Entrevistas y experimentos comerciales |
-| Pagos | Porcentaje, cargo fijo, costo por devolución/depósito, plazos y retenciones | Propuestas formales de proveedores |
-| Adquisición | Inversión y horas comerciales por negocio y por jugador | Marketing y ventas |
-| Operación | Equipo, remuneraciones, soporte, herramientas e infraestructura | Fundadores y proveedores |
-| Caja | Saldo inicial, aportes, gastos incurridos, compromisos y deudas | Registros financieros del proyecto |
-| Fiscal y contractual | Entidad que factura, contratos, impuestos y responsabilidades | Asesoría contable/legal con el modelo concreto |
-
-Cada supuesto debería registrar valor, unidad, fuente, fecha, responsable y grado de confianza. Lo desconocido debe quedar marcado «por validar»; usar cero puede ocultar un costo o una obligación.
-
-## 11. Estructura propuesta de la proyección
-
-Se propone un modelo mensual de 24 meses, ajustable al horizonte que acuerde el equipo, con tres escenarios: conservador, base y favorable. Mantener separadas la operación económica de MATCH y la actividad de los establecimientos.
-
-### 11.1 Oferta y demanda
+Cuenta los negocios que realmente pueden recibir reservas. Un negocio dado de alta no necesariamente tiene una cancha lista. Para considerarlo activo, define con el equipo requisitos sencillos, como tener cancha, horario y precio configurados.
 
 ```text
-Organizaciones activas al cierre
-  = activas al inicio + nuevas activadas − bajas
-
-Horas vendibles
-  = horas abiertas de canchas operativas − bloqueos no comercializables
-
-Reservas potenciales por capacidad
-  = horas vendibles × ocupación esperada / duración media por reserva
-
-Reservas demandadas
-  = clientes reservantes activos × reservas por cliente
+Negocios al final del mes
+= negocios al inicio + negocios nuevos activados − negocios que dejan de usar MATCH
 ```
 
-Usar clientes que efectivamente organizan/reservan, no todos los participantes de un partido, para evitar multiplicar una misma reserva. Limitar las reservas a la capacidad disponible por zona, cancha y franja: el exceso de demanda nocturna no llena automáticamente las horas de la mañana.
+### Paso 2: estimar cuántas reservas caben y cuántas ocurrirán
 
-Estimar aparte qué proporción termina pagándose por MATCH y cuántas reservas se cancelan, devuelven o no completan el pago.
-
-### 11.2 Volumen transaccionado e ingreso propio
+Para cada cancha, pregunta cuántas horas abre, qué horarios tienen demanda, cuánto dura normalmente una reserva y qué porcentaje de esos horarios se ocupa.
 
 ```text
-GMV cobrado por MATCH
-  = suma de importes de reservas cobrados mediante su proveedor
-
-Base elegible de comisión del mes
-  = importes de servicios realizados elegibles
-    + penalidades retenidas elegibles
-    − reversiones aplicables, sin duplicarlas
-
-Ingreso estimado por comisión
-  = base elegible × tasa MATCH
-
-Ingreso estimado por Pro
-  = meses de servicio pagado equivalentes × precio efectivo
-
-Ingreso propio modelado
-  = comisión + Pro + otras líneas efectivamente validadas
+Horas disponibles para alquilar
+= horas abiertas − horas bloqueadas o fuera de servicio
 ```
 
-GMV es el volumen bruto de reservas procesadas, no la facturación propia de MATCH. Registrar por separado el GMV cobrado, los reembolsos y la base sobre la que corresponde comisión. Una reserva pagada hoy para jugar el próximo mes puede pertenecer a periodos distintos de caja y prestación.
+No supongas que todas las horas se venden. Las tardes y noches podrían tener más demanda que las mañanas. Si un grupo reserva una cancha, cuenta una reserva; no cuentes a cada jugador del grupo como si hubiera hecho otra reserva.
 
-Separar suscriptores en prueba, promoción y tarifa regular. Aplicar conversión al terminar la prueba, bajas por cohorte y eventuales impagos. La clasificación contable y tributaria final deberá definirse con los contratos; estas son relaciones para el modelo de gestión.
+### Paso 3: separar las reservas que pasan por MATCH
 
-### 11.3 Costos
-
-| Grupo | Partidas a presupuestar |
-|---|---|
-| Desarrollo inicial | Backend, reservas concurrentes, pagos, conciliación, pruebas y publicación |
-| Equipo recurrente | Desarrollo, producto, comercial, administración y soporte; incluir trabajo fundador aunque se muestre aparte su desembolso |
-| Infraestructura | Servidores, base de datos, almacenamiento, mapas, correo, notificaciones y monitoreo |
-| Variables de transacción | Procesamiento, cargos fijos, devoluciones, contracargos y costos de depósito según contrato |
-| Adquisición | Publicidad, visitas comerciales, referidos, materiales e incentivos |
-| Servicio al negocio | Alta asistida, capacitación, atención e incidencias |
-| Administración | Contabilidad, asesoría, herramientas y otros costos generales |
-
-Clasificar cada partida como única o recurrente, fija o variable, y separar gasto económico de fecha de pago. Si se traslada procesamiento al cliente o al negocio, mostrar también cuánto se recupera y quién asume cualquier diferencia.
-
-### 11.4 Margen y punto de equilibrio
+Pregunta qué parte de las reservas se pagaría dentro de la aplicación y qué parte seguiría siendo manual. Solo así podrás estimar qué volumen podría generar comisión para MATCH.
 
 ```text
-Contribución por reserva
-  = comisión MATCH
-    − costos variables netos asumidos por MATCH
-
-Contribución mensual
-  = contribución de reservas + contribución de suscripciones
-
-Resultado operativo modelado
-  = contribución mensual − costos fijos
-
-Reservas necesarias para equilibrio
-  = (costos fijos − contribución de suscripciones)
-    / contribución media positiva por reserva
+Volumen procesado por MATCH
+= número de reservas pagadas por MATCH × importe promedio por reserva
 ```
 
-Si la contribución por reserva es negativa, aumentar reservas empeora el resultado. Si las suscripciones ya cubren los costos fijos, el requerimiento residual de reservas es cero. Los impuestos, depreciación y otras partidas deben incorporarse según la estructura que corresponda, sin confundir este cálculo simplificado con utilidad neta.
+### Paso 4: estimar los ingresos de MATCH
 
-### 11.5 Caja y fondos del negocio
+```text
+Comisión estimada
+= importe elegible de las reservas × porcentaje de comisión
 
-Proyectar fechas reales de cobro y pago, devoluciones, retenciones del proveedor y depósitos. El dinero destinado a las canchas no debe contarse como caja libre para financiar MATCH. Modelar por separado los fondos administrados por el proveedor y cualquier obligación económica de la plataforma.
+Suscripciones estimadas
+= negocios que pagan Pro × precio mensual que pagan
 
-Calcular saldo mensual y financiamiento necesario a partir del mayor déficit acumulado, más la reserva operativa que acuerde el equipo. El cociente caja disponible/consumo mensual solo es una aproximación útil si ese consumo es estable.
+Ingresos estimados de MATCH
+= comisiones + suscripciones efectivamente pagadas
+```
 
-## 12. Ejemplo numérico exclusivamente ilustrativo
+Separa las pruebas gratis, las promociones de S/ 9.90 y el precio regular de S/ 19.90. Un negocio en prueba aún no es un suscriptor que paga.
 
-**Supuestos inventados para explicar la mecánica; no son resultados, metas ni estimaciones del proyecto.** Se omiten impuestos y diferencias temporales. Todas las reservas del ejemplo se cobran y se realizan en el mismo mes, sin cancelaciones ni reembolsos.
+### Paso 5: estimar los costos y el dinero disponible
 
-| Variable | Supuesto |
-|---|---:|
-| Organizaciones activas | 20 |
-| Canchas operativas por organización | 1 |
-| Reservas mensuales por cancha, todos los canales | 60 |
-| Participación pagada por MATCH | 40% |
-| Ticket por reserva | S/ 100 |
-| Comisión MATCH | 5% |
-| Organizaciones Pro pagadoras a tarifa regular | 5 |
+Pide al equipo y a proveedores cotizaciones para procesar pagos, atender devoluciones, desarrollar la aplicación y mantenerla. Incluye también sueldos, ventas, soporte, publicidad, servidores, herramientas y asesoría contable.
 
-Resultado de ese conjunto de supuestos:
+El costo de procesar cada pago puede incluir un porcentaje y un importe fijo. Por eso, pregunta cuánto cuesta una operación completa y si una reserva dividida entre varios jugadores genera varios cobros.
 
-- Reservas totales: 20 × 1 × 60 = **1,200**.
-- Reservas pagadas por MATCH: 1,200 × 40% = **480**.
-- GMV cobrado y elegible en este ejemplo: 480 × S/ 100 = **S/ 48,000**.
-- Comisión MATCH: S/ 48,000 × 5% = **S/ 2,400**.
-- Suscripciones: 5 × S/ 19.90 = **S/ 99.50**.
-- Ingreso propio modelado antes de costos e impuestos: **S/ 2,499.50**.
+Separa dos cosas:
 
-El volumen de S/ 48,000 no es ingreso propio de MATCH. Tampoco S/ 2,499.50 es utilidad.
+- **Resultado:** cuánto ingresa MATCH y cuánto gasta durante un periodo.
+- **Caja:** cuándo entra y sale el dinero de la cuenta de MATCH.
 
-Supongamos además, solo para ilustrar sensibilidad, un procesamiento de **3% + S/ 1 por pago**. En un pago de S/ 100 serían S/ 4. Si MATCH lo absorbiera, de una comisión de S/ 5 quedarían S/ 1 antes de otros costos. Si se descontara del negocio junto con la comisión, este recibiría S/ 91, bajo esos supuestos. Si lo pagara el jugador adicionalmente, cambiarían el precio final y posiblemente la base de procesamiento.
+El dinero que corresponde a los negocios no es dinero libre de MATCH. En la proyección de caja, identifica qué importes cobra un proveedor y cuándo los deposita al negocio.
 
-No se ha cotizado esa tarifa. El propósito es mostrar por qué hay que definir quién paga cada cargo. El pago dividido puede generar varios cargos fijos para una misma reserva, por lo que debe modelarse por número de transacciones, no solo por reserva.
+### Paso 6: encontrar el punto de equilibrio
 
-## 13. Indicadores que conviene medir desde el piloto
+El punto de equilibrio es el nivel de actividad en el que los ingresos alcanzan para cubrir los gastos del periodo.
 
-| Indicador | Definición de trabajo |
+```text
+Lo que deja una reserva para MATCH
+= comisión − costos de pago y otros costos asociados a esa reserva
+```
+
+Si cada reserva deja S/ 1 después de sus costos y los gastos mensuales de MATCH suman S/ 10,000, harían falta 10,000 reservas con ese margen para cubrirlos, suponiendo que no hubiera otros ingresos. Es solo un ejemplo para explicar la cuenta: los importes deben salir de datos reales.
+
+Si procesar cada reserva cuesta más que la comisión que genera, aumentar las reservas también puede aumentar las pérdidas. Por eso hay que obtener las tarifas del proveedor antes de asumir que una comisión del 5% será rentable.
+
+## 8. Ejemplo simple: cómo leer los números
+
+Los siguientes números son inventados para mostrar cómo funciona el cálculo. **No son resultados, metas ni pronósticos de MATCH.**
+
+Supongamos que 10 clubes tienen una cancha cada uno. Cada cancha registra 50 reservas al mes. La mitad se paga por MATCH y el importe promedio es S/ 100.
+
+| Cuenta | Cálculo | Resultado ilustrativo |
+|---|---:|---:|
+| Reservas registradas | 10 clubes × 50 | 500 reservas |
+| Reservas pagadas por MATCH | 500 × 50% | 250 reservas |
+| Volumen pagado por MATCH | 250 × S/ 100 | S/ 25,000 |
+| Comisión al 5% | S/ 25,000 × 5% | S/ 1,250 |
+
+Los S/ 25,000 son pagos por alquiler de canchas, no ingresos de MATCH. En este ejemplo, S/ 1,250 sería la comisión antes de descontar los costos de pago y otros gastos.
+
+Si además cuatro clubes pagaran Pro a S/ 19.90, MATCH recibiría S/ 79.60 de suscripciones ese mes, antes de gastos. El total ilustrativo de comisión y suscripciones sería S/ 1,329.60 antes de costos. No se debe llamar utilidad a esa cifra.
+
+## 9. Qué información debe conseguir la analista
+
+El repositorio explica cómo se piensa construir el producto, pero no contiene los datos necesarios para saber si el negocio será rentable. Conviene pedir al equipo:
+
+| Pregunta | Dato que ayudaría a responderla |
 |---|---|
-| Activación de oferta | Negocios con cancha, horario y tarifa listos / negocios dados de alta |
-| Oferta publicada | Organizaciones publicadas y horas efectivamente reservables |
-| Conversión de reserva | Reservas pagadas / inicios de reserva, con ventana temporal definida |
-| Repetición | Clientes que vuelven a reservar en 30/60/90 días por cohorte |
-| Participación MATCH | Reservas pagadas por MATCH / reservas totales conocidas del negocio |
-| Ticket medio | Importe de reservas / número de reservas del mismo conjunto |
-| Ocupación | Horas reservadas / horas vendibles, distinguiendo franja y canal |
-| Comisión efectiva | Ingreso neto de comisión / base de volumen definida y consistente |
-| Conversión a Pro | Organizaciones que comienzan a pagar / pruebas finalizadas de la misma cohorte |
-| Ingreso mensual recurrente | Suscripciones recurrentes normalizadas; excluir pruebas y comisiones variables |
-| Bajas de Pro | Pagadores que se dan de baja / pagadores al inicio del periodo |
-| Costo de adquisición | Gasto atribuible / nuevos clientes activados, separado para negocios y jugadores |
-| Contribución por cliente | Ingreso propio menos costos variables atribuibles |
-| Incidencias de pago | Fallos, devoluciones y contracargos por número e importe |
-| Calidad de liquidación | Importe y antigüedad de partidas no conciliadas; retrasos de depósito |
+| ¿Dónde empieza MATCH? | Ciudad, zonas y fecha tentativa del piloto. |
+| ¿Cuántos negocios participarán? | Clubes contactados, interesados y comprometidos. |
+| ¿Qué oferta tendrán? | Sedes, canchas, horarios, tarifas y días de operación. |
+| ¿Cuánto se cobra por reserva? | Precio promedio y diferencias por horario o tipo de cancha. |
+| ¿Cuántas reservas pueden ocurrir? | Reservas actuales de los clubes y horas que suelen quedar libres. |
+| ¿Cuántas se pagarían por MATCH? | Porcentaje esperado de reservas dentro y fuera de la aplicación. |
+| ¿Cuánto cobra el proveedor de pago? | Cotización, cargos fijos, devoluciones y depósitos. |
+| ¿Qué cuesta operar? | Sueldos, soporte, ventas, marketing, desarrollo y servicios digitales. |
+| ¿Qué planea cobrar MATCH? | Precio de Pro, duración de promoción y reglas de prueba. |
+| ¿Cuánto dinero tiene el proyecto? | Aportes, gastos pagados, compromisos y caja disponible. |
 
-No calcular valor de vida del cliente con una retención inventada. Al inicio, usar contribución acumulada observada por cohorte y escenarios explícitos de permanencia.
+Para cada dato, anota el valor, la unidad, quién lo proporcionó y cuándo. Distingue una cotización de proveedor de una tarifa ya contratada y una opinión de un dato medido.
 
-## 14. Escenarios y riesgos que cambian el resultado
+## 10. Indicadores para revisar durante un piloto
 
-| Factor | Escenario conservador | Escenario favorable a validar |
-|---|---|---|
-| Activación de negocios | Alta lenta y acompañamiento intensivo | Oferta lista con menos intervención |
-| Uso de MATCH para pagar | Mucha agenda manual y pagos externos | Mayor participación de pagos dentro de la plataforma |
-| Retención | Reservas esporádicas y abandono | Repetición de grupos y negocios |
-| Pro | Baja conversión y promoción prolongada | Conversión sustentada en valor operativo |
-| Procesamiento | Cargos fijos altos respecto del ticket | Condiciones compatibles con el margen objetivo |
-| Incidencias | Más soporte, devoluciones y conflictos | Operación estable con menos costo por reserva |
-| Desarrollo | Integraciones demoradas | Hitos completos y validados antes de escalar |
+- **Negocios activos:** negocios que tienen una cancha lista y disponible.
+- **Reservas pagadas por MATCH:** número de reservas cuyo pago se procesó dentro de la aplicación.
+- **Importe promedio:** valor promedio de esas reservas.
+- **Ocupación:** horas reservadas divididas entre horas disponibles para alquilar.
+- **Repetición:** cuántos jugadores vuelven a reservar después de su primera reserva.
+- **Conversión a Pro:** cuántos negocios comienzan a pagar después de probar el plan.
+- **Costo por reserva:** costo de procesamiento y atención asociado a una reserva.
+- **Devoluciones y fallos:** cantidad e importe de pagos que no terminan como se esperaba.
 
-Riesgos específicos:
+Los indicadores deben usar periodos y definiciones consistentes. Por ejemplo, no compares una tasa de ocupación que descuenta bloqueos con otra que los cuenta como horas disponibles.
 
-- **Oferta y demanda desbalanceadas:** muchos usuarios sin horarios útiles, o muchas canchas sin reservas.
-- **Desvío de pagos:** el negocio obtiene al cliente en MATCH y cobra fuera de la app.
-- **Basic costoso:** organizaciones que consumen soporte pero no generan comisión ni suscripción.
-- **Precio Pro insuficiente:** ingresos bajos frente al costo de atención y mantenimiento.
-- **Beneficios sin financiación:** promociones o recompensas que absorben el margen.
-- **Datos aparentes:** confundir valores demo, confirmaciones o ventas del negocio con ingresos cobrados por MATCH.
-- **Riesgo operativo:** doble reserva, pago sin confirmación o depósito fallido que requiere resolución.
-- **Estacionalidad:** clima, feriados, calendario y preferencias horarias; debe medirse por zona.
+## 11. Decisiones que el equipo necesita tomar
 
-No fijar probabilidades ni porcentajes de escenario sin evidencia. Hacer sensibilidad de ticket, participación de pagos MATCH, comisión, conversión a Pro y costo por pago ayuda a identificar qué supuestos dominan el resultado.
+Antes de confiar en una proyección, el equipo debe confirmar:
 
-## 15. Decisiones prioritarias para fundadores y analista
+1. En qué ciudad y con cuántos negocios probará MATCH.
+2. Qué funciones incluirá en la primera versión con pagos reales.
+3. Qué precio tendrá Pro y cuánto durará la oferta para fundadores.
+4. Quién pagará el costo de procesar el cobro.
+5. Cuándo MATCH podrá cobrar su comisión: al pagar, al realizarse el servicio o bajo otra regla acordada.
+6. Qué sucederá con cancelaciones, devoluciones y reclamos.
+7. Cuánto costará captar negocios y jugadores y atenderlos.
 
-1. Definir ciudad/zona piloto, segmento de canchas y criterios de éxito.
-2. Delimitar el primer lanzamiento: reserva, pago, agenda y liquidación; decidir cuándo entran pago dividido y partidos abiertos.
-3. Confirmar precios, impuestos incluidos o excluidos, duración de promoción y reglas de prueba Pro.
-4. Definir quién paga procesamiento, devoluciones y costos extraordinarios.
-5. Acordar cancelaciones, penalidades, ausencia del jugador y momento de liberación de fondos.
-6. Obtener propuestas de proveedores y verificar compatibilidad con el flujo de marketplace.
-7. Validar disposición de pago y valor tangible de Pro con negocios reales.
-8. Presupuestar implementación pendiente, operación y captación antes de estimar rentabilidad.
-9. Instrumentar eventos y registros que permitan medir el piloto y conciliar dinero.
+## 12. Referencias del proyecto
 
-No se prevé una billetera propia para el primer MVP. Tampoco debe asumirse como disponible el financiamiento del negocio con saldos de jugadores o canchas.
+Estas fuentes internas contienen más detalle y permiten revisar cómo se llegó a este resumen:
 
-## 16. Entregables propuestos para el trabajo financiero
+- [Modelo de producto](PRODUCT_MODEL.md): usuarios, negocios, roles, planes y precios propuestos.
+- [Pruebas del prototipo](DEVELOPMENT_TESTING.md): accesos y datos de demostración.
+- [Reservas](src/features/reservations/RESERVATIONS_API.md): estados y reglas previstas para las reservas.
+- [Pagos](src/features/payments/PAYMENTS_API.md): comisiones, devoluciones y depósitos propuestos.
+- [Suscripciones](src/features/subscriptions/SUBSCRIPTIONS_API.md): planes y límites.
+- [Plan de auditoría empresarial](BUSINESS_FLOW_AUDIT_PLAN.md): flujos y validaciones aún pendientes.
+- [Pantalla de finanzas](src/features/payments/views/BusinessPaymentsView.tsx) y [sus datos de ejemplo](src/features/payments/data/paymentsPreview.ts).
+- [Creación de reservas del jugador](src/features/reservations/views/PlayerReservationCreateView.tsx).
+- [Cálculo de estadísticas](src/features/analytics/utils/buildBusinessAnalytics.ts).
 
-La analista puede convertir este contexto en:
-
-1. **Registro de supuestos:** dato, fuente, responsable, fecha y confianza.
-2. **Modelo mensual:** oferta, demanda, reservas, ingreso propio, costos, resultado y caja.
-3. **Economía por reserva y organización:** margen, costo de atención y recuperación de adquisición.
-4. **Tres escenarios y sensibilidades:** con explicación de los supuestos que cambian.
-5. **Necesidad de financiamiento:** monto, fechas y hitos que permite completar.
-6. **Tablero de piloto:** métricas mínimas para actualizar el modelo con evidencia.
-7. **Lista de decisiones:** precio, comisión, promociones y alcance, cada una con impacto económico.
-
-El primer objetivo práctico es determinar qué combinación de negocios activos, reservas pagadas por MATCH y suscripciones sostiene la operación, y cuánto cuesta llegar a ella.
-
-## 17. Fuentes internas y alcance de la revisión
-
-Las siguientes referencias permiten verificar el contenido sin necesidad de leer todo el código:
-
-| Fuente | Qué respalda |
-|---|---|
-| [Modelo de producto](PRODUCT_MODEL.md) | Usuarios, organizaciones, roles, planes, hipótesis comerciales y visión |
-| [Pruebas del prototipo](DEVELOPMENT_TESTING.md) | Datos demo, persistencia local y validación pendiente |
-| [Contrato de reservas](src/features/reservations/RESERVATIONS_API.md) | Origen, estados, cancelaciones y responsabilidades de servidor |
-| [Contrato de pagos](src/features/payments/PAYMENTS_API.md) | Comisión, procesamiento, liquidaciones y cuenta de destino |
-| [Contrato de suscripciones](src/features/subscriptions/SUBSCRIPTIONS_API.md) | Alcance de planes, prueba y límites actuales |
-| [Creación de reserva del jugador](src/features/reservations/views/PlayerReservationCreateView.tsx) | Reserva y pago inicialmente pendientes |
-| [Finanzas del negocio](src/features/payments/views/BusinessPaymentsView.tsx) y [datos de ejemplo](src/features/payments/data/paymentsPreview.ts) | Origen simulado de resúmenes, movimientos y liquidaciones |
-| [Cálculo de analítica](src/features/analytics/utils/buildBusinessAnalytics.ts) | Ventas confirmadas, ocupación y canales |
-| [Exportación CSV](src/features/analytics/services/exportAnalyticsCsv.ts) y [pantalla de estadísticas](src/features/analytics/views/BusinessAnalyticsView.tsx) | Exportación operativa implementada |
-| [Capacidades del plan](src/features/subscriptions/utils/getBusinessPlanAccess.ts) | Límites y acceso del prototipo |
-| [Gateway de reservas](src/features/reservations/services/index.ts), [suscripciones](src/features/subscriptions/services/index.ts) y [cuenta de depósito](src/features/payments/services/index.ts) | Uso de implementaciones simuladas |
-| [Gateway empresarial](src/features/venues/services/index.ts) | Selección entre mock y HTTP según configuración |
-| [Plan de auditoría](BUSINESS_FLOW_AUDIT_PLAN.md) | Validaciones empresariales y pruebas manuales pendientes |
-| [Dependencias declaradas](package.json) | Plataforma técnica actual |
-
-La revisión fue documental y de código localizado. El índice estructural reportó metadatos cambiados; las conclusiones materiales se contrastaron con los archivos actuales. No se ejecutaron recorridos en dispositivos, pagos, despliegues ni comprobaciones de un backend externo. Este documento no certifica el funcionamiento productivo ni sustituye datos reales de un piloto.
+Este resumen se preparó leyendo documentación y código del repositorio. No incluye entrevistas, cifras de un piloto, cotizaciones de proveedores ni revisión contable o legal. Usa los datos que entregue el equipo para completar la proyección.
