@@ -33,3 +33,7 @@ export const getReservationCustomerLabel = (reservation: ReservationRecord) =>
 
 export const getReservationReferenceLabel = (reservation: Pick<ReservationRecord, "id" | "referenceCode">) =>
   `#${reservation.referenceCode || createReservationReferenceCode(reservation.id)}`;
+
+export const getReservationSourceLabel = (
+  reservation: Pick<ReservationRecord, "source">,
+) => reservation.source === "match" ? "MATCH" : "LOCAL";

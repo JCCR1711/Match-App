@@ -63,17 +63,13 @@ const EmailVerificationView = () => {
     }
 
     lastSubmittedCode.current = code;
-    void verifyEmailCode(code);
+    void verifyEmailCode(code).then((outcome) => {
+      if (!outcome) {
+        setCode("");
+        lastSubmittedCode.current = "";
+      }
+    });
   }, [code, loading, verifyEmailCode]);
-
-  useEffect(() => {
-    if (!error) {
-      return;
-    }
-
-    setCode("");
-    lastSubmittedCode.current = "";
-  }, [error]);
 
   const handleCodeChange = (nextCode: string) => {
     setCode(nextCode);

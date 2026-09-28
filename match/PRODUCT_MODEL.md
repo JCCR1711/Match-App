@@ -79,7 +79,22 @@ export interface VenueMembership {
 - `manager`: gestiona la operación sin transferir propiedad.
 - `staff`: tiene acceso limitado a tareas operativas.
 
+Una membresía tiene un solo rol dentro de una organización. `owner` no es un
+segundo rol combinado con `manager`: es el nivel superior y hereda las
+capacidades operativas necesarias. `manager` representa a una persona de
+confianza que administra la operación sin controlar propiedad, miembros ni la
+cuenta de depósito. `staff` se limita a tareas operativas asignadas.
+
+Una misma cuenta puede pertenecer a organizaciones distintas con roles
+distintos. El rol siempre se resuelve en el contexto de una membresía y nunca
+como propiedad global de la cuenta.
+
 `admin` no debe utilizarse como tipo general de usuario. Una futura administración interna de Match debe modelarse como autorización de plataforma separada de los roles de una organización.
+
+Durante el prototipo existe un selector de rol exclusivo para desarrollo. Solo
+modifica la membresía mock para revisar variantes de interfaz; no forma parte
+del producto, no existe en el gateway HTTP y no representa una autorización
+válida del servidor.
 
 ### 3.5 Suscripción
 
@@ -126,15 +141,17 @@ export type BusinessPlan = "basic" | "pro";
 
 #### Basic
 
-- Registrar y configurar canchas.
+- Administrar una sede y una cancha.
+- Acceso administrativo exclusivo para el propietario.
 - Administrar horarios y disponibilidad.
 - Recibir y consultar reservas.
 - Bloquear horarios.
-- Consultar métricas operativas básicas.
+- Consultar métricas operativas de los últimos 30 días.
 
 #### Pro — sujeto a validación
 
 - Analítica avanzada.
+- Varias sedes y ampliación de canchas por sede.
 - Gestión avanzada y reportes consolidados para varias sedes.
 - Acceso para empleados.
 - Automatización de precios y horarios.
@@ -144,7 +161,128 @@ export type BusinessPlan = "basic" | "pro";
 - Integraciones y notificaciones avanzadas.
 - Opciones adicionales de visibilidad.
 
+Basic es permanente. No debe utilizarse como una prueba temporal encubierta.
+
+La operación local y la publicación en el marketplace son estados distintos. Una organización puede mantener su agenda manual mientras no acepta reservas de jugadores. `marketplaceStatus` usa `local_only | live | paused`: `local_only` es el estado inicial, `live` publica únicamente sedes y canchas activas con ubicación, horario y tarifa válidos, y `paused` detiene reservas online nuevas sin cancelar reservas existentes ni desactivar la agenda local. Recibir reservas online forma parte de Basic porque genera actividad y comisión para Match; no debe bloquearse detrás de Pro.
+Una organización nueva podrá recibir una prueba de Pro de 30 días y volver a
+Basic sin pérdida de datos cuando termine.
+
+Al bajar de Pro a Basic, el propietario selecciona la sede y la cancha que
+seguirán operativas. Las demás dejan de aceptar reservas nuevas, pero sus datos
+se conservan. Las membresías de gestores y personal no se eliminan: su acceso
+empresarial queda suspendido hasta recuperar Pro.
+
+El permiso efectivo de una operación se calcula como la intersección de:
+
+```text
+membresía activa
+    + rol
+    + capacidades de la suscripción
+    + alcance asignado
+    + estado del recurso
+```
+
+Cambiar a modo jugador solo cambia la experiencia de navegación. No elimina la
+membresía ni el rol empresarial. Al volver al modo negocio se recuperan los
+permisos que continúen vigentes. El backend nunca debe utilizar `activeMode`
+como frontera de autorización.
+
 La visibilidad pagada debe identificarse como promoción o contenido patrocinado. La suscripción no debe manipular silenciosamente resultados orgánicos.
+
+### 4.3 Hipótesis de monetización empresarial
+
+La monetización combina suscripción y reservas. Ninguna cifra se considera
+precio definitivo hasta validar disposición de pago, ticket promedio y costos
+reales del proveedor de pagos.
+
+Propuesta inicial:
+
+- Basic permanente para reducir la barrera de entrada y generar oferta de canchas.
+- Pro fundador a S/ 9.90 mensuales durante una promoción limitada.
+- Pro regular de referencia a S/ 19.90 mensuales, sujeto a validación.
+- Prueba Pro de 30 días por organización.
+- Comisión de plataforma de 5% por reserva pagada, que se confirma cuando el servicio queda realizado.
+- Costo de procesamiento separado de la comisión de Match y mostrado con transparencia.
+- La comisión es la misma para Basic y Pro durante el MVP.
+- Las liquidaciones y depósitos no generan otra comisión de Match.
+
+La comisión se registra inicialmente como pendiente. Un reembolso total la
+revierte; una cancelación con penalidad la calcula solo sobre el importe
+retenido. Los contracargos se representan como ajustes posteriores. Match no
+debe cobrar simultáneamente comisión por reserva y comisión por retiro.
+
+Una comisión total de 5% no es sostenible si Match absorbe procesamiento,
+cargos fijos, IGV, fraude, contracargos y reembolsos. Antes de ofrecer una tarifa
+todo incluido se debe calcular:
+
+```text
+margen por reserva
+= comisión de Match
+- procesamiento
+- impuestos aplicables
+- devoluciones y contracargos
+- soporte e incentivos
+```
+
+Como alternativa simplificada se evaluará una comisión total entre 8% y 10%,
+pero no se adoptará sin datos reales. Un porcentaje alto puede desalentar que
+las canchas canalicen reservas por Match o incentivar pagos fuera de la app.
+
+Para que Pro justifique su precio deben completarse, en este orden:
+
+1. Gestión real de gestores y personal, con invitaciones, alcance y auditoría.
+2. Varias sedes y canchas con reportes consolidados.
+3. Analítica accionable: ocupación, ingresos, cancelaciones y horas sin vender.
+4. Exportación y conciliación de reservas, comisiones y liquidaciones.
+5. Automatizaciones útiles, como precios por franja y reglas de disponibilidad.
+6. Herramientas de retención, promociones y clientes recurrentes.
+
+Para que Basic también sea sostenible debe generar reservas procesadas por
+Match, mantener bajo el costo de soporte y ofrecer una ruta de actualización
+visible cuando el negocio necesite otra cancha, equipo o análisis avanzado.
+
+### 4.4 Evolución competitiva del producto
+
+Match toma como referencia el modelo de plataformas que conectan una aplicación
+de jugadores con un sistema operativo para establecimientos. La referencia no
+implica copiar interfaces, reglas ni términos comerciales. Match se especializa
+en fútbol y en las necesidades operativas y de pago del mercado peruano.
+
+#### Capacidades prioritarias del MVP
+
+1. Disponibilidad real por sede y cancha.
+2. Reserva privada con pago completo o dividido entre jugadores.
+3. Partidos abiertos que permitan completar cupos sin coordinación manual.
+4. Invitaciones por enlace y confirmación individual de participantes.
+5. Agenda del negocio sin dobles reservas.
+6. Pagos, cancelaciones, reembolsos y liquidaciones conciliables.
+7. Recordatorios y cambios de estado relevantes.
+8. Gestión Pro de propietarios, gestores y personal.
+9. Métricas de ocupación, ingresos, cancelaciones y horas libres.
+
+#### Capacidades que deben fortalecer Pro
+
+1. Consolidación de varias sedes y canchas.
+2. Permisos y alcance de empleados por sede.
+3. Precios por franja y reglas automáticas para horas de baja demanda.
+4. Promociones y campañas medibles.
+5. Clientes recurrentes, membresías y beneficios configurados por el negocio.
+6. Exportación, conciliación y reportes operativos.
+7. Gestión de ligas, torneos, academias y entrenadores cuando exista demanda.
+
+#### Capacidades del jugador para una etapa posterior
+
+- equipos permanentes y convocatorias;
+- retos y competiciones entre equipos;
+- historial y estadísticas deportivas;
+- nivel o ranking con controles contra manipulación;
+- descubrimiento de entrenadores y academias;
+- recompensas sostenibles financiadas por Match o por establecimientos.
+
+No se implementará una billetera propia durante el primer MVP. Primero deben
+resolverse custodia, conciliación, reembolsos, regulación y soporte. Tampoco se
+añadirán torneos, ligas o rankings antes de estabilizar reserva, pago y partido
+abierto, que constituyen el ciclo principal del marketplace.
 
 ## 5. Estado y capacidades
 
@@ -329,6 +467,10 @@ Antes de implementar monetización se debe validar:
 - Reglas de visibilidad patrocinada.
 
 Hasta resolverlas, las pantallas de planes son prototipos y no compromisos comerciales definitivos.
+
+### Estado del prototipo empresarial
+
+El prototipo implementa una suscripción empresarial separada de los roles. Basic conserva la operación esencial y Pro habilita únicamente capacidades avanzadas ya representadas en la interfaz. El selector de plan del perfil es exclusivo de desarrollo; no representa facturación ni autorización del servidor.
 
 ## 12. Regla de evolución
 

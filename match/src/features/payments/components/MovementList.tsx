@@ -1,10 +1,11 @@
+import AppSurface from "@/src/components/ui/AppSurface";
 import CustomText from "@/src/components/ui/CustomText";
 import SportsAvatar from "@/src/components/ui/SportsAvatar";
-import SettlementStatusLabel from "@/src/features/payments/components/SettlementStatusLabel";
+import PaymentStatusLabel from "@/src/features/payments/components/PaymentStatusLabel";
 import type { FinancialMovement } from "@/src/features/payments/types/businessPayments";
 import { theme } from "@/src/theme";
 import { formatMoneyAmount } from "@/src/utils/formatMoney";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 const MovementList = ({ movements, onPressMovement }: { movements: FinancialMovement[]; onPressMovement?: (movement: FinancialMovement) => void }) => {
   if (movements.length === 0) {
@@ -22,28 +23,28 @@ const MovementRow = ({ movement, onPress }: { movement: FinancialMovement; onPre
   const isPaid = movement.status === "paid";
 
   return (
-    <Pressable
+    <AppSurface
+      variant="transparent"
       disabled={!onPress}
       onPress={onPress}
-      accessibilityRole={onPress ? "button" : undefined}
       accessibilityLabel={onPress ? `Abrir reserva de ${movement.customerName}` : undefined}
-      style={({ pressed }) => [styles.card, isPaid && styles.paidCard, pressed && styles.pressed]}
+      style={[styles.card, isPaid && styles.paidCard]}
     >
       <SportsAvatar seed={movement.customerName} size={44} />
       <View style={styles.content}>
         <View style={styles.heading}>
           <CustomText text={movement.customerName} variant="bodyStrong" style={styles.name} numberOfLines={1} ellipsizeMode="tail" />
-          <SettlementStatusLabel status={movement.status} context="movement" />
+          <PaymentStatusLabel status={movement.status} />
         </View>
         <View style={styles.footer}>
           <CustomText text={movement.dateLabel} variant="caption" style={styles.date} numberOfLines={1} />
           <View style={styles.amountRow}>
             <CustomText text="S/" variant="label" style={styles.currency} />
-            <CustomText text={formatMoneyAmount(movement.amount)} variant="actionSecondary" style={styles.amount} numberOfLines={1} />
+            <CustomText text={formatMoneyAmount(movement.grossAmount)} variant="actionSecondary" style={styles.amount} numberOfLines={1} />
           </View>
         </View>
       </View>
-    </Pressable>
+    </AppSurface>
   );
 };
 
@@ -61,6 +62,5 @@ const styles = StyleSheet.create({
   amountRow: { flexShrink: 0, flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xxs },
   currency: { color: theme.colors.textOnDarkSecondary },
   amount: { color: theme.colors.white, textAlign: "right" },
-  pressed: { opacity: 0.76 },
   empty: { color: theme.colors.authTextSecondary },
 });

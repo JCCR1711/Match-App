@@ -6,16 +6,20 @@ import { Pressable, StyleSheet, View } from "react-native";
 interface AppSectionProps {
   title: string;
   children: ReactNode;
+  titleAccessory?: ReactNode;
   actionLabel?: string;
   onAction?: () => void;
   actionVariant?: "text" | "reserved";
   actionDisabled?: boolean;
 }
 
-const AppSection = ({ title, children, actionLabel, onAction, actionVariant = "text", actionDisabled = false }: AppSectionProps) => (
+const AppSection = ({ title, children, titleAccessory, actionLabel, onAction, actionVariant = "text", actionDisabled = false }: AppSectionProps) => (
   <View style={styles.section}>
     <View style={styles.heading}>
-      <CustomText text={title} variant="sectionHeading" style={styles.title} />
+      <View style={styles.titleGroup}>
+        <CustomText text={title} variant="sectionHeading" style={styles.title} />
+        {titleAccessory}
+      </View>
       {actionLabel && onAction ? (
         <Pressable
           onPress={onAction}
@@ -43,7 +47,8 @@ export default AppSection;
 const styles = StyleSheet.create({
   section: { gap: theme.layout.elementGap },
   heading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.layout.elementGap },
-  title: { color: theme.colors.authText },
+  titleGroup: { minWidth: 0, flexDirection: "row", alignItems: "center", gap: theme.spacing.xxs },
+  title: { flexShrink: 1, color: theme.colors.authText },
   action: { color: theme.colors.authTextSecondary, fontFamily: theme.fontFamilies.poppinsBold },
   actionControl: { minHeight: 48, justifyContent: "center" },
   reservedActionControl: { minHeight: 40, paddingHorizontal: theme.spacing.md, borderRadius: theme.radius.pill, backgroundColor: theme.colors.reservedSurface },

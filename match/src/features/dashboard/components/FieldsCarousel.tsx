@@ -14,8 +14,7 @@ interface FieldsCarouselProps {
 
 const FieldsCarousel = ({ fields, venues, onOpenAll, onOpenField }: FieldsCarouselProps) => {
   const { width } = useWindowDimensions();
-  const availableWidth = width - theme.layout.screenGutter * 2;
-  const cardWidth = availableWidth;
+  const cardWidth = width - theme.layout.screenGutter * 2;
   const cardStyle = useMemo(() => ({ width: cardWidth }), [cardWidth]);
   const renderField = useCallback(({ item }: { item: SportsFieldDraft }) => {
     const venueName = venues.find((venue) => venue.venueId === item.venueId)?.venueName;
@@ -48,7 +47,7 @@ const Separator = () => <View style={styles.separator} />;
 export default FieldsCarousel;
 
 const styles = StyleSheet.create({
-  list: { marginHorizontal: -theme.spacing.lg },
-  content: { paddingHorizontal: theme.spacing.lg },
+  list: { marginHorizontal: -theme.layout.screenGutter },
+  content: { paddingHorizontal: theme.layout.screenGutter },
   separator: { width: theme.spacing.sm },
 });

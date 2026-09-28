@@ -3,30 +3,12 @@ import type { AnalyticsScope } from "@/src/features/analytics/types/businessAnal
 import { theme } from "@/src/theme";
 import { Pressable, ScrollView, StyleSheet } from "react-native";
 
-const options: { id: AnalyticsScope; label: string }[] = [
-  { id: "all", label: "Todas" },
-  { id: "miraflores", label: "Miraflores" },
-  { id: "los-olivos", label: "Los Olivos" },
-];
-
-interface AnalyticsScopeSelectorProps {
-  selectedScope: AnalyticsScope;
-  onScopeChange: (scope: AnalyticsScope) => void;
-}
-
-const AnalyticsScopeSelector = ({ selectedScope, onScopeChange }: AnalyticsScopeSelectorProps) => (
+const AnalyticsScopeSelector = ({ options, selectedScope, onScopeChange }: { options: { id: AnalyticsScope; label: string }[]; selectedScope: AnalyticsScope; onScopeChange: (scope: AnalyticsScope) => void }) => (
   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.content} accessibilityRole="tablist">
     {options.map((option) => {
       const selected = option.id === selectedScope;
       return (
-        <Pressable
-          key={option.id}
-          accessibilityRole="tab"
-          accessibilityState={{ selected }}
-          accessibilityLabel={`Ver estadísticas de ${option.label}`}
-          onPress={() => onScopeChange(option.id)}
-          style={[styles.option, selected && styles.optionSelected]}
-        >
+        <Pressable key={option.id} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => onScopeChange(option.id)} style={[styles.option, selected && styles.optionSelected]}>
           <CustomText text={option.label} variant="caption" style={[styles.label, selected && styles.labelSelected]} />
         </Pressable>
       );

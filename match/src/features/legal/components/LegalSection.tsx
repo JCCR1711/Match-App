@@ -1,11 +1,11 @@
 import CustomText from "@/src/components/ui/CustomText";
 import { theme } from "@/src/theme";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { LegalSectionContent } from "../data/legalContent";
 
 const LegalSection = ({ title, paragraphs }: LegalSectionContent) => (
   <View style={styles.section}>
-    <Text style={styles.title}>{title}</Text>
+    <CustomText text={title} variant="sectionHeading" style={styles.title} />
     {paragraphs.map((paragraph) => (
       <CustomText
         key={paragraph}
@@ -24,10 +24,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   title: {
-    color: theme.colors.authText,
-    fontFamily: theme.fontFamilies.poppinsBold,
-    fontSize: theme.fontSizes.subtitle,
-    lineHeight: theme.lineHeights.subtitle,
+    color: theme.colors.white,
   },
   paragraph: {
     color: theme.colors.authTextSecondary,

@@ -259,6 +259,46 @@ A service should be global only when multiple features genuinely use it.
 
 ---
 
+# 9.1 Server State
+
+Match uses TanStack Query for asynchronous data owned by the backend.
+
+The responsibility chain is:
+
+```text
+Route
+  |
+Feature View
+  |
+Feature Query or Mutation Hook
+  |
+TanStack Query
+  |
+Feature Gateway
+  |
+HTTP API
+```
+
+Query keys and query hooks belong to the feature that owns the data. Shared
+query infrastructure belongs in `src/services/query/`.
+
+TanStack Query must not replace local form state, modal state, authentication
+context, onboarding context or device-location context. Views must not call
+HTTP endpoints directly, and server responses must not be copied into an
+additional global client-state store.
+
+Persisted prototype stores that expose synchronous domain commands are still
+local application state. They should move to TanStack Query only when an
+asynchronous gateway becomes their source of truth. Until then, wrapping the
+same store in Query would create two competing caches.
+
+The reservations feature already exposes that asynchronous boundary through
+`ReservationsGateway`. Views read its schedule through `useReservations` and
+execute writes through `useReservationCommands`; only the mock gateway may
+access the temporary AsyncStorage-backed store.
+
+---
+
 # 10. Types
 
 Feature-specific types:

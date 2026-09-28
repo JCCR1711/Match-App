@@ -1,9 +1,10 @@
 import AppCardArrow from "@/src/components/ui/AppCardArrow";
+import AppSurface from "@/src/components/ui/AppSurface";
 import CustomText from "@/src/components/ui/CustomText";
 import { theme } from "@/src/theme";
 import { Image, type ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 interface ModeSelectionCardProps {
   title: string;
@@ -26,17 +27,14 @@ const ModeSelectionCard = ({
   const playerColors = [theme.colors.authBlueDeep, theme.colors.cobalt] as const;
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <AppSurface
+      variant="transparent"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.container,
         isBusiness && styles.businessContainer,
-        pressed && !disabled && styles.pressed,
-        disabled && styles.disabled,
       ]}
     >
       {isBusiness ? null : (
@@ -78,7 +76,7 @@ const ModeSelectionCard = ({
           style={styles.action}
         />
       </View>
-    </Pressable>
+    </AppSurface>
   );
 };
 
@@ -114,6 +112,4 @@ const styles = StyleSheet.create({
   title: { flex: 1, maxWidth: 176, color: theme.colors.white, fontSize: 24, lineHeight: 30 },
   businessTitle: { color: theme.colors.black },
   action: { width: 44, height: 44 },
-  pressed: { opacity: 0.8 },
-  disabled: { opacity: 0.44 },
 });

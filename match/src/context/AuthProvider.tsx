@@ -11,6 +11,7 @@ import {
 import type { SportsAvatarId } from "@/src/types/avatar";
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import AuthContext from "./AuthContext";
+import { clearAppQueryCache } from "@/src/services/query/queryClient";
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -320,6 +321,7 @@ export function AuthProvider({
     try {
       refreshToken = await sessionStore.getRefreshToken().catch(() => null);
       await clearSession().catch(() => undefined);
+      clearAppQueryCache();
 
       if (refreshToken) {
         await gateway.revokeSession(refreshToken).catch(() => undefined);

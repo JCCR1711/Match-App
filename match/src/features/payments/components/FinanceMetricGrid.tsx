@@ -7,8 +7,8 @@ import { StyleSheet, View } from "react-native";
 const FinanceMetricGrid = ({ overview }: { overview: PaymentOverview }) => (
   <View style={styles.summary}>
     <Metric label="Cobrado" value={formatSoles(overview.grossCollectedThisMonth)} />
-    <View style={styles.divider} />
     <Metric label="Comisiones" value={formatSoles(overview.feesThisMonth)} />
+    <Metric label="Neto" value={formatSoles(overview.netCollectedThisMonth)} />
   </View>
 );
 
@@ -22,9 +22,8 @@ const Metric = ({ label, value }: { label: string; value: string }) => (
 export default FinanceMetricGrid;
 
 const styles = StyleSheet.create({
-  summary: { minHeight: 76, flexDirection: "row", alignItems: "center", paddingVertical: theme.spacing.sm },
+  summary: { minHeight: 76, flexDirection: "row", alignItems: "center", gap: theme.spacing.lg, paddingVertical: theme.spacing.sm },
   metric: { flex: 1, minWidth: 0, gap: theme.spacing.xxs },
-  divider: { width: StyleSheet.hairlineWidth, height: 42, marginHorizontal: theme.spacing.lg, backgroundColor: theme.colors.dividerOnDark },
   value: { color: theme.colors.white },
   label: { color: theme.colors.authTextSecondary },
 });

@@ -2,7 +2,7 @@ import { theme } from "@/src/theme";
 import type { ReactNode } from "react";
 import { Pressable, type StyleProp, StyleSheet, View, type ViewStyle } from "react-native";
 
-export type AppSurfaceVariant = "neutral" | "blue";
+export type AppSurfaceVariant = "transparent" | "neutral" | "blue";
 
 interface AppSurfaceProps {
   children: ReactNode;
@@ -16,7 +16,17 @@ interface AppSurfaceProps {
 const AppSurface = ({ children, variant = "neutral", style, accessibilityLabel, onPress, disabled = false }: AppSurfaceProps) => {
   const surfaceStyle = [styles.surface, styles[variant], style];
 
-  if (!onPress) return <View style={surfaceStyle}>{children}</View>;
+  if (!onPress) {
+    return (
+      <View
+        style={surfaceStyle}
+        accessible={Boolean(accessibilityLabel)}
+        accessibilityLabel={accessibilityLabel}
+      >
+        {children}
+      </View>
+    );
+  }
 
   return (
     <Pressable
@@ -36,8 +46,9 @@ export default AppSurface;
 
 const styles = StyleSheet.create({
   surface: { overflow: "hidden", borderRadius: theme.radius.card, borderCurve: "continuous" },
-  neutral: { backgroundColor: "rgba(255, 255, 255, 0.075)", borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255, 255, 255, 0.1)" },
-  blue: { backgroundColor: "rgba(36, 72, 255, 0.82)" },
+  transparent: { backgroundColor: "transparent" },
+  neutral: { backgroundColor: theme.colors.surfaceOnDarkSubtle, borderWidth: StyleSheet.hairlineWidth, borderColor: theme.colors.controlBorderOnDark },
+  blue: { backgroundColor: theme.colors.businessBlueSurface },
   pressed: { opacity: 0.76 },
   disabled: { opacity: 0.5 },
 });

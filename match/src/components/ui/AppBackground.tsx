@@ -7,7 +7,7 @@ import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from "react-nat
  * `dashboard` is reserved for high-level product summaries.
  * `content` is used by lists, details, forms and confirmations.
  */
-export type AppBackgroundVariant = "dashboard" | "content" | "solid";
+export type AppBackgroundVariant = "dashboard" | "content" | "premium" | "solid";
 
 interface AppBackgroundProps {
   variant?: AppBackgroundVariant;
@@ -46,6 +46,32 @@ const AppBackground = ({ variant = "content" }: AppBackgroundProps) => {
     );
   }
 
+  if (variant === "premium") {
+    return (
+      <Svg width="100%" height="100%" viewBox="0 0 390 844" preserveAspectRatio="none" style={styles.background} accessible={false}>
+        <Defs>
+          <LinearGradient id={`${id}-base`} x1="0" y1="0" x2="0.84" y2="1">
+            <Stop offset="0%" stopColor={theme.colors.premiumPlanBright} stopOpacity={0.82} />
+            <Stop offset="48%" stopColor={theme.colors.premiumPlanDeep} />
+            <Stop offset="100%" stopColor={theme.colors.black} />
+          </LinearGradient>
+          <RadialGradient id={`${id}-ambient`} cx="84%" cy="18%" rx="70%" ry="54%">
+            <Stop offset="0%" stopColor={theme.colors.luminousLavender} stopOpacity={0.3} />
+            <Stop offset="48%" stopColor={theme.colors.electricViolet} stopOpacity={0.1} />
+            <Stop offset="100%" stopColor={theme.colors.premiumPlanDeep} stopOpacity={0} />
+          </RadialGradient>
+          <LinearGradient id={`${id}-fade`} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="42%" stopColor={theme.colors.black} stopOpacity={0} />
+            <Stop offset="100%" stopColor={theme.colors.black} stopOpacity={0.72} />
+          </LinearGradient>
+        </Defs>
+        <Rect width="390" height="844" fill={`url(#${id}-base)`} />
+        <Rect width="390" height="640" fill={`url(#${id}-ambient)`} />
+        <Rect width="390" height="844" fill={`url(#${id}-fade)`} />
+      </Svg>
+    );
+  }
+
   return (
     <Svg width="100%" height="100%" viewBox="0 0 390 844" preserveAspectRatio="none" style={styles.background} accessible={false}>
       <Defs>
@@ -74,6 +100,6 @@ const AppBackground = ({ variant = "content" }: AppBackgroundProps) => {
 export default AppBackground;
 
 const styles = StyleSheet.create({
-  background: { ...StyleSheet.absoluteFillObject },
+  background: { ...StyleSheet.absoluteFill },
   solid: { backgroundColor: theme.colors.background },
 });

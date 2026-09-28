@@ -49,16 +49,16 @@ const Metric = ({ value, label }: { value: string; label: string }) => (
 export default TodaySummaryCard;
 
 const styles = StyleSheet.create({
-  summary: { gap: theme.spacing.xl, paddingVertical: theme.spacing.xl },
+  summary: { gap: theme.spacing.md, paddingVertical: theme.spacing.md },
   heading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.md },
   label: { color: theme.colors.white },
   revenueRow: { minWidth: 0, flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xs },
-  currency: { color: theme.colors.white, fontSize: 54, lineHeight: 62 },
-  revenue: { flexShrink: 1, color: theme.colors.white, fontSize: 54, lineHeight: 62 },
+  currency: { color: theme.colors.white, fontSize: 44, lineHeight: 52 },
+  revenue: { flexShrink: 1, color: theme.colors.white, fontSize: 44, lineHeight: 52 },
   decimals: { color: theme.colors.textOnDarkSecondary },
   analyticsAction: { minHeight: 48, justifyContent: "center" },
   analyticsActionLabel: { color: theme.colors.authTextSecondary, fontFamily: theme.fontFamilies.poppinsBold },
-  metrics: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xxl, marginTop: theme.spacing.sm },
+  metrics: { flexDirection: "row", alignItems: "center", gap: theme.spacing.xxl },
   metric: { flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xs },
   metricValue: { color: theme.colors.white },
   metricLabel: { color: theme.colors.textOnDarkSecondary },

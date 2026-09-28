@@ -1,5 +1,5 @@
-import CustomText from "@/src/components/ui/CustomText";
-import CustomButton from "@/src/components/ui/CustomButton";
+import AppScreenState from "@/src/components/ui/AppScreenState";
+import BusinessDashboardSkeleton from "@/src/features/dashboard/components/BusinessDashboardSkeleton";
 import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
 import SportsAvatar from "@/src/components/ui/SportsAvatar";
 import BusinessDashboardOverview from "@/src/features/dashboard/components/BusinessDashboardOverview";
@@ -10,23 +10,31 @@ import { reservationDates } from "@/src/features/reservations/data/reservationDa
 import type { ReservationRecord } from "@/src/features/reservations/types/reservation";
 import { createBusinessAgendaHref, createFocusedReservationAgendaHref } from "@/src/features/reservations/utils/businessAgendaRoute";
 import { getBusinessAvailabilityOpportunity } from "@/src/features/reservations/utils/getBusinessAvailabilityOpportunity";
+import { getBusinessReservations } from "@/src/features/reservations/utils/getBusinessReservations";
 import { settlements } from "@/src/features/payments/data/paymentsPreview";
+import { getBusinessFinanceAccess } from "@/src/features/payments/utils/businessFinanceAccess";
 import { getNextPendingSettlement } from "@/src/features/payments/utils/settlementSelectors";
+import BusinessMembershipRestrictedState from "@/src/features/subscriptions/components/BusinessMembershipRestrictedState";
+import { useEffectiveBusinessMembership } from "@/src/features/subscriptions/hooks/useEffectiveBusinessMembership";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { getEffectiveFieldSchedule } from "@/src/features/venues/utils/getEffectiveFieldSchedule";
+import { getVenueRoleLabel } from "@/src/features/venues/utils/venueRoleLabel";
+import { getBusinessResourceAccess } from "@/src/features/venues/utils/businessResourceAccess";
+import { getMarketplaceReadiness } from "@/src/features/venues/utils/getMarketplaceReadiness";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import Animated, { Extrapolation, interpolate, useAnimatedStyle } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const DashboardView = () => {
   const { draft, loading, error, reload } = useBusinessDraft();
+  const { effectiveMembership, effectiveRole, loading: planLoading } = useEffectiveBusinessMembership(draft?.membership);
   const { user } = useAuth();
-  const { reservations, blocks } = useReservations();
+  const { reservations, blocks } = useReservations(draft?.organizationId);
   const insets = useSafeAreaInsets();
   const { scrollY, onScroll, headerContentInset } = useCollapsibleHeader();
   const avatarScaleStyle = useAnimatedStyle(() => ({
@@ -35,12 +43,15 @@ const DashboardView = () => {
   const businessName = draft?.businessName || "Match Arena";
   const venues = draft?.venues ?? [];
   const fields = draft?.fields ?? [];
+  const canConfigureResources = getBusinessResourceAccess(effectiveRole).canConfigureResources;
+  const marketplaceReady = draft ? getMarketplaceReadiness(draft).ready : false;
   const pendingField = fields.find((field) => !getEffectiveFieldSchedule(
     field,
     venues.find((venue) => venue.venueId === field.venueId),
   ));
   const todayKey = reservationDates[0].dateKey;
-  const todayReservations = reservations.filter((reservation) => reservation.dateKey === todayKey);
+  const businessReservations = getBusinessReservations(reservations, fields);
+  const todayReservations = businessReservations.filter((reservation) => reservation.dateKey === todayKey);
   const todayBlocks = blocks.filter((block) => block.dateKey === todayKey);
   const availabilityOpportunity = getBusinessAvailabilityOpportunity({
     dateKey: todayKey,
@@ -58,6 +69,7 @@ const DashboardView = () => {
   };
 
   const handleSetup = () => {
+    if (!canConfigureResources) return;
     if (venues.length === 0) {
       router.push("/business/venues/new");
       return;
@@ -79,6 +91,7 @@ const DashboardView = () => {
   const handleOpenReservation = (reservation: ReservationRecord) => {
     router.navigate(createFocusedReservationAgendaHref(reservation));
   };
+
 
   const setupAction: {
     kind: BusinessSetupKind;
@@ -105,15 +118,16 @@ const DashboardView = () => {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <AppBackground variant="dashboard" />
+      <AppBackground variant={!effectiveMembership.enabled && effectiveMembership.restriction === "team_requires_pro" ? "premium" : "dashboard"} />
       <AppScreenHeader
         title={businessName}
+        contextLabel={draft?.membership ? getVenueRoleLabel(draft.membership.role) : undefined}
         scrollY={scrollY}
         action={(
           <Animated.View style={avatarScaleStyle}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Abrir perfil de ${user?.displayName || "Propietario"}`}
+              accessibilityLabel={`Abrir perfil de ${user?.displayName || "usuario"}. Rol ${draft?.membership ? getVenueRoleLabel(draft.membership.role) : "sin asignar"}`}
               onPress={() => router.navigate("/(tabs)/business-profile")}
               style={({ pressed }) => [styles.avatar, pressed && styles.avatarPressed]}
             >
@@ -134,24 +148,27 @@ const DashboardView = () => {
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
       >
-        {loading ? (
-          <View style={styles.loadingState} accessibilityLabel="Preparando tu inicio" accessibilityRole="progressbar">
-            <ActivityIndicator color={theme.colors.electricBlue} size="small" />
-            <CustomText text="Preparando tu inicio" variant="body" style={styles.centeredMessage} />
-          </View>
+        {loading || planLoading ? (
+          <BusinessDashboardSkeleton />
         ) : error ? (
-          <View style={styles.errorState}>
-            <CustomText text={error} variant="body" style={styles.centeredMessage} accessibilityRole="alert" />
-            <CustomButton label="Reintentar" variant="secondary" onPress={reload} accessibilityLabel="Reintentar cargar el inicio" />
-          </View>
+          <AppScreenState
+            title="No pudimos cargar tu inicio"
+            message={error}
+            actionLabel="Intentarlo de nuevo"
+            onAction={reload}
+            style={styles.screenState}
+          />
+        ) : draft && !effectiveMembership.enabled ? (
+          <BusinessMembershipRestrictedState restriction={effectiveMembership.restriction} role={effectiveMembership.originalRole} />
         ) : draft ? (
           <View style={styles.content}>
-            {venues.length === 0 || fields.length === 0 || pendingField ? (
+            {canConfigureResources && (venues.length === 0 || fields.length === 0 || pendingField) ? (
               <BusinessSetupCard
                 kind={setupAction.kind}
                 title={setupAction.title}
                 onPress={handleSetup}
                 accessibilityLabel={setupAction.accessibilityLabel}
+                style={styles.setupCard}
               />
             ) : null}
 
@@ -167,7 +184,9 @@ const DashboardView = () => {
                 onOpenReservation={handleOpenReservation}
                 todayReservations={todayReservations}
                 opportunity={availabilityOpportunity.bestSlot}
-                settlement={getNextPendingSettlement(settlements)}
+                settlement={getBusinessFinanceAccess(effectiveRole).canViewFinances ? getNextPendingSettlement(settlements) : null}
+                marketplaceLabel={draft.marketplaceStatus === "live" && marketplaceReady ? "Visible en MATCH" : "Agenda local"}
+                onOpenMarketplace={canConfigureResources ? () => router.push("/business/online-reservations") : undefined}
                 onOpenField={(fieldId) =>
                   router.push({
                     pathname: "/business/fields/[fieldId]",
@@ -192,30 +211,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.layout.screenGutter,
     gap: theme.spacing.md,
   },
-  centeredMessage: {
-    color: theme.colors.authTextSecondary,
-    textAlign: "center",
-  },
-  loadingState: {
-    flex: 1,
-    minHeight: 240,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: theme.spacing.md,
-  },
-  errorState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: theme.spacing.lg,
-  },
+  screenState: { minHeight: 420, paddingHorizontal: 0 },
   content: {
     flex: 1,
-    gap: theme.layout.sectionGap,
+    gap: theme.layout.groupGap,
   },
+  setupCard: { marginTop: theme.spacing.xs },
   avatar: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: theme.radius.pill,

@@ -5,7 +5,7 @@ import {
   isGlassEffectAPIAvailable,
   isLiquidGlassAvailable,
 } from "expo-glass-effect";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import {
   Platform,
   StyleSheet,
@@ -13,6 +13,12 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
+import Animated, {
+  Extrapolation,
+  interpolate,
+  type SharedValue,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 
 interface GlassSurfaceProps {
   children: ReactNode;
@@ -21,6 +27,9 @@ interface GlassSurfaceProps {
   fallbackTint?: string;
   tintColor?: string;
   interactive?: boolean;
+  blurTarget?: RefObject<View | null>;
+  revealProgress?: SharedValue<number>;
+  revealRange?: readonly [number, number];
 }
 
 const supportsLiquidGlass =
@@ -35,8 +44,22 @@ const GlassSurface = ({
   fallbackTint = "rgba(8, 8, 10, 0.28)",
   tintColor = theme.colors.authSurface,
   interactive = false,
+  blurTarget,
+  revealProgress,
+  revealRange = [0, 1],
 }: GlassSurfaceProps) => {
-  if (supportsLiquidGlass) {
+  const revealStyle = useAnimatedStyle(() => ({
+    opacity: revealProgress
+      ? interpolate(
+          revealProgress.get(),
+          revealRange,
+          [0, 1],
+          Extrapolation.CLAMP,
+        )
+      : 1,
+  }));
+
+  if (supportsLiquidGlass && !revealProgress) {
     return (
       <GlassView
         glassEffectStyle="regular"
@@ -52,16 +75,21 @@ const GlassSurface = ({
 
   return (
     <View style={style}>
-      <BlurView
-        intensity={intensity}
-        tint="dark"
-        experimentalBlurMethod="dimezisBlurView"
-        style={StyleSheet.absoluteFill}
-      />
-      <View
+      <Animated.View
         pointerEvents="none"
-        style={[styles.fallbackTint, { backgroundColor: fallbackTint }]}
-      />
+        style={[StyleSheet.absoluteFill, revealStyle]}
+      >
+        <BlurView
+          intensity={intensity}
+          tint="dark"
+          blurMethod={blurTarget ? "dimezisBlurViewSdk31Plus" : "none"}
+          blurTarget={blurTarget}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
+          style={[styles.fallbackTint, { backgroundColor: fallbackTint }]}
+        />
+      </Animated.View>
       {children}
     </View>
   );
@@ -70,5 +98,5 @@ const GlassSurface = ({
 export default GlassSurface;
 
 const styles = StyleSheet.create({
-  fallbackTint: StyleSheet.absoluteFillObject,
+  fallbackTint: StyleSheet.absoluteFill,
 });

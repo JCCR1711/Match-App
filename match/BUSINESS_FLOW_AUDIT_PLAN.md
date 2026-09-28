@@ -551,7 +551,7 @@ solo porque el codigo compile.
 | 3. Agenda operativa | En validacion | 2 | 1 | Codex | Rangos, conflictos y retorno corregidos; prueba Android/iOS pendiente |
 | 4. Sedes y canchas | En validacion | 3 | 2 | Codex | Rutas, nextStep, herencia y eliminacion corregidos; prueba Android/iOS pendiente |
 | 5. Pagos | En validacion | 2 | 2 | Codex | Semantica y enlaces corregidos; integracion financiera real pendiente |
-| 6. Permisos | En analisis | 1 | 2 | Codex | Modo corregido; contrato backend de membresias y capacidades pendiente |
+| 6. Permisos | En validacion | 1 | 2 | Codex | Membresia tipada y selector DEV persistente implementados; autorizacion backend pendiente |
 | 7. Calidad transversal | En validacion | 1 | 4 | Codex | Recuperacion, accesibilidad y store externo corregidos; prueba en dispositivos pendiente |
 | 8. Cierre | Pendiente | - | - | - | - |
 
@@ -593,6 +593,48 @@ solo porque el codigo compile.
 - La implementacion permanece sobre el Stack nativo de Expo Router; no agrega animaciones JS por vista.
 - La auditoria jerarquica encontro que `app/business/_layout.tsx` usaba `Slot`; por ello las opciones `business/...` del Stack raiz no controlaban las transiciones internas.
 - Negocio ahora posee un Stack nativo propio y registra sus rutas con nombres relativos al layout.
+
+### Correccion: datos mock y roles de negocio
+
+- El catalogo demo usa identificadores estables para sedes, canchas y reservas.
+- Home, Agenda, Pendientes, detalle de cancha y Finanzas filtran por las
+  canchas pertenecientes a la organizacion activa.
+- Agenda ya no crea canchas temporales a partir de reservas huerfanas.
+- El detalle de cancha calcula ingresos confirmados y ocupacion desde el store
+  compartido y muestra hasta tres reservas del dia.
+- El perfil empresarial expone un selector `owner`, `manager` y `staff`
+  solamente en desarrollo.
+- El rol mock persiste en la membresia de la organizacion; no se agrega una
+  segunda cuenta ni se modifica el modo de uso.
+- El gateway HTTP no contiene una operacion de cambio de rol para desarrollo.
+- La guia `DEVELOPMENT_TESTING.md` documenta accesos, seeds, persistencia y el
+  recorrido manual de verificacion.
+
+### Correccion: encabezado de Estadisticas
+
+- Estadisticas y Finanzas usan `AppScreenLayout` con titulo grande dentro del
+  contenido y titulo compacto centrado al hacer scroll.
+- Ambas pantallas regresan de forma segura al Dashboard cuando no existe una
+  entrada previa en el stack.
+- La correccion reutiliza el layout compartido y no agrega un header local.
+
+### Implementacion: cuenta de deposito
+
+- Finanzas enlaza una pantalla secundaria de cuenta de deposito.
+- La pantalla reutiliza el header con titulo por scroll y retorno seguro a
+  Finanzas.
+- `owner` puede reemplazar la cuenta, `manager` accede en modo lectura y
+  `staff` recibe el estado financiero restringido.
+- El mock persiste la cuenta por organizacion y descarta el numero completo;
+  solo conserva banco, titular, moneda, estado y ultimos cuatro digitos.
+- El historial de liquidaciones conserva la cuenta utilizada en cada corte y
+  no se reescribe al cambiar la cuenta actual.
+- Cambiar cuenta usa una pantalla de tarea vertical, no un bottom sheet, porque
+  contiene seleccion, inputs, validacion y teclado.
+- El formulario reutiliza `AppScreenLayout` con `keyboardAware`, footer fijo y
+  confirmacion compartida para cambios sin guardar.
+- La proteccion de salida y su sheet se promovieron a `src/hooks` y
+  `src/components/ui` porque ahora son responsabilidades transversales.
 
 Estados permitidos:
 

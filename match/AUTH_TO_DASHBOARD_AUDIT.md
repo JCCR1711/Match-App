@@ -266,3 +266,6 @@ Responsabilidades recomendadas:
 - El splash es mas breve y se omite cuando Reduce Motion esta activo.
 - Setup usa retorno seguro hacia seleccion de modo y mensajes alineados al tema.
 - Dashboard muestra progreso estable durante la carga inicial.
+- `app/index.tsx` resuelve de forma centralizada el destino de arranque a partir
+  de sesion, onboarding y modo activo. El guard raiz anterior fue retirado para
+  que no compita con esa redireccion.

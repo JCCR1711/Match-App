@@ -3,7 +3,7 @@ import AppSheetActionButton from "@/src/components/ui/AppSheetActionButton";
 import CustomText from "@/src/components/ui/CustomText";
 import { theme } from "@/src/theme";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Modal, Platform, Pressable, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -33,11 +33,14 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
 
 const TimePickerSheet = ({ visible, title, value, onSelect, onClose }: TimePickerSheetProps) => {
   const [draftTime, setDraftTime] = useState(() => timeToDate(value));
+  const [sessionValue, setSessionValue] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!visible) return;
+  if (!visible && sessionValue !== null) {
+    setSessionValue(null);
+  } else if (visible && sessionValue !== value) {
+    setSessionValue(value);
     setDraftTime(timeToDate(value));
-  }, [value, visible]);
+  }
 
   if (Platform.OS !== "ios") {
     const selectedTime = dateToTime(draftTime);
@@ -94,7 +97,7 @@ const TimePickerSheet = ({ visible, title, value, onSelect, onClose }: TimePicke
             minuteInterval={30}
             textColor={theme.colors.white}
             themeVariant="dark"
-            onChange={(_, date) => date && setDraftTime(date)}
+            onValueChange={(_, date) => setDraftTime(date)}
             style={styles.picker}
           />
           <AppSheetActionButton

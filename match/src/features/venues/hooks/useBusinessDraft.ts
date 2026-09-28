@@ -1,9 +1,10 @@
+import { businessDraftQueryKeys } from "@/src/features/venues/queries/businessDraftQueryKeys";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import type { BusinessOnboardingDraft } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
-import { useFocusEffect } from "@react-navigation/native";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect } from "react";
 
 interface UseBusinessDraftOptions {
   redirectWhenMissing?: boolean;
@@ -14,64 +15,45 @@ export const useBusinessDraft = ({
   redirectWhenMissing = true,
   enabled = true,
 }: UseBusinessDraftOptions = {}) => {
-  const { accessToken } = useAuth();
-  const [draft, setDraft] = useState<BusinessOnboardingDraft | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
-  const cachedDraft = useRef<BusinessOnboardingDraft | null>(null);
-  const cachedToken = useRef<string | null>(null);
-  const reload = useCallback(() => setReloadKey((current) => current + 1), []);
+  const { accessToken, user } = useAuth();
+  const queryClient = useQueryClient();
+  const accountId = user?.id ?? "anonymous";
+  const queryKey = businessDraftQueryKeys.byAccount(accountId);
+  const canLoad = enabled && Boolean(accessToken && user);
+  const query = useQuery({
+    queryKey,
+    queryFn: () => {
+      if (!accessToken) throw new Error("Tu sesión expiró.");
+      return venueOnboardingGateway.getBusinessDraft(accessToken);
+    },
+    enabled: canLoad,
+  });
+  const { refetch } = query;
 
-  useFocusEffect(
-    useCallback(() => {
-      void reloadKey;
-      if (!enabled) {
-        setLoading(false);
-        return undefined;
-      }
+  useEffect(() => {
+    if (!enabled) return;
+    if (!accessToken && user) {
+      router.replace("/");
+      return;
+    }
+    if (!query.isPending && !query.error && query.data === null && redirectWhenMissing) {
+      router.replace("/business/setup");
+    }
+  }, [accessToken, enabled, query.data, query.error, query.isPending, redirectWhenMissing, user]);
 
-      if (!accessToken) {
-        router.replace("/");
-        return undefined;
-      }
+  const reload = useCallback(() => {
+    return refetch();
+  }, [refetch]);
 
-      let active = true;
-      const hasCurrentDraft = cachedToken.current === accessToken && cachedDraft.current !== null;
-      setLoading(!hasCurrentDraft);
-      setError(null);
+  const updateDraft = useCallback((draft: BusinessOnboardingDraft | null) => {
+    queryClient.setQueryData(businessDraftQueryKeys.byAccount(accountId), draft);
+  }, [accountId, queryClient]);
 
-      const load = async () => {
-        try {
-          const currentDraft =
-            await venueOnboardingGateway.getBusinessDraft(accessToken);
-          if (!active) return;
-          if (!currentDraft && redirectWhenMissing) {
-            router.replace("/business/setup");
-            return;
-          }
-          cachedToken.current = accessToken;
-          cachedDraft.current = currentDraft;
-          setDraft(currentDraft);
-        } catch (loadError) {
-          if (active) {
-            setError(
-              loadError instanceof Error
-                ? loadError.message
-                : "No pudimos cargar tu club.",
-            );
-          }
-        } finally {
-          if (active) setLoading(false);
-        }
-      };
-
-      void load();
-      return () => {
-        active = false;
-      };
-    }, [accessToken, enabled, redirectWhenMissing, reloadKey]),
-  );
-
-  return { draft, loading, error, reload };
+  return {
+    draft: query.data ?? null,
+    loading: canLoad && query.isPending,
+    error: query.error instanceof Error ? query.error.message : query.error ? "No pudimos cargar tu club." : null,
+    reload,
+    updateDraft,
+  };
 };

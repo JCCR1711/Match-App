@@ -1,4 +1,5 @@
 import CustomButton from "@/src/components/ui/CustomButton";
+import AppFeedbackNotice from "@/src/components/ui/AppFeedbackNotice";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import MatchMapPin from "@/src/features/venues/components/MatchMapPin";
@@ -40,24 +41,31 @@ const VenueLocationMapPicker = ({ coordinates, address, district, city, disabled
   const [error, setError] = useState<string | null>(null);
   const searchRequest = useRef(0);
 
-  useEffect(() => {
-    if (!visible) return;
+  const openPicker = () => {
+    searchRequest.current += 1;
     setSelection(coordinates ? { coordinates, address, district, city } : null);
     setQuery("");
     setSearchResults([]);
     setError(null);
-  }, [address, city, coordinates, district, visible]);
+    setSearching(false);
+    setVisible(true);
+  };
+
+  const handleQueryChange = (nextQuery: string) => {
+    setQuery(nextQuery);
+    setError(null);
+    const shouldSearch = nextQuery.trim().length >= 3;
+    setSearching(shouldSearch);
+    if (!shouldSearch) {
+      searchRequest.current += 1;
+      setSearchResults([]);
+    }
+  };
 
   useEffect(() => {
-    if (!visible || query.trim().length < 3) {
-      setSearchResults([]);
-      setSearching(false);
-      return;
-    }
+    if (!visible || query.trim().length < 3) return;
 
     const requestId = ++searchRequest.current;
-    setSearching(true);
-    setError(null);
     const timeout = setTimeout(() => {
       void searchVenueLocations(query).then((results) => {
         if (requestId === searchRequest.current) setSearchResults(results);
@@ -110,7 +118,7 @@ const VenueLocationMapPicker = ({ coordinates, address, district, city, disabled
   return (
     <>
       <Pressable
-        onPress={() => setVisible(true)}
+        onPress={openPicker}
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={coordinates ? "Cambiar ubicación" : "Seleccionar ubicación"}
@@ -140,7 +148,7 @@ const VenueLocationMapPicker = ({ coordinates, address, district, city, disabled
                 <CustomIcon icon={Search01Icon} color={theme.colors.authTextSecondary} size={24} strokeWidth={3} />
                 <TextInput
                   value={query}
-                  onChangeText={setQuery}
+                  onChangeText={handleQueryChange}
                   onSubmitEditing={() => void search()}
                   placeholder="Busca una dirección o lugar"
                   placeholderTextColor={theme.colors.authTextSecondary}
@@ -185,7 +193,7 @@ const VenueLocationMapPicker = ({ coordinates, address, district, city, disabled
                   <CustomText text={`${selection.coordinates.latitude.toFixed(5)}, ${selection.coordinates.longitude.toFixed(5)}`} variant="caption" style={styles.coordinates} numberOfLines={1} />
                 </>
               ) : null}
-              {error ? <CustomText text={error} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
+              {error ? <AppFeedbackNotice message={error} /> : null}
               <CustomButton label="Usar esta ubicación" variant="primary" onPress={confirm} disabled={!selection || searching} style={styles.confirmButton} />
             </View>
           </View>
@@ -230,6 +238,5 @@ const styles = StyleSheet.create({
   address: { color: theme.colors.white, textAlign: "center" },
   zone: { color: theme.colors.textOnDarkSecondary, textAlign: "center" },
   coordinates: { color: theme.colors.authTextSecondary, textAlign: "center" },
-  error: { color: theme.colors.error, textAlign: "center" },
   confirmButton: { minHeight: 56, marginTop: theme.spacing.sm, borderRadius: theme.radius.pill },
 });

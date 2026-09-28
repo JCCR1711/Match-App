@@ -1,3 +1,4 @@
+import AppSurface from "@/src/components/ui/AppSurface";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import SettlementStatusLabel from "@/src/features/payments/components/SettlementStatusLabel";
@@ -8,7 +9,7 @@ import { formatSoles } from "@/src/utils/formatMoney";
 import { CreditCardIcon } from "@hugeicons/core-free-icons";
 import { StyleSheet, View } from "react-native";
 
-const SettlementList = ({ settlements }: { settlements: Settlement[] }) => {
+const SettlementList = ({ settlements, onPressSettlement }: { settlements: Settlement[]; onPressSettlement?: (settlement: Settlement) => void }) => {
   if (settlements.length === 0) {
     return <CustomText text="Aun no hay liquidaciones" variant="body" style={styles.empty} />;
   }
@@ -16,21 +17,21 @@ const SettlementList = ({ settlements }: { settlements: Settlement[] }) => {
   return (
     <View style={styles.list}>
       {settlements.map((settlement) => (
-      <View key={settlement.id} style={[styles.card, settlement.status === "paid" && styles.paidCard]}>
+      <AppSurface key={settlement.id} variant="transparent" onPress={onPressSettlement ? () => onPressSettlement(settlement) : undefined} disabled={!onPressSettlement} accessibilityLabel={onPressSettlement ? `Ver liquidacion de ${settlement.period}` : undefined} style={[styles.card, settlement.status === "deposited" && styles.paidCard]}>
         <View style={styles.accountIcon}>
           <CustomIcon icon={CreditCardIcon} color={theme.colors.iceBlue} size={22} strokeWidth={2.25} />
         </View>
         <View style={styles.content}>
           <View style={styles.heading}>
             <CustomText text={settlement.period} variant="bodyStrong" style={styles.period} numberOfLines={1} />
-            <CustomText text={formatSoles(settlement.amount)} variant="actionSecondary" style={styles.amount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} />
+            <CustomText text={formatSoles(settlement.netAmount)} variant="actionSecondary" style={styles.amount} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} />
           </View>
           <View style={styles.footer}>
-            <CustomText text={formatSettlementAccount(settlement.accountLastDigits)} accessibilityLabel={`Cuenta terminada en ${settlement.accountLastDigits}`} variant="caption" style={styles.account} numberOfLines={1} />
+            <CustomText text={`${settlement.reservationCount} reservas · ${formatSettlementAccount(settlement.accountLastDigits)}`} accessibilityLabel={`${settlement.reservationCount} reservas. Cuenta terminada en ${settlement.accountLastDigits}`} variant="caption" style={styles.account} numberOfLines={1} />
             <SettlementStatusLabel status={settlement.status} />
           </View>
         </View>
-      </View>
+      </AppSurface>
       ))}
     </View>
   );

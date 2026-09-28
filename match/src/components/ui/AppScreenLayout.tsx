@@ -20,6 +20,7 @@ interface AppScreenLayoutProps {
   backAccessibilityLabel?: string;
   backIconVariant?: "back" | "dismiss";
   headerAction?: ReactNode;
+  headerActionWidth?: number;
   headerGlassTint?: string;
   contentStyle?: StyleProp<ViewStyle>;
   hasTabBar?: boolean;
@@ -42,6 +43,7 @@ const AppScreenLayout = ({
   backAccessibilityLabel,
   backIconVariant,
   headerAction,
+  headerActionWidth,
   headerGlassTint,
   contentStyle,
   hasTabBar,
@@ -71,6 +73,7 @@ const AppScreenLayout = ({
       backAccessibilityLabel={backAccessibilityLabel}
       backIconVariant={backIconVariant}
       headerAction={headerAction}
+      headerActionWidth={headerActionWidth}
       headerGlassTint={headerGlassTint}
       hasTabBar={hasTabBar}
     >
@@ -96,7 +99,7 @@ const AppScreenLayout = ({
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
         >
-          {headerTitleMode === "scroll" ? <CustomText text={title} variant="body" style={styles.scrollTitle} numberOfLines={1} /> : null}
+          {headerTitleMode === "scroll" ? <CustomText text={title} variant="heading" style={styles.scrollTitle} numberOfLines={1} /> : null}
           {children}
         </AppKeyboardAwareScrollView>
         {footer ? (
@@ -128,10 +131,5 @@ const styles = StyleSheet.create({
   },
   scrollTitle: {
     color: theme.colors.white,
-    fontFamily: theme.fontFamilies.poppinsBold,
-    fontSize: 22,
-    lineHeight: 28,
-    fontWeight: theme.fontWeights.bold,
-    letterSpacing: -0.35,
   },
 });

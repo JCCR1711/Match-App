@@ -1,5 +1,6 @@
 import type { AvailabilityBlock, ReservationRecord } from "@/src/features/reservations/types/reservation";
 import { hasTimeRangeConflict } from "@/src/features/reservations/utils/hasTimeRangeConflict";
+import { hasAgendaSlotStarted } from "@/src/features/reservations/utils/reservationDate";
 
 interface IsSlotUnavailableInput {
   fieldId: string;
@@ -18,6 +19,8 @@ export const isSlotUnavailable = ({
   reservations,
   blocks,
 }: IsSlotUnavailableInput) => {
+  if (hasAgendaSlotStarted(dateKey, startTime)) return true;
+
   const occupiedRanges = [
     ...reservations
       .filter(

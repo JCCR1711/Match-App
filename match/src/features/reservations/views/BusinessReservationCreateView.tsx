@@ -1,28 +1,33 @@
-import CustomIcon from "@/src/components/ui/CustomIcon";
-import CustomText from "@/src/components/ui/CustomText";
 import AppKeyboardAwareScrollView from "@/src/components/ui/AppKeyboardAwareScrollView";
+import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
+import ReservationSheetNotice from "@/src/features/reservations/components/ReservationSheetNotice";
 import ReservationCustomerPicker from "@/src/features/reservations/components/ReservationCustomerPicker";
 import ReservationSheetActionButton from "@/src/features/reservations/components/ReservationSheetActionButton";
 import ReservationStatusSelector from "@/src/features/reservations/components/ReservationStatusSelector";
 import ReservationSheetDetails from "@/src/features/reservations/components/ReservationSheetDetails";
-import ReservationSheetHeroValue from "@/src/features/reservations/components/ReservationSheetHeroValue";
+import ReservationPriceSummary from "@/src/features/reservations/components/ReservationPriceSummary";
 import ReservationTimeRange from "@/src/features/reservations/components/ReservationTimeRange";
 import ScheduleStatusLabel from "@/src/features/reservations/components/ScheduleStatusLabel";
 import { reservationCustomers } from "@/src/features/reservations/data/reservationCustomers";
-import { reservationsStore } from "@/src/features/reservations/services/MockReservationsStore";
+import { useReservationCommands } from "@/src/features/reservations/hooks/useReservationCommands";
 import type { ReservationCreateStatus, ReservationCustomer } from "@/src/features/reservations/types/reservation";
 import { parseBusinessReservationCreateParams } from "@/src/features/reservations/utils/businessReservationCreateRoute";
 import { getTimeRangeDuration } from "@/src/features/reservations/utils/reservationTime";
+import { getReservationActionErrorMessage } from "@/src/features/reservations/utils/getReservationActionErrorMessage";
+import { getBusinessAgendaAccess } from "@/src/features/reservations/utils/businessAgendaAccess";
+import { hasAgendaSlotStarted } from "@/src/features/reservations/utils/reservationDate";
+import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
+import { useEffectiveBusinessMembership } from "@/src/features/subscriptions/hooks/useEffectiveBusinessMembership";
+import { COLLAPSIBLE_HEADER_COLLAPSED_HEIGHT } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
-import { formatMoneyAmount } from "@/src/utils/formatMoney";
-import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const BusinessReservationCreateView = () => {
+  const insets = useSafeAreaInsets();
   const params = parseBusinessReservationCreateParams(useLocalSearchParams<{
     venueId?: string | string[];
     venueName?: string | string[];
@@ -38,40 +43,61 @@ const BusinessReservationCreateView = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<ReservationCustomer | null>(null);
   const [reservationStatus, setReservationStatus] = useState<ReservationCreateStatus>("pending");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { draft } = useBusinessDraft({ redirectWhenMissing: false });
+  const { createReservation, isMutating } = useReservationCommands(draft?.organizationId);
+  const { effectiveRole } = useEffectiveBusinessMembership(draft?.membership);
+  const agendaAccess = getBusinessAgendaAccess(effectiveRole);
+  const field = draft?.fields.find((item) => item.fieldId === params.fieldId);
+  const venue = draft?.venues.find((item) => item.venueId === field?.venueId);
   const durationMinutes = getTimeRangeDuration(params.startTime ?? "", params.endTime ?? "");
   const hourlyPrice = Number(params.hourlyPrice ?? 0);
   const hasValidPrice = Number.isFinite(hourlyPrice) && hourlyPrice >= 0;
-  const amount = useMemo(
-    () => durationMinutes === null || !hasValidPrice ? 0 : Math.round(hourlyPrice * durationMinutes / 60 * 100) / 100,
-    [durationMinutes, hasValidPrice, hourlyPrice],
-  );
+  const amount = durationMinutes === null || !hasValidPrice
+    ? 0
+    : Math.round(hourlyPrice * durationMinutes / 60 * 100) / 100;
   const hasContext = Boolean(params.venueId && params.fieldId && params.dateKey && params.startTime && params.endTime && durationMinutes !== null && hasValidPrice);
+  const resourceOperational = field?.status === "active" && venue?.status === "active";
+  const slotStarted = Boolean(params.dateKey && params.startTime && hasAgendaSlotStarted(params.dateKey, params.startTime));
+  const canCreate = agendaAccess.canCreateReservation && resourceOperational && !slotStarted;
 
-  const handleCreate = () => {
-    if (!selectedCustomer) {
-      setErrorMessage("Selecciona un jugador de Match.");
+  const handleCreate = async () => {
+    if (!canCreate) {
+      setErrorMessage(slotStarted ? "Este horario ya comenzó o pertenece al pasado." : "La sede o la cancha no están disponibles para crear reservas.");
+      return;
+    }
+    const customerName = selectedCustomer?.displayName ?? customerQuery.trim();
+    if (customerName.length < 2) {
+      setErrorMessage("Ingresa el nombre del cliente.");
       return;
     }
     if (!hasContext || !params.venueId || !params.fieldId || !params.dateKey || !params.startTime || durationMinutes === null) {
       setErrorMessage("No pudimos recuperar este horario.");
       return;
     }
-    const reservation = reservationsStore.createReservation({
-      customerId: selectedCustomer.id,
-      venueId: params.venueId,
-      venueName: params.venueName ?? "Club",
-      fieldId: params.fieldId,
-      fieldName: params.fieldName ?? "Cancha",
-      dateKey: params.dateKey,
-      dateLabel: params.dateLabel ?? params.dateKey,
-      startTime: params.startTime,
-      durationMinutes,
-      amount,
-      customerName: selectedCustomer.displayName,
-      status: reservationStatus,
-    });
+    let reservation;
+    try {
+      reservation = await createReservation({
+        customerId: selectedCustomer?.id ?? null,
+        venueId: params.venueId,
+        venueName: params.venueName ?? "Club",
+        fieldId: params.fieldId,
+        fieldName: params.fieldName ?? "Cancha",
+        dateKey: params.dateKey,
+        dateLabel: params.dateLabel ?? params.dateKey,
+        startTime: params.startTime,
+        durationMinutes,
+        amount,
+        customerName,
+        status: reservationStatus,
+        source: "manual",
+        paymentStatus: "pay_at_venue",
+      });
+    } catch (createError) {
+      setErrorMessage(getReservationActionErrorMessage(createError, "No pudimos crear la reserva."));
+      return;
+    }
     if (!reservation) {
-      setErrorMessage("Este horario ya no está disponible.");
+      setErrorMessage("No pudimos crear la reserva. Revisa que el horario siga disponible.");
       return;
     }
     router.back();
@@ -80,25 +106,22 @@ const BusinessReservationCreateView = () => {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      <AppScreenHeader
+        title="Nueva reserva"
+        titleAlign="center"
+        titleSize="compact"
+        onBack={() => router.back()}
+        backIconVariant="dismiss"
+        backAccessibilityLabel="Cerrar nueva reserva"
+      />
+      <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
         <View style={styles.keyboardArea}>
-          <View style={styles.modalHeader}>
-            <Pressable
-              onPress={() => router.back()}
-              accessibilityRole="button"
-              accessibilityLabel="Cerrar nueva reserva"
-              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
-            >
-              <CustomIcon icon={ArrowDown01Icon} color={theme.colors.white} size={24} strokeWidth={3} />
-            </Pressable>
-            <View pointerEvents="none" style={styles.titleContainer}>
-              <CustomText text="Nueva reserva" variant="body" style={styles.title} />
-            </View>
-          </View>
-
           <AppKeyboardAwareScrollView
             style={styles.scroll}
-            contentContainerStyle={styles.content}
+            contentContainerStyle={[
+              styles.content,
+              { paddingTop: insets.top + COLLAPSIBLE_HEADER_COLLAPSED_HEIGHT + theme.spacing.lg },
+            ]}
             showsVerticalScrollIndicator={false}
           >
         <View style={styles.context}>
@@ -128,20 +151,19 @@ const BusinessReservationCreateView = () => {
               setCustomerQuery(customer.displayName);
               setErrorMessage(null);
             }}
+            allowManualEntry
           />
-          {errorMessage ? <CustomText text={errorMessage} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
+          {errorMessage ? <ReservationSheetNotice message={errorMessage} /> : null}
+          {!canCreate && !errorMessage ? <ReservationSheetNotice tone="readOnly" message={slotStarted ? "Este horario ya comenzó o pertenece al pasado." : "No puedes crear reservas mientras la sede o la cancha estén inactivas."} /> : null}
         </View>
 
         <ReservationStatusSelector value={reservationStatus} onChange={setReservationStatus} />
 
-        <View style={styles.totalRow}>
-          <CustomText text="Total" variant="body" style={styles.totalLabel} />
-          <ReservationSheetHeroValue value={formatMoneyAmount(amount)} prefix="S/" accessibilityLabel={`Precio S/ ${formatMoneyAmount(amount)}`} />
-        </View>
+        <ReservationPriceSummary amount={amount} />
 
           </AppKeyboardAwareScrollView>
           <View style={styles.footer}>
-            <ReservationSheetActionButton label="Crear reserva" onPress={handleCreate} disabled={!hasContext || !selectedCustomer} />
+            <ReservationSheetActionButton label="Crear reserva" onPress={() => void handleCreate()} disabled={!hasContext || !canCreate || customerQuery.trim().length < 2 || isMutating} />
           </View>
         </View>
       </SafeAreaView>
@@ -155,55 +177,14 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: theme.colors.black },
   safeArea: { flex: 1 },
   keyboardArea: { flex: 1 },
-  modalHeader: {
-    minHeight: 80,
-    paddingHorizontal: theme.layout.screenGutter,
-    paddingTop: theme.spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-start",
-  },
-  titleContainer: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    color: theme.colors.white,
-    textAlign: "center",
-    textTransform: "none",
-    letterSpacing: 0.2,
-  },
-  closeButton: {
-    width: 48,
-    height: 48,
-    borderRadius: theme.radius.pill,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  pressed: { opacity: 0.72 },
   scroll: { flex: 1 },
   content: {
     flexGrow: 1,
     paddingHorizontal: theme.layout.screenGutter,
-    paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.lg,
     gap: theme.layout.sectionGap,
   },
   context: { gap: theme.spacing.lg },
   form: { gap: theme.spacing.sm },
-  error: { color: theme.colors.error },
-  totalRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "space-between",
-    gap: theme.spacing.lg,
-    paddingTop: theme.spacing.lg,
-  },
-  totalLabel: { color: theme.colors.textOnDarkSecondary },
   footer: { paddingHorizontal: theme.layout.screenGutter, paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.md },
 });

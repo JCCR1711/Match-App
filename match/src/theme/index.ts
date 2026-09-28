@@ -1,7 +1,7 @@
 import { radius } from "./border";
 import { colors } from "./colors";
 import { createLineChartTheme } from "./charts";
-import { metricAccentColors } from "./palettes";
+import { metricAccentColors, payoutBankFallbackPalette, payoutBankPalettes } from "./palettes";
 import { iconColors, iconSizes } from "./icons";
 import { layout } from "./layout";
 import { shadows } from "./shadows";
@@ -31,4 +31,6 @@ export const theme = {
   layout,
   createLineChartTheme,
   metricAccentColors,
+  payoutBankPalettes,
+  payoutBankFallbackPalette,
 };

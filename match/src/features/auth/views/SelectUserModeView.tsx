@@ -1,6 +1,6 @@
 import AppFormIntro from "@/src/components/ui/AppFormIntro";
+import AppFeedbackNotice from "@/src/components/ui/AppFeedbackNotice";
 import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
-import CustomText from "@/src/components/ui/CustomText";
 import ModeSelectionCard from "@/src/features/auth/components/ModeSelectionCard";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
@@ -62,14 +62,7 @@ const SelectUserModeView = () => {
             accessibilityLabel="Usar Match para administrar canchas"
           />
 
-          {error ? (
-            <CustomText
-              text={error}
-              variant="caption"
-              style={styles.errorText}
-              accessibilityRole="alert"
-            />
-          ) : null}
+          {error ? <AppFeedbackNotice message={error} /> : null}
 
         </View>
       </View>
@@ -85,9 +78,5 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: theme.spacing.lg,
-  },
-  errorText: {
-    color: theme.colors.errorSoft,
-    textAlign: "center",
   },
 });

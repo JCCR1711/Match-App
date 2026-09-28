@@ -1,3 +1,4 @@
+import AppSurface from "@/src/components/ui/AppSurface";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import type { OpenMatchPreview } from "@/src/features/home/types/openMatch";
@@ -6,7 +7,7 @@ import type { PublicVenue } from "@/src/features/venues/types/publicVenue";
 import { theme } from "@/src/theme";
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 interface OpenMatchCardProps {
   match: OpenMatchPreview;
@@ -16,11 +17,11 @@ interface OpenMatchCardProps {
 }
 
 const OpenMatchCard = ({ match, venue, width, onPress }: OpenMatchCardProps) => (
-  <Pressable
-    accessibilityRole="button"
+  <AppSurface
+    variant="transparent"
     accessibilityLabel={`Ver ${match.title}, ${match.dateLabel} a las ${match.time}, ${match.availableSpots} cupos`}
     onPress={onPress}
-    style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}
+    style={[styles.card, { width }]}
   >
     <Image source={getVenueImage(venue.id)} style={styles.cover} contentFit="cover" transition={220} accessibilityLabel={`Cancha de ${venue.name}`} />
     <View style={[styles.details, styles[match.tone]]}>
@@ -32,7 +33,7 @@ const OpenMatchCard = ({ match, venue, width, onPress }: OpenMatchCardProps) => 
         <CustomIcon icon={ArrowRight01Icon} color={theme.colors.black} size={19} />
       </View>
     </View>
-  </Pressable>
+  </AppSurface>
 );
 
 export default OpenMatchCard;
@@ -48,5 +49,4 @@ const styles = StyleSheet.create({
   title: { color: theme.colors.white },
   metadata: { color: theme.colors.white, opacity: 0.78 },
   arrow: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: theme.radius.pill, backgroundColor: theme.colors.accent },
-  pressed: { opacity: 0.76 },
 });

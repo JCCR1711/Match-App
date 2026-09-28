@@ -13,24 +13,27 @@ import {
 import { isSlotUnavailable } from "@/src/features/reservations/utils/isSlotUnavailable";
 import { createReservationReferenceCode, getCompactCustomerName } from "@/src/features/reservations/utils/reservationIdentity";
 import { parseTimeToMinutes } from "@/src/features/reservations/utils/reservationTime";
+import { hasAgendaSlotStarted } from "@/src/features/reservations/utils/reservationDate";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const STORAGE_KEY = "match:reservations:v1";
+const LEGACY_STORAGE_KEY = "match:reservations:v1";
+const getStorageKey = (organizationId: string) => `match:reservations:v2:${organizationId}`;
 
 const normalizeReservation = (reservation: ReservationRecord): ReservationRecord => ({
   ...reservation,
   referenceCode: reservation.referenceCode || createReservationReferenceCode(reservation.id),
   customerDisplayName: reservation.customerDisplayName || getCompactCustomerName(reservation.customerName),
+  source: reservation.source ?? (reservation.customerId ? "match" : "manual"),
+  paymentStatus: reservation.paymentStatus ?? (
+    reservation.customerId
+      ? reservation.status === "confirmed" ? "paid" : "pending"
+      : "pay_at_venue"
+  ),
 });
 
 let reservations: ReservationRecord[] = [...reservationsPreview];
 
 let blocks: AvailabilityBlock[] = [...availabilityBlocksPreview];
-
-type Listener = () => void;
-const listeners = new Set<Listener>();
-
-const emit = () => listeners.forEach((listener) => listener());
 
 interface PersistedReservationsState {
   previewVersion: number;
@@ -41,16 +44,12 @@ interface PersistedReservationsState {
 
 let hydrated = false;
 let hydrationPromise: Promise<void> | null = null;
-let version = 0;
-
-const emitChange = () => {
-  version += 1;
-  emit();
-};
+let activeOrganizationId: string | null = null;
 
 const persist = () => {
+  if (!activeOrganizationId) return;
   const state: PersistedReservationsState = { previewVersion: RESERVATIONS_PREVIEW_VERSION, previewDateKey: RESERVATIONS_PREVIEW_DATE_KEY, reservations, blocks };
-  void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => undefined);
+  void AsyncStorage.setItem(getStorageKey(activeOrganizationId), JSON.stringify(state)).catch(() => undefined);
 };
 
 export class MockReservationsStore {
@@ -58,10 +57,20 @@ export class MockReservationsStore {
     return hydrated;
   }
 
-  hydrate() {
-    if (hydrationPromise) return hydrationPromise;
+  hydrate(organizationId: string) {
+    if (hydrationPromise && activeOrganizationId === organizationId) return hydrationPromise;
 
-    hydrationPromise = AsyncStorage.getItem(STORAGE_KEY)
+    activeOrganizationId = organizationId;
+    hydrated = false;
+    reservations = [...reservationsPreview];
+    blocks = [...availabilityBlocksPreview];
+
+    hydrationPromise = AsyncStorage.getItem(getStorageKey(organizationId))
+      .then(async (scopedState) => scopedState ?? (
+        organizationId === "mock-org-mock-venue-owner-1"
+          ? AsyncStorage.getItem(LEGACY_STORAGE_KEY)
+          : null
+      ))
       .then((storedState) => {
         if (!storedState) return;
 
@@ -97,7 +106,6 @@ export class MockReservationsStore {
       })
       .finally(() => {
         hydrated = true;
-        emitChange();
       });
 
     return hydrationPromise;
@@ -111,15 +119,14 @@ export class MockReservationsStore {
     return [...blocks];
   }
 
-  getVersion() {
-    return version;
-  }
-
-  subscribe(listener: Listener) {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
+  replaceSnapshot(snapshot: {
+    reservations: ReservationRecord[];
+    blocks: AvailabilityBlock[];
+  }) {
+    reservations = [...snapshot.reservations];
+    blocks = [...snapshot.blocks];
+    hydrated = true;
+    persist();
   }
 
   createReservation(input: ReservationCreateInput) {
@@ -131,6 +138,7 @@ export class MockReservationsStore {
       input.durationMinutes <= 0 ||
       !Number.isFinite(input.amount) ||
       input.amount < 0 ||
+      hasAgendaSlotStarted(input.dateKey, input.startTime) ||
       this.isTimeRangeUnavailable(input.fieldId, input.dateKey, input.startTime, input.durationMinutes)
     ) {
       return null;
@@ -145,7 +153,6 @@ export class MockReservationsStore {
     };
     reservations.unshift(reservation);
     persist();
-    emitChange();
     return reservation;
   }
 
@@ -156,6 +163,7 @@ export class MockReservationsStore {
       parseTimeToMinutes(input.startTime) === null ||
       !Number.isFinite(input.durationMinutes) ||
       input.durationMinutes <= 0 ||
+      hasAgendaSlotStarted(input.dateKey, input.startTime) ||
       this.isTimeRangeUnavailable(input.fieldId, input.dateKey, input.startTime, input.durationMinutes)
     ) {
       return null;
@@ -167,38 +175,63 @@ export class MockReservationsStore {
     };
     blocks.unshift(block);
     persist();
-    emitChange();
     return block;
   }
 
   deleteBlock(blockId: string) {
     const blockIndex = blocks.findIndex((block) => block.id === blockId);
     if (blockIndex === -1) return false;
+    const block = blocks[blockIndex];
+    if (hasAgendaSlotStarted(block.dateKey, block.startTime)) return false;
 
     blocks.splice(blockIndex, 1);
     persist();
-    emitChange();
     return true;
   }
 
   confirmReservation(reservationId: string) {
-    const reservation = reservations.find((item) => item.id === reservationId);
-    if (!reservation || reservation.status !== "pending") return null;
+    const reservationIndex = reservations.findIndex((item) => item.id === reservationId);
+    const reservation = reservations[reservationIndex];
+    if (!reservation || reservation.status !== "pending" || hasAgendaSlotStarted(reservation.dateKey, reservation.startTime)) return null;
 
-    reservation.status = "confirmed";
+    const confirmedReservation: ReservationRecord = {
+      ...reservation,
+      status: "confirmed",
+      paymentStatus: reservation.source === "match" ? "paid" : reservation.paymentStatus,
+    };
+    reservations = reservations.map((item, index) =>
+      index === reservationIndex ? confirmedReservation : item,
+    );
     persist();
-    emitChange();
-    return reservation;
+    return confirmedReservation;
   }
 
   cancelReservation(reservationId: string) {
-    const reservation = reservations.find((item) => item.id === reservationId);
-    if (!reservation || reservation.status === "canceled") return null;
+    const reservationIndex = reservations.findIndex((item) => item.id === reservationId);
+    const reservation = reservations[reservationIndex];
+    if (!reservation || reservation.status === "canceled" || hasAgendaSlotStarted(reservation.dateKey, reservation.startTime)) return null;
 
-    reservation.status = "canceled";
+    const canceledReservation: ReservationRecord = {
+      ...reservation,
+      status: "canceled",
+      paymentStatus: reservation.paymentStatus === "paid" ? "refund_pending" : reservation.paymentStatus,
+    };
+    reservations = reservations.map((item, index) =>
+      index === reservationIndex ? canceledReservation : item,
+    );
     persist();
-    emitChange();
-    return reservation;
+    return canceledReservation;
+  }
+
+  completeRefund(reservationId: string) {
+    const reservationIndex = reservations.findIndex((item) => item.id === reservationId);
+    const reservation = reservations[reservationIndex];
+    if (!reservation || reservation.status !== "canceled" || reservation.paymentStatus !== "refund_pending") return null;
+
+    const refundedReservation: ReservationRecord = { ...reservation, paymentStatus: "refunded" };
+    reservations = reservations.map((item, index) => index === reservationIndex ? refundedReservation : item);
+    persist();
+    return refundedReservation;
   }
 
   isTimeRangeUnavailable(

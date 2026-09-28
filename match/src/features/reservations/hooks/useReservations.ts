@@ -1,37 +1,23 @@
-import { reservationsStore } from "@/src/features/reservations/services/MockReservationsStore";
-import type {
-  AvailabilityBlock,
-  ReservationRecord,
-} from "@/src/features/reservations/types/reservation";
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { reservationQueryKeys } from "@/src/features/reservations/queries/reservationQueryKeys";
+import { reservationsGateway } from "@/src/features/reservations/services";
+import { DEMO_RESERVATIONS_ORGANIZATION_ID } from "@/src/features/reservations/services/ReservationsGateway";
+import { useQuery } from "@tanstack/react-query";
 
-interface ReservationsSnapshot {
-  reservations: ReservationRecord[];
-  blocks: AvailabilityBlock[];
-  isHydrated: boolean;
-}
+const emptySnapshot = { reservations: [], blocks: [], isHydrated: false };
 
-const getSnapshot = (): ReservationsSnapshot => ({
-  reservations: reservationsStore.getReservations(),
-  blocks: reservationsStore.getBlocks(),
-  isHydrated: reservationsStore.isHydrated(),
-});
+export const useReservations = (organizationId = DEMO_RESERVATIONS_ORGANIZATION_ID) => {
+  const query = useQuery({
+    queryKey: reservationQueryKeys.schedule(organizationId),
+    queryFn: () => reservationsGateway.getSnapshot(organizationId),
+  });
 
-export const useReservations = () => {
-  const version = useSyncExternalStore(
-    subscribeToReservations,
-    getReservationsVersion,
-    getReservationsVersion,
-  );
+  const snapshot = query.data ?? emptySnapshot;
 
-  useEffect(() => {
-    void reservationsStore.hydrate();
-  }, []);
-
-  return useMemo(getSnapshot, [version]);
+  return {
+    ...snapshot,
+    loading:
+      query.isPending,
+    error: query.error instanceof Error ? query.error.message : query.error ? "No pudimos cargar la agenda." : null,
+    reload: query.refetch,
+  };
 };
-
-const subscribeToReservations = (listener: () => void) =>
-  reservationsStore.subscribe(listener);
-
-const getReservationsVersion = () => reservationsStore.getVersion();

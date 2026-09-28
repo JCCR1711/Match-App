@@ -5,7 +5,7 @@ import { memo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 
 const options: readonly { value: ReservationCreateStatus; label: string }[] = [
-  { value: "pending", label: "Pendiente" },
+  { value: "pending", label: "Por confirmar" },
   { value: "confirmed", label: "Confirmada" },
 ];
 

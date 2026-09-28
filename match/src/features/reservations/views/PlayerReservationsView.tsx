@@ -1,7 +1,9 @@
 import AppBackground from "@/src/components/ui/AppBackground";
 import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
+import AppScreenState from "@/src/components/ui/AppScreenState";
 import CustomText from "@/src/components/ui/CustomText";
 import PlayerReservationCard from "@/src/features/reservations/components/PlayerReservationCard";
+import PlayerReservationListSkeleton from "@/src/features/reservations/components/PlayerReservationListSkeleton";
 import { reservationDates } from "@/src/features/reservations/data/reservationDates";
 import { useReservations } from "@/src/features/reservations/hooks/useReservations";
 import { isActiveReservation, type ActiveReservation } from "@/src/features/reservations/utils/isActiveReservation";
@@ -9,6 +11,7 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
 import { StatusBar } from "expo-status-bar";
+import { router } from "expo-router";
 import { useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated from "react-native-reanimated";
@@ -40,13 +43,18 @@ const PlayerReservationsView = () => {
           data={isHydrated ? upcomingReservations : []}
           keyExtractor={(reservation) => reservation.id}
           renderItem={renderReservation}
-          ListHeaderComponent={<CustomText text="Próximas" variant="sectionHeading" style={styles.title} />}
+          ListHeaderComponent={upcomingReservations.length > 0 ? <CustomText text="Próximas" variant="sectionHeading" style={styles.title} /> : null}
           ListEmptyComponent={
-            <CustomText
-              text={isHydrated ? "Todavía no tienes reservas próximas." : "Cargando reservas..."}
-              variant="body"
-              style={styles.emptyState}
-            />
+            isHydrated ? (
+              <AppScreenState
+                kind="empty"
+                title="Aún no tienes reservas"
+                message="Explora canchas cercanas y elige el horario que prefieras."
+                actionLabel="Explorar canchas"
+                onAction={() => router.navigate("/(tabs)")}
+                style={styles.screenState}
+              />
+            ) : <PlayerReservationListSkeleton />
           }
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           contentContainerStyle={[styles.content, { paddingTop: headerContentInset + theme.spacing.xl }]}
@@ -67,5 +75,5 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.huge * 2 + theme.spacing.lg },
   title: { color: theme.colors.white },
   separator: { height: theme.spacing.sm },
-  emptyState: { paddingTop: theme.spacing.xl, color: theme.colors.authTextSecondary, textAlign: "center" },
+  screenState: { minHeight: 480, marginHorizontal: -theme.spacing.lg },
 });

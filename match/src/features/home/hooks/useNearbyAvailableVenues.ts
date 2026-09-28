@@ -1,4 +1,4 @@
-import { findNearbyAvailableVenues } from "@/src/features/home/services/MockNearbyVenuesService";
+import { findNearbyAvailableVenues } from "@/src/features/home/services/findNearbyAvailableVenues";
 import type { PlayerCoordinates, PlayerLocationSource } from "@/src/features/home/types/nearbyVenue";
 import { reservationDates } from "@/src/features/reservations/data/reservationDates";
 import { useReservations } from "@/src/features/reservations/hooks/useReservations";

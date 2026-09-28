@@ -1,7 +1,8 @@
 import AppCardArrow from "@/src/components/ui/AppCardArrow";
+import AppSurface from "@/src/components/ui/AppSurface";
 import CustomText from "@/src/components/ui/CustomText";
 import { theme } from "@/src/theme";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 type BusinessHighlightCardTone = "blue" | "green";
 
@@ -25,14 +26,13 @@ const BusinessHighlightCard = ({
   const isGreen = tone === "green";
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <AppSurface
+      variant="transparent"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.card,
         isGreen ? styles.greenCard : styles.blueCard,
-        pressed && styles.pressed,
       ]}
     >
       <View style={styles.copy}>
@@ -63,7 +63,7 @@ const BusinessHighlightCard = ({
         backgroundColor={theme.colors.black}
         color={isGreen ? theme.colors.white : theme.colors.accent}
       />
-    </Pressable>
+    </AppSurface>
   );
 };
 
@@ -111,8 +111,5 @@ const styles = StyleSheet.create({
   },
   greenValue: {
     color: theme.colors.black,
-  },
-  pressed: {
-    opacity: 0.78,
   },
 });

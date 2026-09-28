@@ -1,3 +1,5 @@
+import type { MarketplaceStatus } from "@/src/features/venues/types/businessOnboarding";
+
 export type PublicFieldFormat = "Fútbol 5" | "Fútbol 7" | "Fútbol 11";
 
 export interface PublicVenueField {
@@ -18,4 +20,5 @@ export interface PublicVenue {
     longitude: number;
   };
   fields: PublicVenueField[];
+  marketplaceStatus: MarketplaceStatus;
 }

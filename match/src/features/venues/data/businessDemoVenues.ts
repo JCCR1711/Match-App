@@ -1,4 +1,7 @@
-import type { VenueLocation } from "@/src/features/venues/types/businessOnboarding";
+import type {
+  SportsFieldDraft,
+  VenueLocation,
+} from "@/src/features/venues/types/businessOnboarding";
 
 const demoSchedule: VenueLocation["defaultSchedule"] = {
   weekdays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
@@ -46,5 +49,50 @@ export const businessDemoVenues: readonly VenueLocation[] = [
     coordinates: { latitude: -12.0775, longitude: -76.9483 },
     status: "active",
     defaultSchedule: demoSchedule,
+  },
+];
+
+export const businessDemoFields: readonly SportsFieldDraft[] = [
+  {
+    fieldId: "demo-field-san-juan-1",
+    venueId: "demo-venue-san-juan",
+    fieldName: "Cancha Principal",
+    format: "7v7",
+    status: "active",
+    scheduleMode: "inherit",
+    scheduleOverride: null,
+    hourlyPrice: 120,
+    nightHourlyPrice: 145,
+    nightStartsAt: "18:00",
+    currency: "PEN",
+    availability: null,
+  },
+  {
+    fieldId: "demo-field-surco-1",
+    venueId: "demo-venue-surco",
+    fieldName: "Cancha Norte",
+    format: "5v5",
+    status: "active",
+    scheduleMode: "inherit",
+    scheduleOverride: null,
+    hourlyPrice: 100,
+    nightHourlyPrice: 120,
+    nightStartsAt: "18:00",
+    currency: "PEN",
+    availability: null,
+  },
+  {
+    fieldId: "demo-field-miraflores-1",
+    venueId: "demo-venue-miraflores",
+    fieldName: "Cancha Terraza",
+    format: "7v7",
+    status: "active",
+    scheduleMode: "inherit",
+    scheduleOverride: null,
+    hourlyPrice: 135,
+    nightHourlyPrice: 155,
+    nightStartsAt: "18:00",
+    currency: "PEN",
+    availability: null,
   },
 ];

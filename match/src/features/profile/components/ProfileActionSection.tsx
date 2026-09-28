@@ -9,6 +9,7 @@ export interface ProfileActionItem {
   key: string;
   icon: IconSvgElement;
   label: string;
+  value?: string;
   onPress: () => void;
   destructive?: boolean;
   disabled?: boolean;
@@ -36,6 +37,7 @@ const ProfileActionSection = ({ title, items }: ProfileActionSectionProps) => (
             >
               <CustomIcon icon={item.icon} color={color} size={25} />
               <CustomText text={item.label} variant="body" style={[styles.label, item.destructive && styles.destructive]} />
+              {item.value ? <CustomText text={item.value} variant="caption" style={styles.value} /> : null}
               {!item.destructive ? <CustomIcon icon={ArrowRight01Icon} color={theme.colors.authTextSecondary} size={24} /> : null}
             </Pressable>
             {index < items.length - 1 ? <View style={styles.separator} /> : null}
@@ -53,6 +55,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: theme.colors.white, fontSize: 19, lineHeight: 26, fontFamily: theme.fontFamilies.poppinsBold },
   row: { minHeight: 68, flexDirection: "row", alignItems: "center", gap: theme.spacing.md },
   label: { flex: 1, color: theme.colors.authText, fontFamily: theme.fontFamilies.poppinsBold },
+  value: { flexShrink: 0, color: theme.colors.authTextSecondary },
   destructive: { color: theme.colors.errorSoft },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: 41, backgroundColor: "rgba(255, 255, 255, 0.1)" },
   pressed: { opacity: 0.62 },

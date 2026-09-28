@@ -1,5 +1,6 @@
 import CustomText from "@/src/components/ui/CustomText";
 import { theme } from "@/src/theme";
+import { useId } from "react";
 import { Platform, type StyleProp, StyleSheet, TextInput, type TextInputProps, View, type ViewStyle } from "react-native";
 
 export interface AppTextFieldProps extends TextInputProps {
@@ -11,20 +12,27 @@ export interface AppTextFieldProps extends TextInputProps {
   containerStyle?: StyleProp<ViewStyle>;
 }
 
-const AppTextField = ({ label, prefix, hasError = false, errorMessage, isValid = false, containerStyle, style, ...props }: AppTextFieldProps) => (
-  <View style={[styles.container, containerStyle]}>
-    <CustomText text={label} variant="body" style={styles.label} />
-    <View style={[styles.inputFrame, isValid && styles.inputValid, (hasError || errorMessage) && styles.inputError]}>
-      {prefix ? <CustomText text={prefix} variant="bodyStrong" style={styles.prefix} /> : null}
-      <TextInput
-        {...props}
-        placeholderTextColor={theme.colors.authTextSecondary}
-        style={[styles.input, prefix ? styles.inputWithPrefix : styles.inputWithoutPrefix, style]}
-      />
+const AppTextField = ({ label, prefix, hasError = false, errorMessage, isValid = false, containerStyle, style, ...props }: AppTextFieldProps) => {
+  const errorId = useId();
+  const invalid = Boolean(hasError || errorMessage);
+
+  return (
+    <View style={[styles.container, containerStyle]}>
+      <CustomText text={label} variant="body" style={styles.label} />
+      <View style={[styles.inputFrame, isValid && styles.inputValid, invalid && styles.inputError]}>
+        {prefix ? <CustomText text={prefix} variant="bodyStrong" style={styles.prefix} /> : null}
+        <TextInput
+          {...props}
+          aria-describedby={errorMessage ? errorId : undefined}
+          aria-invalid={invalid}
+          placeholderTextColor={theme.colors.authTextSecondary}
+          style={[styles.input, prefix ? styles.inputWithPrefix : styles.inputWithoutPrefix, style]}
+        />
+      </View>
+      {errorMessage ? <CustomText nativeID={errorId} text={errorMessage} variant="caption" style={styles.errorText} accessibilityRole="alert" /> : null}
     </View>
-    {errorMessage ? <CustomText text={errorMessage} variant="caption" style={styles.errorText} accessibilityRole="alert" /> : null}
-  </View>
-);
+  );
+};
 
 export default AppTextField;
 

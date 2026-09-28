@@ -36,6 +36,11 @@ Respuesta:
 ```json
 {
   "organizationId": "org_123",
+  "marketplaceStatus": "local_only",
+  "membership": {
+    "organizationId": "org_123",
+    "role": "owner"
+  },
   "businessName": "Match Arena",
   "contactPhone": "999999999",
   "venues": [],
@@ -118,11 +123,27 @@ desde el panel, sin extender este onboarding inicial.
   identidad sin un proceso de verificación independiente.
 - `organizationId` se genera en el servidor y no se acepta desde el cliente.
 - La respuesta indica el siguiente paso permitido por el servidor.
+- Las operaciones financieras requieren `owner` o `manager`. Solo `owner`
+  puede modificar la cuenta de depósito. `staff` no recibe acceso financiero.
 - El servidor debe comprobar que `venueId` pertenece a la organización antes de
   registrar una cancha.
 - El servidor debe impedir registrar disponibilidad antes de tener una cancha.
 - Toda lectura o escritura posterior debe comprobar la membresía y el alcance
   de la organización.
+
+## Herramienta de roles en desarrollo
+
+El gateway mock permite cambiar la membresía entre `owner`, `manager` y
+`staff` desde Perfil para comprobar la interfaz y sus capacidades. Esta
+operación:
+
+- solo está disponible con `__DEV__`;
+- persiste en el borrador mock de la organización;
+- no tiene endpoint HTTP equivalente;
+- no debe implementarse como un cambio de rol autorizado por el cliente.
+
+En producción, asignar o modificar roles requiere un contrato independiente,
+autorización de `owner`, validación del servidor y registro de auditoría.
 
 ## Estados operativos
 
@@ -139,3 +160,18 @@ Una sede inactiva hace que sus canchas estén inactivas de forma efectiva, pero
 no modifica el estado propio de cada cancha. Al reactivar la sede vuelven solo
 las canchas cuyo estado individual sea `active`. Cambiar estados no elimina
 horarios, precios, bloqueos ni reservas.
+
+## Reservas online
+
+`PATCH /venue-organizations/:organizationId/marketplace-status`
+
+```json
+{ "status": "live" }
+```
+
+Los estados permitidos son `local_only`, `live` y `paused`. Activar `live`
+requiere al menos una sede activa con ubicación y una cancha activa con tarifa
+y horario efectivos. `paused` detiene nuevas reservas desde el marketplace sin
+cancelar reservas existentes ni impedir reservas manuales. El servidor es la
+autoridad de publicación; el cliente no debe hacer visible una cancha solamente
+por tener `status: active`.

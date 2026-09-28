@@ -242,6 +242,6 @@ export default AuthFlowBackground;
 
 const styles = StyleSheet.create({
   background: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 });

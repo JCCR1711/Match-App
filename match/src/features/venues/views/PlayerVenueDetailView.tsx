@@ -1,5 +1,6 @@
 import AppBackground from "@/src/components/ui/AppBackground";
 import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
+import AppScreenState from "@/src/components/ui/AppScreenState";
 import AppSurface from "@/src/components/ui/AppSurface";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
@@ -7,6 +8,7 @@ import { reservationDates } from "@/src/features/reservations/data/reservationDa
 import { useReservations } from "@/src/features/reservations/hooks/useReservations";
 import { isSlotUnavailable } from "@/src/features/reservations/utils/isSlotUnavailable";
 import { publicVenuesPreview } from "@/src/features/venues/data/publicVenuesPreview";
+import { isPublicVenueBookable } from "@/src/features/venues/utils/isPublicVenueBookable";
 import { getVenueImage } from "@/src/features/venues/data/venueImages";
 import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
@@ -23,7 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const PlayerVenueDetailView = () => {
   const { venueId } = useLocalSearchParams<{ venueId: string }>();
-  const venue = publicVenuesPreview.find((item) => item.id === venueId);
+  const venue = publicVenuesPreview.find((item) => item.id === venueId && isPublicVenueBookable(item));
   const { reservations, blocks, isHydrated } = useReservations();
   const { scrollY, onScroll, headerContentInset } = useCollapsibleHeader();
   const [selectedDateId, setSelectedDateId] = useState<(typeof reservationDates)[number]["id"]>("today");
@@ -123,7 +125,14 @@ const PlayerVenueDetailView = () => {
               </View>
             </>
           ) : (
-            <CustomText text="No encontramos esta cancha." variant="body" style={styles.emptyState} />
+            <AppScreenState
+              kind="empty"
+              title="No encontramos esta cancha"
+              message="Puede que ya no esté disponible. Regresa para explorar otras opciones."
+              actionLabel="Volver"
+              onAction={() => router.back()}
+              style={styles.screenState}
+            />
           )}
         </Animated.ScrollView>
       </SafeAreaView>
@@ -162,6 +171,6 @@ const styles = StyleSheet.create({
   slotText: { color: theme.colors.authText },
   slotPressed: { backgroundColor: theme.colors.electricBlue, borderColor: theme.colors.electricBlue },
   emptySlots: { color: theme.colors.authTextSecondary },
-  emptyState: { marginTop: "auto", marginBottom: "auto", color: theme.colors.authTextSecondary, textAlign: "center" },
+  screenState: { minHeight: 520, marginHorizontal: -theme.layout.screenGutter },
   pressed: { opacity: 0.76 },
 });

@@ -1,4 +1,5 @@
 import CustomButton from "@/src/components/ui/CustomButton";
+import AppFeedbackNotice from "@/src/components/ui/AppFeedbackNotice";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import type { VenueLocationMapPickerProps } from "@/src/features/venues/components/VenueLocationMapPicker.types";
@@ -52,25 +53,33 @@ const VenueLocationMapPicker = ({ coordinates, address, district, city, disabled
   const mapRef = useRef<MapView>(null);
   const searchRequest = useRef(0);
 
-  useEffect(() => {
-    if (!visible) return;
+  const openPicker = () => {
+    searchRequest.current += 1;
     setCandidate(coordinates ?? deviceCoordinates ?? LIMA_CENTER);
     setResolvedLocation(coordinates ? { coordinates, address, district, city } : null);
     setError(null);
     setQuery("");
     setSearchResults([]);
-  }, [address, city, coordinates, deviceCoordinates, district, visible]);
+    setSearching(false);
+    setVisible(true);
+    void requestCurrentLocation();
+  };
+
+  const handleQueryChange = (nextQuery: string) => {
+    setQuery(nextQuery);
+    setError(null);
+    const shouldSearch = nextQuery.trim().length >= 3;
+    setSearching(shouldSearch);
+    if (!shouldSearch) {
+      searchRequest.current += 1;
+      setSearchResults([]);
+    }
+  };
 
   useEffect(() => {
-    if (!visible || query.trim().length < 3) {
-      setSearchResults([]);
-      setSearching(false);
-      return;
-    }
+    if (!visible || query.trim().length < 3) return;
 
     const requestId = ++searchRequest.current;
-    setSearching(true);
-    setError(null);
     const timeout = setTimeout(() => {
       void searchVenueLocations(query).then((results) => {
         if (requestId === searchRequest.current) setSearchResults(results);
@@ -167,7 +176,7 @@ const VenueLocationMapPicker = ({ coordinates, address, district, city, disabled
 
   return (
     <>
-      <Pressable onPress={() => { setVisible(true); void requestCurrentLocation(); }} disabled={disabled} accessibilityRole="button" accessibilityLabel={coordinates ? "Cambiar ubicación en el mapa" : "Seleccionar ubicación en el mapa"} style={({ pressed }) => [styles.preview, pressed && styles.pressed]}>
+      <Pressable onPress={openPicker} disabled={disabled} accessibilityRole="button" accessibilityLabel={coordinates ? "Cambiar ubicación en el mapa" : "Seleccionar ubicación en el mapa"} style={({ pressed }) => [styles.preview, pressed && styles.pressed]}>
         {Platform.OS === "web" ? <View style={styles.webMap} /> : (
           <View pointerEvents="none" style={styles.previewMapWrap}>
             <MapView style={styles.map} region={{ ...previewCoordinates, ...REGION_DELTA }} mapType={Platform.OS === "ios" ? "mutedStandard" : "standard"} customMapStyle={Platform.OS === "android" ? MATCH_MAP_STYLE : undefined} userInterfaceStyle="dark" toolbarEnabled={false}>
@@ -222,7 +231,7 @@ const VenueLocationMapPicker = ({ coordinates, address, district, city, disabled
             <CustomIcon icon={Search01Icon} color={theme.colors.authTextSecondary} size={25} strokeWidth={3} />
             <TextInput
               value={query}
-              onChangeText={setQuery}
+              onChangeText={handleQueryChange}
               onSubmitEditing={() => void search()}
               placeholder="Busca una dirección o lugar"
               placeholderTextColor={theme.colors.authTextSecondary}
@@ -303,7 +312,7 @@ const VenueLocationMapPicker = ({ coordinates, address, district, city, disabled
                 </View>
               </View>
             ) : null}
-            {error ? <CustomText text={error} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
+            {error ? <AppFeedbackNotice message={error} /> : null}
             <CustomButton label="Usar esta ubicación" variant="primary" onPress={confirm} disabled={!resolvedLocation || resolving} style={styles.confirmButton} />
           </View>
         </View>
@@ -340,7 +349,6 @@ const styles = StyleSheet.create({
   detailValue: { width: "100%", color: theme.colors.white, fontSize: 28, lineHeight: 34, textAlign: "center" },
   zoneValue: { width: "100%", color: theme.colors.white, fontSize: 16, lineHeight: 21, textAlign: "center" },
   detailLabel: { width: "100%", color: theme.colors.authTextSecondary, textAlign: "center" },
-  error: { color: theme.colors.error },
   searchResults: { position: "absolute", zIndex: 5, right: theme.layout.screenGutter, left: theme.layout.screenGutter, overflow: "hidden", borderRadius: theme.radius.extraLarge, backgroundColor: theme.colors.backgroundAlt, ...theme.shadows.medium },
   searchResult: { minHeight: 68, flexDirection: "row", alignItems: "center", gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.separatorOnDark },
   resultCopy: { flex: 1, minWidth: 0 },

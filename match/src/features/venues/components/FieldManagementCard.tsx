@@ -15,26 +15,27 @@ interface FieldManagementCardProps {
   disabled?: boolean;
   subtitle?: string;
   style?: StyleProp<ViewStyle>;
-  presentation?: "compact" | "featured";
+  presentation?: "compact" | "featured" | "list";
   onPress: () => void;
 }
 
 const FieldManagementCard = ({ field, disabled, subtitle, style, presentation = "compact", onPress }: FieldManagementCardProps) => {
   const isFeatured = presentation === "featured";
+  const isList = presentation === "list";
 
   return (
     <AppSurface
       style={[
         styles.card,
-        isFeatured ? styles.featuredCard : styles.compactCard,
+        isList ? styles.listCard : isFeatured ? styles.featuredCard : styles.compactCard,
         style,
       ]}
       onPress={onPress}
       disabled={disabled}
-      accessibilityLabel={`Abrir ${field.fieldName}, estado ${field.status === "active" ? "activa" : "inactiva"}, fútbol ${field.format}, precio ${formatSoles(field.hourlyPrice)}`}
+      accessibilityLabel={`Abrir ${field.fieldName}${subtitle ? `, sede ${subtitle}` : ""}, estado ${field.status === "active" ? "activa" : "inactiva"}, fútbol ${field.format}, precio ${formatSoles(field.hourlyPrice)}`}
     >
-      {isFeatured ? (
-        <FeaturedField field={field} />
+      {isFeatured || isList ? (
+        <FeaturedField field={field} subtitle={subtitle} compact={isList} />
       ) : (
         <CompactField field={field} venueName={subtitle} />
       )}
@@ -42,25 +43,23 @@ const FieldManagementCard = ({ field, disabled, subtitle, style, presentation = 
   );
 };
 
-const FeaturedField = ({ field }: { field: SportsFieldDraft }) => (
-  <View style={styles.featuredContent}>
-    <Image source={getVenueImage(field.venueId)} style={styles.featuredImage} contentFit="cover" transition={180} cachePolicy="memory-disk" />
-    <LinearGradient
-      colors={["transparent", "rgba(8, 8, 10, 0.34)", "rgba(8, 8, 10, 0.9)"]}
-      locations={[0, 0.34, 1]}
-      style={styles.featuredFade}
-      pointerEvents="none"
-    />
+const FeaturedField = ({ field, subtitle, compact = false }: { field: SportsFieldDraft; subtitle?: string; compact?: boolean }) => (
+  <View style={[styles.featuredContent, compact && styles.listContent]}>
+    <View style={[styles.featuredMedia, compact && styles.listMedia]}>
+      <Image source={getVenueImage(field.venueId)} style={styles.featuredImage} contentFit="cover" transition={180} cachePolicy="memory-disk" />
+    </View>
     <View style={styles.featuredBody}>
       <View style={styles.featuredCopy}>
-        <ResourceStatusLabel status={field.status} style={styles.cardStatus} />
-        <CustomText text={field.fieldName} variant="sectionHeading" style={styles.featuredName} numberOfLines={1} />
+        <CustomText text={field.fieldName} variant="bodyStrong" style={styles.featuredName} numberOfLines={1} />
+        <CustomText text={compact ? `Fútbol ${field.format}` : subtitle ?? ""} variant="caption" style={styles.featuredMetadata} numberOfLines={1} />
+        <ResourceStatusLabel status={field.status} style={styles.featuredStatus} />
       </View>
       <View style={styles.featuredPrice}>
-        <View style={styles.featuredPriceRow}>
-          <CustomText text="S/" variant="label" style={styles.featuredCurrency} />
-          <CustomText text={formatMoneyAmount(field.hourlyPrice)} variant="actionSecondary" style={styles.featuredPriceAmount} numberOfLines={1} />
+        <View style={styles.featuredPriceValue}>
+          <CustomText text="S/" variant="caption" style={styles.featuredCurrency} />
+          <CustomText text={formatMoneyAmount(field.hourlyPrice)} variant="actionSecondary" style={styles.featuredAmount} numberOfLines={1} />
         </View>
+        <CustomText text="por hora" variant="caption" style={styles.featuredPriceLabel} />
       </View>
     </View>
   </View>
@@ -104,18 +103,24 @@ export default memo(FieldManagementCard);
 
 const styles = StyleSheet.create({
   card: { borderRadius: theme.radius.card, borderWidth: 0, backgroundColor: theme.colors.authSurface },
-  featuredCard: { minHeight: 264, backgroundColor: theme.colors.authSurface },
-  featuredContent: { flex: 1, minHeight: 264, position: "relative", justifyContent: "flex-end" },
-  featuredImage: { ...StyleSheet.absoluteFillObject, backgroundColor: theme.colors.backgroundAlt },
-  featuredFade: { position: "absolute", right: 0, bottom: 0, left: 0, height: "66%" },
-  featuredBody: { zIndex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.md },
+  listCard: { height: 92, borderRadius: 0, backgroundColor: "transparent" },
+  featuredCard: { height: 116, backgroundColor: "transparent" },
+  featuredContent: { minWidth: 0, height: 116, flexDirection: "row", gap: theme.spacing.md, padding: theme.spacing.sm },
+  featuredMedia: { width: 100, height: 100, overflow: "hidden", borderRadius: theme.radius.extraLarge, borderCurve: "continuous", backgroundColor: theme.colors.backgroundAlt },
+  listContent: { height: 92, gap: theme.spacing.md, paddingHorizontal: 0, paddingVertical: theme.spacing.sm },
+  listMedia: { width: 76, height: 76, borderRadius: theme.radius.large },
+  featuredImage: { width: "100%", height: "100%", backgroundColor: theme.colors.backgroundAlt },
+  featuredBody: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: theme.spacing.sm, paddingRight: theme.spacing.sm },
   featuredCopy: { flex: 1, minWidth: 0, gap: theme.spacing.xxs },
-  featuredName: { flexShrink: 1, minWidth: 0, color: theme.colors.white },
-  cardStatus: { alignSelf: "flex-start" },
+  featuredName: { color: theme.colors.white },
+  featuredMetadata: { color: theme.colors.authTextSecondary },
+  featuredStatus: { marginTop: theme.spacing.xxs, fontSize: 10, lineHeight: 14 },
   featuredPrice: { flexShrink: 0, alignItems: "flex-end" },
-  featuredPriceRow: { flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xxs },
-  featuredCurrency: { color: theme.colors.white },
-  featuredPriceAmount: { color: theme.colors.white },
+  featuredPriceValue: { flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xxs },
+  featuredCurrency: { color: theme.colors.textOnDarkSecondary },
+  featuredAmount: { color: theme.colors.white },
+  featuredPriceLabel: { color: theme.colors.authTextSecondary },
+  cardStatus: { alignSelf: "flex-start" },
   priceRow: { flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xxs },
   currency: { color: theme.colors.textOnDarkSecondary },
   priceAmount: { color: theme.colors.white },

@@ -1,28 +1,19 @@
 import CustomText from "@/src/components/ui/CustomText";
-import type { PaymentStatus } from "@/src/features/payments/types/businessPayments";
+import type { SettlementStatus } from "@/src/features/payments/types/businessPayments";
 import { theme } from "@/src/theme";
 import { memo } from "react";
 import { StyleSheet } from "react-native";
 
-const statusContent: Record<PaymentStatus, { settlementLabel: string; movementLabel: string; color: string }> = {
-  pending: { settlementLabel: "En proceso", movementLabel: "En proceso", color: theme.colors.pendingLimeText },
-  paid: { settlementLabel: "Depositada", movementLabel: "Cobrado", color: theme.colors.accent },
-  failed: { settlementLabel: "Fallida", movementLabel: "Fallido", color: theme.colors.error },
+const statusContent: Record<SettlementStatus, { label: string; color: string }> = {
+  scheduled: { label: "Programada", color: theme.colors.iceBlue },
+  processing: { label: "En proceso", color: theme.colors.pendingLimeText },
+  deposited: { label: "Depositada", color: theme.colors.accent },
+  failed: { label: "Fallida", color: theme.colors.error },
 };
 
-const SettlementStatusLabel = ({ status, context = "settlement" }: { status: PaymentStatus; context?: "settlement" | "movement" }) => {
+const SettlementStatusLabel = ({ status }: { status: SettlementStatus }) => {
   const content = statusContent[status];
-  const label = context === "movement" ? content.movementLabel : content.settlementLabel;
-
-  return (
-    <CustomText
-      text={label}
-      variant="label"
-      accessibilityLabel={`Estado de ${context === "movement" ? "movimiento" : "liquidacion"}: ${label}`}
-      style={[styles.label, { color: content.color }]}
-      numberOfLines={1}
-    />
-  );
+  return <CustomText text={content.label} variant="label" accessibilityLabel={`Estado de liquidación: ${content.label}`} style={[styles.label, { color: content.color }]} numberOfLines={1} />;
 };
 
 export default memo(SettlementStatusLabel);

@@ -1,5 +1,6 @@
 import { useAuth } from "@/src/hooks/useAuth";
 import { useOnboarding } from "@/src/features/auth/context/OnboardingProvider";
+import resolveInitialRoute from "@/src/features/auth/utils/resolveInitialRoute";
 import { Redirect } from "expo-router";
 
 export default function Index() {
@@ -10,17 +11,13 @@ export default function Index() {
     return null;
   }
 
-  if (!isAuthenticated) {
-    return <Redirect href={hasCompletedOnboarding ? "/auth/welcome" : "/auth/onboarding"} />;
-  }
-
-  if (!user?.activeMode) {
-    return <Redirect href="/auth/select-mode" />;
-  }
-
-  return user.activeMode === "venue_manager" ? (
-    <Redirect href="/(tabs)/dashboard" />
-  ) : (
-    <Redirect href="/(tabs)" />
+  return (
+    <Redirect
+      href={resolveInitialRoute({
+        isAuthenticated,
+        hasCompletedOnboarding,
+        activeMode: user?.activeMode,
+      })}
+    />
   );
 }

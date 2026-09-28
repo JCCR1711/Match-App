@@ -1,4 +1,6 @@
 import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
+import AppScreenState from "@/src/components/ui/AppScreenState";
+import AppFeedbackNotice from "@/src/components/ui/AppFeedbackNotice";
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
@@ -10,8 +12,11 @@ import { useReservations } from "@/src/features/reservations/hooks/useReservatio
 import { hasFieldScheduleDependencies } from "@/src/features/reservations/utils/hasFieldScheduleDependencies";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
+import { getBusinessResourceAccess } from "@/src/features/venues/utils/businessResourceAccess";
+import { useEffectiveBusinessMembership } from "@/src/features/subscriptions/hooks/useEffectiveBusinessMembership";
 import type { ResourceStatus, SportsFieldDraft } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
+import useAppToast from "@/src/hooks/useAppToast";
 import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
 import { Location01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
@@ -25,11 +30,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const VenueDetailView = () => {
   const { venueId } = useLocalSearchParams<{ venueId: string }>();
   const { accessToken } = useAuth();
-  const { draft, loading, error, reload } = useBusinessDraft();
-  const { reservations, blocks } = useReservations();
+  const { showToast } = useAppToast();
+  const { draft, loading, error, updateDraft } = useBusinessDraft();
+  const { effectiveRole } = useEffectiveBusinessMembership(draft?.membership);
+  const canConfigureResources = getBusinessResourceAccess(effectiveRole).canConfigureResources;
+  const { reservations, blocks } = useReservations(draft?.organizationId);
   const { scrollY, onScroll, headerContentInset } = useCollapsibleHeader();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [venueMenuVisible, setVenueMenuVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const venue = draft?.venues.find((item) => item.venueId === venueId);
@@ -38,26 +45,34 @@ const VenueDetailView = () => {
   const updateVenueStatus = async (status: ResourceStatus) => {
     if (!accessToken || !draft || !venue) return;
     setBusyId(venue.venueId);
-    try { await venueOnboardingGateway.updateVenueStatus(accessToken, draft.organizationId, venue.venueId, status); reload(); }
-    catch (statusError) { setActionError(statusError instanceof Error ? statusError.message : "No pudimos actualizar la sede."); }
+    try {
+      const updatedDraft = await venueOnboardingGateway.updateVenueStatus(accessToken, draft.organizationId, venue.venueId, status);
+      updateDraft(updatedDraft);
+      showToast({ message: status === "active" ? "Sede activada." : "Sede desactivada.", tone: "success" });
+    }
+    catch (statusError) { showToast({ message: statusError instanceof Error ? statusError.message : "No pudimos actualizar la sede." }); }
     finally { setBusyId(null); }
   };
 
   const deleteVenue = async () => {
     if (!accessToken || !draft || !venue) return;
     setBusyId(venue.venueId);
-    try { await venueOnboardingGateway.deleteVenue(accessToken, draft.organizationId, venue.venueId); router.back(); }
-    catch (deleteError) { setActionError(deleteError instanceof Error ? deleteError.message : "No pudimos eliminar la sede."); setBusyId(null); }
+    try {
+      const updatedDraft = await venueOnboardingGateway.deleteVenue(accessToken, draft.organizationId, venue.venueId);
+      updateDraft(updatedDraft);
+      showToast({ message: "Sede eliminada.", tone: "success" });
+      router.back();
+    }
+    catch (deleteError) { showToast({ message: deleteError instanceof Error ? deleteError.message : "No pudimos eliminar la sede." }); setBusyId(null); }
   };
 
   const confirmDeleteVenue = () => {
     if (!venue) return;
     setVenueMenuVisible(false);
     if (hasFieldScheduleDependencies(fields.map((field) => field.fieldId), reservations, blocks)) {
-      setActionError("No puedes eliminar una sede con reservas o bloqueos activos.");
+      showToast({ message: "No puedes eliminar una sede con reservas o bloqueos activos." });
       return;
     }
-    setActionError(null);
     setDeleteVisible(true);
   };
 
@@ -65,13 +80,16 @@ const VenueDetailView = () => {
     <FieldManagementCard field={item} disabled={busyId !== null} onPress={() => router.push({ pathname: "/business/fields/[fieldId]", params: { fieldId: item.fieldId } })} />
   ), [busyId]);
 
-  const addField = () => router.push({ pathname: "/business/fields/new", params: { venueId } });
+  const addField = () => {
+    if (!canConfigureResources) return;
+    router.push({ pathname: "/business/fields/new", params: { venueId } });
+  };
 
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
       <AppBackground />
-      <AppScreenHeader title={venue?.venueName ?? "Sede"} onBack={() => router.back()} scrollY={scrollY} action={<CustomButton icon={<CustomIcon icon={MoreHorizontalIcon} color={theme.colors.white} size={27} />} size="icon" variant="inverse" onPress={() => setVenueMenuVisible(true)} style={styles.headerMenu} accessibilityLabel={`Opciones de ${venue?.venueName ?? "sede"}`} />} />
+      <AppScreenHeader title={venue?.venueName ?? "Sede"} onBack={() => router.back()} scrollY={scrollY} action={venue && canConfigureResources ? <CustomButton icon={<CustomIcon icon={MoreHorizontalIcon} color={theme.colors.white} size={27} />} size="icon" variant="inverse" onPress={() => setVenueMenuVisible(true)} style={styles.headerMenu} accessibilityLabel={`Opciones de ${venue.venueName}`} /> : undefined} />
       <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
         <Animated.FlatList
           data={fields}
@@ -79,14 +97,23 @@ const VenueDetailView = () => {
           keyExtractor={(item) => item.fieldId}
           contentContainerStyle={[styles.content, { paddingTop: headerContentInset + theme.spacing.xl }]}
           ItemSeparatorComponent={Separator}
-          ListHeaderComponent={venue ? <View style={styles.venueSummary}><View style={styles.location}><CustomIcon icon={Location01Icon} color={theme.colors.authTextSecondary} size={22} /><CustomText text={`${venue.district}, ${venue.city}`} variant="body" style={styles.locationText} /></View>{error || actionError ? <CustomText text={error ?? actionError ?? ""} variant="caption" style={styles.error} /> : null}<View style={styles.sectionHeader}><CustomText text="Canchas" variant="sectionHeading" style={styles.sectionTitle} /><CustomButton label="Añadir" variant="secondary" onPress={addField} style={styles.addButton} accessibilityLabel="Añadir cancha" /></View></View> : null}
-          ListEmptyComponent={!loading ? <CustomText text="Aún no hay canchas" variant="body" style={styles.empty} /> : <CustomText text="Cargando" variant="body" style={styles.empty} />}
+          ListHeaderComponent={venue ? <View style={styles.venueSummary}><View style={styles.location}><CustomIcon icon={Location01Icon} color={theme.colors.authTextSecondary} size={22} /><CustomText text={`${venue.district}, ${venue.city}`} variant="body" style={styles.locationText} /></View>{error ? <AppFeedbackNotice message={error} /> : null}<View style={styles.sectionHeader}><CustomText text="Canchas" variant="sectionHeading" style={styles.sectionTitle} /><CustomButton label="Añadir" variant="secondary" onPress={addField} style={styles.addButton} accessibilityLabel="Añadir cancha" /></View></View> : null}
+          ListEmptyComponent={(
+            <AppScreenState
+              kind={loading ? "loading" : error && !venue ? "error" : "empty"}
+              title={loading ? "Cargando sede" : venue ? "Aún no hay canchas" : "No encontramos la sede"}
+              message={!venue ? error ?? undefined : "Añade la primera cancha para empezar a recibir reservas."}
+              actionLabel={loading ? undefined : venue ? "Añadir cancha" : "Volver"}
+              onAction={loading ? undefined : venue ? addField : () => router.back()}
+              style={styles.screenState}
+            />
+          )}
           showsVerticalScrollIndicator={false}
           onScroll={onScroll}
           scrollEventThrottle={16}
         />
       </SafeAreaView>
-      <ResourceActionsMenu
+      {canConfigureResources ? <ResourceActionsMenu
         visible={venueMenuVisible}
         title={venue?.venueName ?? "Sede"}
         active={venue?.status === "active"}
@@ -101,8 +128,8 @@ const VenueDetailView = () => {
         }}
         onToggleStatus={() => { if (!venue) return; setVenueMenuVisible(false); void updateVenueStatus(venue.status === "active" ? "inactive" : "active"); }}
         onDelete={confirmDeleteVenue}
-      />
-      <ResourceDeleteConfirmSheet
+      /> : null}
+      {canConfigureResources ? <ResourceDeleteConfirmSheet
         visible={deleteVisible}
         resourceName={venue?.venueName ?? "Sede"}
         detail={fields.length ? `También se eliminarán ${fields.length} canchas asociadas.` : "Esta acción no se puede deshacer."}
@@ -112,7 +139,7 @@ const VenueDetailView = () => {
           setDeleteVisible(false);
           void deleteVenue();
         }}
-      />
+      /> : null}
     </View>
   );
 };
@@ -131,7 +158,6 @@ const styles = StyleSheet.create({
   sectionTitle: { color: theme.colors.white },
   addButton: { minHeight: 42, height: 42, paddingHorizontal: theme.spacing.lg, borderWidth: 0, borderRadius: theme.radius.pill, backgroundColor: theme.colors.businessBlueSurface },
   headerMenu: { width: 42, height: 42, minHeight: 42, borderWidth: 0, backgroundColor: "transparent" },
-  error: { color: theme.colors.errorSoft },
-  empty: { minHeight: 260, paddingVertical: theme.spacing.huge, color: theme.colors.authTextSecondary, textAlign: "center", textAlignVertical: "center" },
+  screenState: { minHeight: 440, marginHorizontal: -theme.spacing.lg },
   separator: { height: theme.spacing.md },
 });

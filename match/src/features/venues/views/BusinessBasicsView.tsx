@@ -1,8 +1,10 @@
 import AppFormIntro from "@/src/components/ui/AppFormIntro";
 import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
+import AppFeedbackNotice from "@/src/components/ui/AppFeedbackNotice";
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomText from "@/src/components/ui/CustomText";
 import VenueTextField from "@/src/features/venues/components/VenueTextField";
+import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import { formatNationalPhone, isValidNationalPhone, PERU_PHONE_FORMAT, toInternationalPhone } from "@/src/features/venues/utils/phoneNumber";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -19,12 +21,17 @@ type BusinessField = "businessName" | "contactPhone";
 
 const BusinessBasicsView = () => {
   const { user, accessToken, initialized } = useAuth();
+  const canCheckDraft = initialized && Boolean(user?.activeMode === "venue_manager" && accessToken);
+  const { draft, loading: checkingDraft, error: draftError, updateDraft } = useBusinessDraft({
+    redirectWhenMissing: false,
+    enabled: canCheckDraft,
+  });
   const [businessName, setBusinessName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
-  const [checkingDraft, setCheckingDraft] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [fieldError, setFieldError] = useState<BusinessField | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const preparingDraft = !initialized || (canCheckDraft && checkingDraft);
 
   useEffect(() => {
     if (!initialized) {
@@ -36,34 +43,8 @@ const BusinessBasicsView = () => {
       return;
     }
 
-    let active = true;
-    const restoreDraft = async () => {
-      try {
-        const draft = await venueOnboardingGateway.getBusinessDraft(accessToken);
-        if (active && draft) {
-          router.replace("/(tabs)/dashboard");
-        }
-      } catch (restoreError) {
-        if (active) {
-          setErrorMessage(
-            restoreError instanceof Error
-              ? restoreError.message
-              : "No pudimos recuperar tu club.",
-          );
-        }
-      } finally {
-        if (active) {
-          setCheckingDraft(false);
-        }
-      }
-    };
-
-    void restoreDraft();
-
-    return () => {
-      active = false;
-    };
-  }, [accessToken, initialized, user]);
+    if (draft) router.replace("/(tabs)/dashboard");
+  }, [accessToken, draft, initialized, user]);
 
   const handleContinue = async () => {
     const normalizedName = businessName.trim();
@@ -92,10 +73,11 @@ const BusinessBasicsView = () => {
     setErrorMessage(null);
 
     try {
-      await venueOnboardingGateway.saveBusinessBasics(accessToken, {
+      const updatedDraft = await venueOnboardingGateway.saveBusinessBasics(accessToken, {
         businessName: normalizedName,
         contactPhone: internationalPhone,
       });
+      updateDraft(updatedDraft);
       router.replace("/(tabs)/dashboard");
     } catch (submissionError) {
       setErrorMessage(
@@ -117,7 +99,7 @@ const BusinessBasicsView = () => {
       keyboardAware
       onBack={() => backOrReplace("/auth/select-mode")}
       backAccessibilityLabel="Volver a elegir modo"
-      footer={!checkingDraft ? (
+      footer={!preparingDraft ? (
         <CustomButton
           label={submitting ? "Guardando..." : "Continuar"}
           variant="primary"
@@ -130,9 +112,9 @@ const BusinessBasicsView = () => {
       ) : undefined}
     >
             <View
-              style={[styles.content, checkingDraft && styles.contentLoading]}
+              style={[styles.content, preparingDraft && styles.contentLoading]}
             >
-              {checkingDraft ? (
+              {preparingDraft ? (
                 <CustomText
                   text="Preparando tu club..."
                   variant="body"
@@ -184,13 +166,8 @@ const BusinessBasicsView = () => {
                     accessibilityLabel="Teléfono de contacto"
                   />
 
-                {errorMessage && !fieldError ? (
-                  <CustomText
-                    text={errorMessage}
-                    variant="caption"
-                    style={styles.errorText}
-                    accessibilityRole="alert"
-                  />
+                {(errorMessage || draftError) && !fieldError ? (
+                  <AppFeedbackNotice message={errorMessage ?? draftError ?? ""} />
                 ) : null}
 
                   </View>
@@ -217,10 +194,6 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: theme.layout.groupGap,
-  },
-  errorText: {
-    color: theme.colors.errorSoft,
-    textAlign: "center",
   },
   continueButton: {
     minHeight: 62,

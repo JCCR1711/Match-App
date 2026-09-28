@@ -6,6 +6,7 @@ import {
   UpdateVenueLocationInput,
   VenueLocationInput,
   VenueOnboardingGateway,
+  MarketplaceStatus,
 } from "@/src/features/venues/types/businessOnboarding";
 
 interface ApiErrorResponse {
@@ -199,6 +200,15 @@ export class HttpVenueOnboardingGateway implements VenueOnboardingGateway {
     return this.readDraftResponse(response);
   }
 
+  async updateMarketplaceStatus(accessToken: string, organizationId: string, status: MarketplaceStatus) {
+    const response = await fetch(`${this.baseUrl}/venue-organizations/${organizationId}/marketplace-status`, {
+      method: "PATCH",
+      headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    return this.readDraftResponse(response);
+  }
+
   private async readDraftResponse(response: Response) {
     if (!response.ok) {
       const error = (await response
@@ -237,6 +247,7 @@ export class HttpVenueOnboardingGateway implements VenueOnboardingGateway {
 
     return {
       ...draft,
+      marketplaceStatus: draft.marketplaceStatus ?? "local_only",
       venues,
       fields,
       location:

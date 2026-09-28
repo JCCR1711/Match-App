@@ -1,20 +1,28 @@
 import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
+import AppScreenState from "@/src/components/ui/AppScreenState";
+import AppAccessRestrictedState from "@/src/components/ui/AppAccessRestrictedState";
+import AppFeedbackNotice from "@/src/components/ui/AppFeedbackNotice";
+import AppChoiceGroup from "@/src/components/ui/AppChoiceGroup";
 import AppSection from "@/src/components/ui/AppSection";
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomText from "@/src/components/ui/CustomText";
 import FieldPricingEditor from "@/src/features/venues/components/FieldPricingEditor";
-import VenueChoiceGroup from "@/src/features/venues/components/VenueChoiceGroup";
 import VenuePickerField from "@/src/features/venues/components/VenuePickerField";
 import VenueTextField from "@/src/features/venues/components/VenueTextField";
-import UnsavedChangesSheet from "@/src/features/venues/components/UnsavedChangesSheet";
+import AppUnsavedChangesSheet from "@/src/components/ui/AppUnsavedChangesSheet";
 import WeeklyScheduleEditor from "@/src/features/venues/components/WeeklyScheduleEditor";
-import useUnsavedChangesGuard from "@/src/features/venues/hooks/useUnsavedChangesGuard";
+import BusinessProFeatureCard from "@/src/features/subscriptions/components/BusinessProFeatureCard";
+import { useEffectiveBusinessMembership } from "@/src/features/subscriptions/hooks/useEffectiveBusinessMembership";
+import { canCreateFieldForPlan } from "@/src/features/subscriptions/utils/businessPlanLimits";
+import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
+import useUnsavedChangesGuard from "@/src/hooks/useUnsavedChangesGuard";
+import { getBusinessResourceAccess } from "@/src/features/venues/utils/businessResourceAccess";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
-import type { BusinessOnboardingDraft, FieldFormat, FieldScheduleMode, WeeklySchedule } from "@/src/features/venues/types/businessOnboarding";
+import type { FieldFormat, FieldScheduleMode, WeeklySchedule } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
 const FIELD_FORMATS: { value: FieldFormat; label: string }[] = [
@@ -37,7 +45,9 @@ const DEFAULT_SCHEDULE: WeeklySchedule = {
 const FirstFieldView = () => {
   const { venueId } = useLocalSearchParams<{ venueId?: string }>();
   const { accessToken } = useAuth();
-  const [draft, setDraft] = useState<BusinessOnboardingDraft | null>(null);
+  const { draft, loading, error, updateDraft } = useBusinessDraft();
+  const { access: planAccess, effectiveRole, loading: planLoading } = useEffectiveBusinessMembership(draft?.membership);
+  const canConfigureResources = getBusinessResourceAccess(effectiveRole).canConfigureResources;
   const [fieldName, setFieldName] = useState("");
   const [format, setFormat] = useState<FieldFormat>("5v5");
   const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
@@ -46,42 +56,27 @@ const FirstFieldView = () => {
   const [hourlyPrice, setHourlyPrice] = useState("");
   const [nightHourlyPrice, setNightHourlyPrice] = useState("");
   const [nightStartsAt, setNightStartsAt] = useState("18:00");
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [fieldNameError, setFieldNameError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const initialVenueId = useRef<string | null>(null);
-  const initialScheduleMode = useRef<FieldScheduleMode>("inherit");
+  const [initialSelection, setInitialSelection] = useState<{
+    venueId: string;
+    scheduleMode: FieldScheduleMode;
+  } | null>(null);
 
   useEffect(() => {
-    if (!accessToken) {
-      router.replace("/");
-      return;
+    if (!loading && draft && !draft.venues.length) {
+      router.replace("/(tabs)/business-fields");
     }
-    let active = true;
-    const loadDraft = async () => {
-      try {
-        const currentDraft = await venueOnboardingGateway.getBusinessDraft(accessToken);
-        if (!active) return;
-        if (!currentDraft?.venues.length) {
-          router.replace("/(tabs)/business-fields");
-          return;
-        }
-        setDraft(currentDraft);
-        const initialVenue = currentDraft.venues.find((venue) => venue.venueId === venueId) ?? currentDraft.venues[0];
-        initialVenueId.current = initialVenue.venueId;
-        initialScheduleMode.current = initialVenue.defaultSchedule ? "inherit" : "custom";
-        setSelectedVenueId(initialVenue.venueId);
-        setScheduleMode(initialScheduleMode.current);
-      } catch (loadError) {
-        if (active) setErrorMessage(loadError instanceof Error ? loadError.message : "No pudimos cargar tus sedes.");
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-    void loadDraft();
-    return () => { active = false; };
-  }, [accessToken, venueId]);
+  }, [draft, loading]);
+
+  if (!loading && draft?.venues.length && !initialSelection) {
+    const initialVenue = draft.venues.find((venue) => venue.venueId === venueId) ?? draft.venues[0];
+    const initialMode = initialVenue.defaultSchedule ? "inherit" : "custom";
+    setInitialSelection({ venueId: initialVenue.venueId, scheduleMode: initialMode });
+    setSelectedVenueId(initialVenue.venueId);
+    setScheduleMode(initialMode);
+  }
 
   const clearError = () => {
     setFieldNameError(false);
@@ -98,6 +93,10 @@ const FirstFieldView = () => {
 
   const venues = draft?.venues ?? [];
   const selectedVenue = venues.find((venue) => venue.venueId === selectedVenueId);
+  const selectedVenueFieldCount = selectedVenueId
+    ? (draft?.fields ?? []).filter((field) => field.venueId === selectedVenueId).length
+    : 0;
+  const canCreateField = canCreateFieldForPlan(planAccess, selectedVenueFieldCount);
   const customScheduleChanged = scheduleMode === "custom" && (
     scheduleOverride.openingTime !== DEFAULT_SCHEDULE.openingTime
     || scheduleOverride.closingTime !== DEFAULT_SCHEDULE.closingTime
@@ -108,8 +107,8 @@ const FirstFieldView = () => {
     || hourlyPrice.trim()
     || nightHourlyPrice.trim()
     || format !== "5v5"
-    || selectedVenueId !== initialVenueId.current
-    || scheduleMode !== initialScheduleMode.current
+    || selectedVenueId !== initialSelection?.venueId
+    || scheduleMode !== initialSelection?.scheduleMode
     || customScheduleChanged
     || nightStartsAt !== "18:00"
   );
@@ -144,7 +143,7 @@ const FirstFieldView = () => {
     setSubmitting(true);
     clearError();
     try {
-      await venueOnboardingGateway.saveSportsField(accessToken, draft.organizationId, {
+      const updatedDraft = await venueOnboardingGateway.saveSportsField(accessToken, draft.organizationId, {
         venueId: selectedVenueId,
         fieldName: fieldName.trim(),
         format,
@@ -156,6 +155,7 @@ const FirstFieldView = () => {
         nightStartsAt,
         currency: "PEN",
       });
+      updateDraft(updatedDraft);
       unsavedChanges.leaveWithoutPrompt(finishCreation);
     } catch (saveError) {
       setErrorMessage(saveError instanceof Error ? saveError.message : "No pudimos crear la cancha.");
@@ -179,10 +179,24 @@ const FirstFieldView = () => {
       backgroundVariant="solid"
       onBack={() => router.back()}
       backAccessibilityLabel="Volver"
-      footer={!loading && draft ? <CustomButton label={submitting ? "Creando..." : "Crear cancha"} variant="primary" onPress={save} disabled={submitting} style={styles.saveButton} /> : undefined}
+      footer={!loading && !planLoading && draft && canConfigureResources && canCreateField ? <CustomButton label={submitting ? "Creando..." : "Crear cancha"} variant="primary" onPress={save} disabled={submitting} style={styles.saveButton} /> : undefined}
     >
-      {loading ? <CustomText text="Cargando" variant="body" style={styles.muted} /> : !draft ? (
-        <CustomText text={errorMessage ?? "No encontramos tu club."} variant="body" style={styles.muted} />
+      {loading || planLoading ? <AppScreenState kind="loading" title="Preparando la cancha" style={styles.screenState} /> : !draft ? (
+        <AppScreenState
+          title="No pudimos preparar la cancha"
+          message={errorMessage ?? error ?? undefined}
+          actionLabel="Volver"
+          onAction={() => router.back()}
+          style={styles.screenState}
+        />
+      ) : !canConfigureResources ? (
+        <AppAccessRestrictedState title="Creación no disponible" message="Esta acción está disponible para propietarios y gestores." onBack={() => router.back()} style={styles.screenState} />
+      ) : !canCreateField ? (
+        <BusinessProFeatureCard
+          title="Capacidad Basic completa"
+          message="Basic incluye una cancha. Con Pro puedes ampliar tu operación con más canchas y sedes."
+          onPress={() => router.push("/business/plan")}
+        />
       ) : (
         <View style={styles.content}>
           {venues.length > 1 ? (
@@ -191,15 +205,15 @@ const FirstFieldView = () => {
             </AppSection>
           ) : selectedVenue ? <CustomText text={selectedVenue.venueName} variant="caption" style={styles.venueContext} numberOfLines={1} /> : null}
 
-          <VenueTextField label="Nombre" value={fieldName} onChangeText={(value) => { setFieldName(value); clearError(); }} placeholder="Cancha principal" autoCapitalize="words" editable={!submitting} hasError={fieldNameError} accessibilityLabel="Nombre de la cancha" />
+          <VenueTextField label="Nombre" value={fieldName} onChangeText={(value) => { setFieldName(value); clearError(); }} placeholder="Cancha principal" autoCapitalize="words" editable={!submitting} hasError={fieldNameError} errorMessage={fieldNameError ? errorMessage : null} accessibilityLabel="Nombre de la cancha" />
 
           <View style={styles.controlGroup}>
             <CustomText text="Formato" variant="body" style={styles.controlLabel} />
-            <VenueChoiceGroup options={FIELD_FORMATS} value={format} disabled={submitting} onChange={(value) => { setFormat(value); clearError(); }} />
+            <AppChoiceGroup options={FIELD_FORMATS} value={format} disabled={submitting} onChange={(value) => { setFormat(value); clearError(); }} />
           </View>
 
           <AppSection title="Horario">
-            <VenueChoiceGroup options={scheduleOptions} value={scheduleMode} disabled={submitting} onChange={(value) => { setScheduleMode(value); clearError(); }} />
+            <AppChoiceGroup options={scheduleOptions} value={scheduleMode} disabled={submitting} onChange={(value) => { setScheduleMode(value); clearError(); }} />
             {scheduleMode === "custom" ? <WeeklyScheduleEditor value={scheduleOverride} onChange={(value) => { setScheduleOverride(value); clearError(); }} disabled={submitting} /> : null}
           </AppSection>
 
@@ -207,11 +221,11 @@ const FirstFieldView = () => {
             <FieldPricingEditor showTitle={false} dayHourlyPrice={hourlyPrice} nightHourlyPrice={nightHourlyPrice} nightStartsAt={nightStartsAt} disabled={submitting} onChange={(pricing) => { setHourlyPrice(pricing.dayHourlyPrice); setNightHourlyPrice(pricing.nightHourlyPrice); setNightStartsAt(pricing.nightStartsAt); clearError(); }} />
           </AppSection>
 
-          {errorMessage ? <CustomText text={errorMessage} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
+          {(errorMessage && !fieldNameError) || error ? <AppFeedbackNotice message={(errorMessage && !fieldNameError ? errorMessage : error) ?? ""} /> : null}
         </View>
       )}
     </AppScreenLayout>
-    <UnsavedChangesSheet visible={unsavedChanges.confirmationVisible} onKeepEditing={unsavedChanges.keepEditing} onDiscard={unsavedChanges.discardChanges} />
+    <AppUnsavedChangesSheet visible={unsavedChanges.confirmationVisible} onKeepEditing={unsavedChanges.keepEditing} onDiscard={unsavedChanges.discardChanges} />
     </>
   );
 };
@@ -224,6 +238,6 @@ const styles = StyleSheet.create({
   controlGroup: { gap: theme.spacing.md },
   controlLabel: { color: theme.colors.white },
   muted: { color: theme.colors.authTextSecondary, textAlign: "center" },
-  error: { color: theme.colors.errorSoft, textAlign: "center" },
+  screenState: { minHeight: 420, paddingHorizontal: 0 },
   saveButton: { minHeight: 56, borderRadius: theme.radius.pill },
 });

@@ -1,18 +1,24 @@
 import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
-import CustomText from "@/src/components/ui/CustomText";
 import { getStableSportsAvatarId } from "@/src/components/ui/SportsAvatar";
 import ProfileIdentityHero from "@/src/features/profile/components/ProfileIdentityHero";
 import ProfileActionSection, { type ProfileActionItem } from "@/src/features/profile/components/ProfileActionSection";
 import { useAuth } from "@/src/hooks/useAuth";
-import { ArrowDataTransferHorizontalIcon, Calendar03Icon, LegalDocument01Icon, Logout01Icon, UserIcon } from "@hugeicons/core-free-icons";
+import useAppToast from "@/src/hooks/useAppToast";
+import { ArrowDataTransferHorizontalIcon, Calendar03Icon, FootballIcon, LegalDocument01Icon, Logout01Icon, TestTube01Icon, UserIcon } from "@hugeicons/core-free-icons";
 import { router } from "expo-router";
-import { theme } from "@/src/theme";
-import { StyleSheet } from "react-native";
+import { useEffect } from "react";
 
 const PlayerProfileView = () => {
-  const { user, error, logout, selectUserMode, status } = useAuth();
+  const { user, error, logout, selectUserMode, status, clearAuthError } = useAuth();
+  const { showToast } = useAppToast();
   const profileSeed = user?.id || user?.displayName || "player";
   const selectedAvatarId = user?.avatarId ?? getStableSportsAvatarId(profileSeed);
+
+  useEffect(() => {
+    if (!error) return;
+    showToast({ message: error });
+    clearAuthError();
+  }, [clearAuthError, error, showToast]);
 
   const profileActions: ProfileActionItem[] = [
     { key: "avatar", icon: UserIcon, label: "Cambiar avatar", onPress: () => router.push("/profile/avatar") },
@@ -28,6 +34,8 @@ const PlayerProfileView = () => {
         });
       },
     }] : []),
+    ...(__DEV__ ? [{ key: "feedback-preview", icon: TestTube01Icon, label: "Estados de interfaz", onPress: () => router.push("/dev/feedback") }] : []),
+    ...(__DEV__ ? [{ key: "sports-design-preview", icon: FootballIcon, label: "Concepto deportivo", onPress: () => router.push("/dev/sports-design") }] : []),
     { key: "legal", icon: LegalDocument01Icon, label: "Términos y privacidad", onPress: () => router.push("/legal/terms-and-privacy") },
   ];
 
@@ -63,7 +71,6 @@ const PlayerProfileView = () => {
         username={user?.username ?? "jugador"}
         modeLabel="Jugador"
       />
-      {error ? <CustomText text={error} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
       <ProfileActionSection title="Tu experiencia" items={profileActions} />
       <ProfileActionSection title="Sesión" items={sessionActions} />
     </AppScreenLayout>
@@ -71,7 +78,3 @@ const PlayerProfileView = () => {
 };
 
 export default PlayerProfileView;
-
-const styles = StyleSheet.create({
-  error: { color: theme.colors.errorSoft },
-});

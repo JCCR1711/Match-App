@@ -27,7 +27,7 @@ const AppRootHeader = ({ title, subtitle, actionIcon, actionLabel, onAction }: A
 export default AppRootHeader;
 
 const styles = StyleSheet.create({
-  container: { minHeight: 80, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.md },
+  container: { minHeight: 72, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.md },
   copy: { flex: 1, minWidth: 0, gap: theme.spacing.xxs },
   title: { color: theme.colors.white },
   subtitle: { color: theme.colors.authTextSecondary },

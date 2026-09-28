@@ -17,7 +17,7 @@ import { UserIcon } from "@hugeicons/core-free-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { FlatList, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -35,9 +35,9 @@ const HomeView = () => {
     viewportWidth - theme.layout.screenGutter * 2 - theme.spacing.huge,
   );
 
-  useEffect(() => {
-    if (featuredTimes.length > 0 && !featuredTimes.includes(selectedTime)) setSelectedTime(featuredTimes[0]);
-  }, [featuredTimes, selectedTime]);
+  const effectiveSelectedTime = featuredTimes.includes(selectedTime)
+    ? selectedTime
+    : featuredTimes[0] ?? "";
 
   const openVenue = useCallback((venueId: string) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -101,7 +101,7 @@ const HomeView = () => {
               <FeaturedVenueCard
                 venue={featuredVenue.venue}
                 times={featuredTimes}
-                selectedTime={selectedTime}
+                selectedTime={effectiveSelectedTime}
                 onSelectTime={(time) => {
                   setSelectedTime(time);
                   void Haptics.selectionAsync();

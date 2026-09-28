@@ -101,7 +101,7 @@ export default LaunchSplash;
 
 const styles = StyleSheet.create({
   root: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 100,
     alignItems: "center",
     justifyContent: "center",

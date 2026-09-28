@@ -2,7 +2,7 @@ import CustomIcon from "@/src/components/ui/CustomIcon";
 import SportsAvatar, { sportsAvatarCatalog } from "@/src/components/ui/SportsAvatar";
 import { theme } from "@/src/theme";
 import type { SportsAvatarId } from "@/src/types/avatar";
-import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
+import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 
 interface SportsAvatarGridProps {
@@ -39,7 +39,7 @@ const SportsAvatarGrid = ({ selectedId, seed, onSelect }: SportsAvatarGridProps)
             <SportsAvatar seed={seed} avatarId={avatar.id} size={avatarSize} />
             {selected ? (
               <View style={styles.check}>
-                <CustomIcon icon={CheckmarkCircle02Icon} color={theme.colors.black} size={22} strokeWidth={2.6} />
+                <CustomIcon icon={Tick02Icon} color={theme.colors.white} size={18} strokeWidth={3} />
               </View>
             ) : null}
           </Pressable>
@@ -64,23 +64,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: theme.radius.pill,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: "transparent",
   },
   selected: {
-    borderColor: theme.colors.white,
+    borderColor: theme.colors.electricBlue,
+    backgroundColor: theme.colors.surfaceOnDarkSubtle,
   },
   pressed: { opacity: 0.72 },
   check: {
     position: "absolute",
-    right: 2,
-    bottom: 2,
-    width: 28,
-    height: 28,
+    right: 1,
+    bottom: 1,
+    width: 26,
+    height: 26,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: theme.radius.pill,
-    backgroundColor: theme.colors.white,
+    backgroundColor: theme.colors.electricBlue,
     borderWidth: 2,
     borderColor: theme.colors.black,
   },

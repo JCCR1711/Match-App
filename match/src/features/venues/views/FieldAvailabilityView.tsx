@@ -1,21 +1,25 @@
 import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
+import AppScreenState from "@/src/components/ui/AppScreenState";
+import AppAccessRestrictedState from "@/src/components/ui/AppAccessRestrictedState";
+import AppFeedbackNotice from "@/src/components/ui/AppFeedbackNotice";
 import CustomButton from "@/src/components/ui/CustomButton";
-import CustomText from "@/src/components/ui/CustomText";
 import FieldContextHeader from "@/src/features/venues/components/FieldContextHeader";
-import UnsavedChangesSheet from "@/src/features/venues/components/UnsavedChangesSheet";
-import VenueChoiceGroup from "@/src/features/venues/components/VenueChoiceGroup";
+import AppUnsavedChangesSheet from "@/src/components/ui/AppUnsavedChangesSheet";
+import AppChoiceGroup from "@/src/components/ui/AppChoiceGroup";
 import WeeklyScheduleEditor from "@/src/features/venues/components/WeeklyScheduleEditor";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
-import useUnsavedChangesGuard from "@/src/features/venues/hooks/useUnsavedChangesGuard";
+import useUnsavedChangesGuard from "@/src/hooks/useUnsavedChangesGuard";
 import { getEffectiveFieldSchedule } from "@/src/features/venues/utils/getEffectiveFieldSchedule";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import type { FieldScheduleMode, WeeklySchedule } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
 import { theme } from "@/src/theme";
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { backOrReplace } from "@/src/utils/routerNavigation";
+import { getBusinessResourceAccess } from "@/src/features/venues/utils/businessResourceAccess";
+import { useEffectiveBusinessMembership } from "@/src/features/subscriptions/hooks/useEffectiveBusinessMembership";
 
 const EMPTY_SCHEDULE: WeeklySchedule = {
   weekdays: [],
@@ -31,14 +35,19 @@ const SCHEDULE_MODE_OPTIONS = [
 const FieldAvailabilityView = () => {
   const { fieldId } = useLocalSearchParams<{ fieldId: string }>();
   const { accessToken } = useAuth();
-  const { draft, loading, error } = useBusinessDraft();
+  const { draft, loading, error, updateDraft } = useBusinessDraft();
+  const { effectiveRole } = useEffectiveBusinessMembership(draft?.membership);
   const field = draft?.fields.find((item) => item.fieldId === fieldId);
   const venue = draft?.venues.find((item) => item.venueId === field?.venueId);
+  const canConfigureResources = getBusinessResourceAccess(
+    effectiveRole,
+  ).canConfigureResources;
   const [scheduleMode, setScheduleMode] = useState<FieldScheduleMode>("custom");
   const [schedule, setSchedule] = useState<WeeklySchedule>(EMPTY_SCHEDULE);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [formInitialized, setFormInitialized] = useState(false);
+  const [initializedFieldId, setInitializedFieldId] = useState<string | null>(null);
+  const formInitialized = initializedFieldId === field?.fieldId;
   const initialSchedule = field ? getEffectiveFieldSchedule(field, venue) ?? EMPTY_SCHEDULE : EMPTY_SCHEDULE;
   const hasUnsavedChanges = Boolean(formInitialized && field && (
     scheduleMode !== field.scheduleMode
@@ -47,8 +56,7 @@ const FieldAvailabilityView = () => {
   const unsavedChanges = useUnsavedChangesGuard(hasUnsavedChanges && !saving);
   const returnToField = () => backOrReplace({ pathname: "/business/fields/[fieldId]", params: { fieldId } });
 
-  useEffect(() => {
-    if (!field) return;
+  if (field && initializedFieldId !== field.fieldId) {
     const effectiveSchedule = getEffectiveFieldSchedule(field, venue);
     setScheduleMode(field.scheduleMode);
     setSchedule(effectiveSchedule ? {
@@ -56,8 +64,8 @@ const FieldAvailabilityView = () => {
       openingTime: effectiveSchedule.openingTime,
       closingTime: effectiveSchedule.closingTime,
     } : EMPTY_SCHEDULE);
-    setFormInitialized(true);
-  }, [field, venue]);
+    setInitializedFieldId(field.fieldId);
+  }
 
   const save = async () => {
     if (!field || !draft || !accessToken) return;
@@ -73,7 +81,7 @@ const FieldAvailabilityView = () => {
     setSaving(true);
     setMessage(null);
     try {
-      await venueOnboardingGateway.updateSportsField(accessToken, draft.organizationId, field.fieldId, {
+      const updatedDraft = await venueOnboardingGateway.updateSportsField(accessToken, draft.organizationId, field.fieldId, {
         fieldName: field.fieldName,
         format: field.format,
         scheduleMode,
@@ -82,6 +90,7 @@ const FieldAvailabilityView = () => {
         nightHourlyPrice: field.nightHourlyPrice,
         nightStartsAt: field.nightStartsAt,
       });
+      updateDraft(updatedDraft);
       unsavedChanges.leaveWithoutPrompt(returnToField);
     } catch (saveError) {
       setMessage(saveError instanceof Error ? saveError.message : "No pudimos guardar la disponibilidad.");
@@ -100,7 +109,7 @@ const FieldAvailabilityView = () => {
       onBack={returnToField}
       backAccessibilityLabel="Volver a detalles de cancha"
       backIconVariant="dismiss"
-      footer={field ? (
+      footer={field && canConfigureResources ? (
         <CustomButton
           label={saving ? "Guardando..." : "Guardar disponibilidad"}
           variant="primary"
@@ -111,13 +120,27 @@ const FieldAvailabilityView = () => {
       ) : undefined}
     >
       {loading ? (
-        <CustomText text="Cargando..." variant="body" style={styles.muted} />
+        <AppScreenState kind="loading" title="Cargando disponibilidad" style={styles.screenState} />
       ) : !field ? (
-        <CustomText text={error ?? "No encontramos la cancha."} variant="body" style={styles.muted} />
+        <AppScreenState
+          kind={error ? "error" : "empty"}
+          title="No encontramos la cancha"
+          message={error ?? undefined}
+          actionLabel="Volver"
+          onAction={returnToField}
+          style={styles.screenState}
+        />
+      ) : !canConfigureResources ? (
+        <AppAccessRestrictedState
+          title="Disponibilidad en solo lectura"
+          message="Los cambios están disponibles para propietarios y gestores."
+          onBack={returnToField}
+          style={styles.screenState}
+        />
       ) : (
         <View style={styles.content}>
           <FieldContextHeader fieldName={field.fieldName} venueName={venue?.venueName ?? "Sede"} />
-          <VenueChoiceGroup
+          <AppChoiceGroup
             options={SCHEDULE_MODE_OPTIONS.map((option) => ({ ...option, disabled: option.value === "inherit" && !venue?.defaultSchedule }))}
             value={scheduleMode}
             disabled={saving}
@@ -131,11 +154,11 @@ const FieldAvailabilityView = () => {
             readOnly={scheduleMode === "inherit"}
           />
 
-          {message ? <CustomText text={message} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
+          {message ? <AppFeedbackNotice message={message} /> : null}
         </View>
       )}
     </AppScreenLayout>
-    <UnsavedChangesSheet visible={unsavedChanges.confirmationVisible} onKeepEditing={unsavedChanges.keepEditing} onDiscard={unsavedChanges.discardChanges} />
+    <AppUnsavedChangesSheet visible={unsavedChanges.confirmationVisible} onKeepEditing={unsavedChanges.keepEditing} onDiscard={unsavedChanges.discardChanges} />
     </>
   );
 };
@@ -145,6 +168,6 @@ export default FieldAvailabilityView;
 const styles = StyleSheet.create({
   content: { gap: theme.layout.groupGap },
   muted: { color: theme.colors.authTextSecondary },
-  error: { color: theme.colors.errorSoft, textAlign: "center" },
+  screenState: { minHeight: 420, paddingHorizontal: 0 },
   button: { minHeight: 56, borderRadius: theme.radius.pill },
 });

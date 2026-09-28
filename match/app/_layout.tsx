@@ -1,10 +1,11 @@
 import { AuthProvider } from "@/src/context/AuthProvider";
 import DeviceLocationProvider from "@/src/context/DeviceLocationProvider";
-import AuthNavigationGuard from "@/src/features/auth/components/AuthNavigationGuard";
+import AppToastProvider from "@/src/context/AppToastProvider";
 import { OnboardingProvider } from "@/src/features/auth/context/OnboardingProvider";
 import { authGateway } from "@/src/features/auth/services";
 import LaunchSplash from "@/src/features/launch/components/LaunchSplash";
 import { sessionStore } from "@/src/services/storage";
+import AppQueryProvider from "@/src/services/query/AppQueryProvider";
 import { theme } from "@/src/theme";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -42,12 +43,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
+    <AppQueryProvider>
+    <AppToastProvider>
     <KeyboardProvider>
     <DeviceLocationProvider>
     <AuthProvider gateway={authGateway} sessionStore={sessionStore}>
       <OnboardingProvider>
-      <StatusBar style="dark" />
-      <AuthNavigationGuard>
+      <StatusBar style="light" />
         <Stack
           screenOptions={{
             headerShown: false,
@@ -139,8 +141,9 @@ export default function RootLayout() {
             contentStyle: { backgroundColor: theme.colors.black },
           }}
         />
+        <Stack.Screen name="dev/feedback" />
+        <Stack.Screen name="dev/sports-design" options={{ animation: "slide_from_right" }} />
         </Stack>
-      </AuthNavigationGuard>
       {showLaunchSplash ? (
         <LaunchSplash onComplete={handleLaunchComplete} />
       ) : null}
@@ -148,6 +151,8 @@ export default function RootLayout() {
     </AuthProvider>
     </DeviceLocationProvider>
     </KeyboardProvider>
+    </AppToastProvider>
+    </AppQueryProvider>
     </GestureHandlerRootView>
   );
 }

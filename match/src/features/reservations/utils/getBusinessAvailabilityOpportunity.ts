@@ -3,10 +3,10 @@ import type {
   ReservationRecord,
 } from "@/src/features/reservations/types/reservation";
 import { parseTimeToMinutes } from "@/src/features/reservations/utils/reservationTime";
+import { getWeekdayFromDateKey, toDateKey } from "@/src/features/reservations/utils/reservationDate";
 import type {
   SportsFieldDraft,
   VenueLocation,
-  Weekday,
 } from "@/src/features/venues/types/businessOnboarding";
 import { getEffectiveFieldSchedule } from "@/src/features/venues/utils/getEffectiveFieldSchedule";
 
@@ -16,6 +16,7 @@ interface BusinessAvailabilityOpportunityInput {
   venues: VenueLocation[];
   reservations: ReservationRecord[];
   blocks: AvailabilityBlock[];
+  now?: Date;
 }
 
 export interface BusinessAvailabilityOpportunity {
@@ -33,24 +34,8 @@ interface MinuteRange {
   end: number;
 }
 
-const weekdays: Weekday[] = [
-  "sunday",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-];
-
 const toTime = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-
-const getWeekday = (dateKey: string) => {
-  const [year, month, day] = dateKey.split("-").map(Number);
-  if (!year || !month || !day) return null;
-  return weekdays[new Date(year, month - 1, day).getDay()];
-};
 
 const mergeRanges = (ranges: MinuteRange[]) => {
   const merged: MinuteRange[] = [];
@@ -75,8 +60,9 @@ export const getBusinessAvailabilityOpportunity = ({
   venues,
   reservations,
   blocks,
+  now = new Date(),
 }: BusinessAvailabilityOpportunityInput): BusinessAvailabilityOpportunity => {
-  const weekday = getWeekday(dateKey);
+  const weekday = getWeekdayFromDateKey(dateKey);
   if (!weekday) return { bestSlot: null };
 
   let bestSlot: BusinessAvailabilityOpportunity["bestSlot"] = null;
@@ -147,7 +133,12 @@ export const getBusinessAvailabilityOpportunity = ({
           .filter((range) => range.end > range.start),
       );
 
-      let cursor = opening;
+      const nextBookableMinute = dateKey === toDateKey(now)
+        ? Math.ceil((now.getHours() * 60 + now.getMinutes() + 1) / 60) * 60
+        : opening;
+      let cursor = dateKey < toDateKey(now)
+        ? closing
+        : Math.max(opening, nextBookableMinute);
       occupied.forEach((range) => {
         registerFreeRange(field, cursor, range.start);
         cursor = Math.max(cursor, range.end);

@@ -1,7 +1,7 @@
 import AppFormIntro from "@/src/components/ui/AppFormIntro";
 import AppScreenLayout from "@/src/components/ui/AppScreenLayout";
 import AppTextField from "@/src/components/ui/AppTextField";
-import CustomText from "@/src/components/ui/CustomText";
+import AppFeedbackNotice from "@/src/components/ui/AppFeedbackNotice";
 import AuthButton from "@/src/features/auth/components/AuthButton";
 import TermsAcceptance from "@/src/features/auth/components/TermsAcceptance";
 import { isValidUsername, normalizeUsername } from "@/src/features/auth/utils/username";
@@ -132,14 +132,7 @@ const CompleteProfileView = () => {
                   accessibilityLabel="Nombre de usuario"
                 />
 
-                {error ? (
-                  <CustomText
-                    text={error}
-                    variant="caption"
-                    style={styles.formError}
-                    accessibilityRole="alert"
-                  />
-                ) : null}
+                {error ? <AppFeedbackNotice message={error} /> : null}
 
                 <TermsAcceptance
                   onOpenTerms={() =>
@@ -160,7 +153,6 @@ const styles = StyleSheet.create({
   fields: {
     gap: theme.spacing.lg,
   },
-  formError: { color: theme.colors.errorSoft },
   submitButton: {
     minHeight: 60,
     borderRadius: theme.radius.pill,

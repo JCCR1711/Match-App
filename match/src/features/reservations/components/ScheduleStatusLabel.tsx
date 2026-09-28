@@ -3,10 +3,11 @@ import { theme } from "@/src/theme";
 import { memo } from "react";
 import { StyleSheet, View } from "react-native";
 
-export type ScheduleStatus = "available" | "confirmed" | "pending" | "blocked" | "maintenance" | "canceled";
+export type ScheduleStatus = "available" | "past" | "confirmed" | "pending" | "blocked" | "maintenance" | "canceled";
 
 const statusContent: Record<ScheduleStatus, { label: string; color: string; backgroundColor: string }> = {
   available: { label: "Disponible", color: theme.colors.textMuted, backgroundColor: theme.colors.surfaceOnDarkSubtle },
+  past: { label: "Hora pasada", color: theme.colors.textOnDarkSecondary, backgroundColor: theme.colors.surfaceOnDarkSubtle },
   confirmed: { label: "Confirmada", color: theme.colors.accent, backgroundColor: theme.colors.confirmedSurface },
   pending: { label: "Pendiente", color: theme.colors.pendingLimeText, backgroundColor: theme.colors.pendingSurface },
   blocked: { label: "Bloqueada", color: theme.colors.error, backgroundColor: theme.colors.errorSurface },
@@ -14,11 +15,11 @@ const statusContent: Record<ScheduleStatus, { label: string; color: string; back
   canceled: { label: "Cancelada", color: theme.colors.errorSoft, backgroundColor: theme.colors.errorSurface },
 };
 
-const ScheduleStatusLabel = ({ status, variant = "text", emphasis = "compact", tone = "default" }: { status: ScheduleStatus; variant?: "text" | "badge"; emphasis?: "compact" | "regular"; tone?: "default" | "accent" }) => {
+const ScheduleStatusLabel = ({ status, variant = "text", emphasis = "compact", tone = "default" }: { status: ScheduleStatus; variant?: "text" | "badge"; emphasis?: "micro" | "compact" | "regular"; tone?: "default" | "accent" }) => {
   const content = status === "available" && tone === "accent"
     ? { ...statusContent.available, color: theme.colors.accent, backgroundColor: theme.colors.confirmedSurface }
     : statusContent[status];
-  const label = <CustomText text={content.label} variant={emphasis === "regular" ? "caption" : "label"} accessibilityLabel={`Estado: ${content.label}`} style={[styles.label, { color: content.color }]} numberOfLines={1} />;
+  const label = <CustomText text={content.label} variant={emphasis === "regular" ? "caption" : "label"} accessibilityLabel={`Estado: ${content.label}`} style={[styles.label, emphasis === "micro" && styles.microLabel, { color: content.color }]} numberOfLines={1} />;
   return variant === "badge" ? <View style={[styles.badge, { backgroundColor: content.backgroundColor }]}>{label}</View> : label;
 };
 
@@ -26,5 +27,6 @@ export default memo(ScheduleStatusLabel);
 
 const styles = StyleSheet.create({
   label: { flexShrink: 0, textTransform: "uppercase", letterSpacing: 0.9 },
+  microLabel: { fontSize: 10, lineHeight: 12, letterSpacing: 0.65 },
   badge: { flexShrink: 0, alignSelf: "flex-start", paddingHorizontal: theme.spacing.sm, paddingVertical: theme.spacing.xs, borderRadius: theme.radius.pill },
 });

@@ -1,5 +1,7 @@
 import AppScreenFrame from "@/src/components/ui/AppScreenFrame";
+import AppFeedbackNotice from "@/src/components/ui/AppFeedbackNotice";
 import AppSection from "@/src/components/ui/AppSection";
+import AppScreenState from "@/src/components/ui/AppScreenState";
 import AppTimeRange from "@/src/components/ui/AppTimeRange";
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomIcon from "@/src/components/ui/CustomIcon";
@@ -17,9 +19,12 @@ import { createBusinessAgendaHref, createFocusedReservationAgendaHref } from "@/
 import { getVenueImage } from "@/src/features/venues/data/venueImages";
 import { useBusinessDraft } from "@/src/features/venues/hooks/useBusinessDraft";
 import { getEffectiveFieldSchedule } from "@/src/features/venues/utils/getEffectiveFieldSchedule";
+import { getBusinessResourceAccess } from "@/src/features/venues/utils/businessResourceAccess";
+import { useEffectiveBusinessMembership } from "@/src/features/subscriptions/hooks/useEffectiveBusinessMembership";
 import { venueOnboardingGateway } from "@/src/features/venues/services";
 import type { ResourceStatus, WeeklySchedule } from "@/src/features/venues/types/businessOnboarding";
 import { useAuth } from "@/src/hooks/useAuth";
+import useAppToast from "@/src/hooks/useAppToast";
 import { theme } from "@/src/theme";
 import { formatMoneyAmount } from "@/src/utils/formatMoney";
 import { MoreHorizontalIcon } from "@hugeicons/core-free-icons";
@@ -35,28 +40,30 @@ const getFieldFormatLabel = (format: string) => `Fútbol ${format.split("v")[0]}
 const FieldDetailView = () => {
   const { fieldId } = useLocalSearchParams<{ fieldId: string }>();
   const { accessToken } = useAuth();
-  const { reservations, blocks } = useReservations();
-  const { draft, loading, error, reload } = useBusinessDraft();
+  const { showToast } = useAppToast();
+  const { draft, loading, error, updateDraft } = useBusinessDraft();
+  const { reservations, blocks } = useReservations(draft?.organizationId);
+  const { effectiveRole } = useEffectiveBusinessMembership(draft?.membership);
+  const canConfigureResources = getBusinessResourceAccess(effectiveRole).canConfigureResources;
   const [menuVisible, setMenuVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const field = draft?.fields.find((item) => item.fieldId === fieldId);
   const venue = draft?.venues.find((item) => item.venueId === field?.venueId);
   const schedule = field ? getEffectiveFieldSchedule(field, venue) : null;
-  const todayReservations = field ? reservations.filter(isActiveReservation).filter((reservation) => reservation.fieldId === field.fieldId && reservation.dateKey === reservationDates[0].dateKey) : [];
-  const todayBlocks = field ? blocks.filter((block) => block.fieldId === field.fieldId && block.dateKey === reservationDates[0].dateKey) : [];
+  const fieldReservations = field ? reservations.filter(isActiveReservation).filter((reservation) => reservation.fieldId === field.fieldId) : [];
+  const fieldBlocks = field ? blocks.filter((block) => block.fieldId === field.fieldId) : [];
 
   const updateStatus = async (status: ResourceStatus) => {
     if (!accessToken || !draft || !field) return;
     setMenuVisible(false);
     setBusy(true);
-    setActionError(null);
     try {
-      await venueOnboardingGateway.updateFieldStatus(accessToken, draft.organizationId, field.fieldId, status);
-      reload();
+      const updatedDraft = await venueOnboardingGateway.updateFieldStatus(accessToken, draft.organizationId, field.fieldId, status);
+      updateDraft(updatedDraft);
+      showToast({ message: status === "active" ? "Cancha activada." : "Cancha desactivada.", tone: "success" });
     } catch (statusError) {
-      setActionError(statusError instanceof Error ? statusError.message : "No pudimos actualizar la cancha.");
+      showToast({ message: statusError instanceof Error ? statusError.message : "No pudimos actualizar la cancha." });
     } finally {
       setBusy(false);
     }
@@ -66,10 +73,12 @@ const FieldDetailView = () => {
     if (!accessToken || !draft || !field) return;
     setBusy(true);
     try {
-      await venueOnboardingGateway.deleteSportsField(accessToken, draft.organizationId, field.fieldId);
+      const updatedDraft = await venueOnboardingGateway.deleteSportsField(accessToken, draft.organizationId, field.fieldId);
+      updateDraft(updatedDraft);
+      showToast({ message: "Cancha eliminada.", tone: "success" });
       router.back();
     } catch (deleteError) {
-      setActionError(deleteError instanceof Error ? deleteError.message : "No pudimos eliminar la cancha.");
+      showToast({ message: deleteError instanceof Error ? deleteError.message : "No pudimos eliminar la cancha." });
       setBusy(false);
     }
   };
@@ -78,10 +87,9 @@ const FieldDetailView = () => {
     if (!field) return;
     setMenuVisible(false);
     if (hasFieldScheduleDependencies([field.fieldId], reservations, blocks)) {
-      setActionError("No puedes eliminar una cancha con reservas o bloqueos activos.");
+      showToast({ message: "No puedes eliminar una cancha con reservas o bloqueos activos." });
       return;
     }
-    setActionError(null);
     setDeleteVisible(true);
   };
 
@@ -92,14 +100,20 @@ const FieldDetailView = () => {
       headerTitleSize="compact"
       backgroundVariant="solid"
       onBack={() => router.back()}
-      backAccessibilityLabel="Cerrar detalles de cancha"
-      backIconVariant="dismiss"
-      headerAction={field ? <CustomButton icon={<CustomIcon icon={MoreHorizontalIcon} color={theme.colors.white} size={26} strokeWidth={3} />} size="icon" variant="inverse" onPress={() => setMenuVisible(true)} style={styles.headerMenu} accessibilityLabel="Opciones de cancha" /> : null}
+      backAccessibilityLabel="Volver"
+      headerAction={field && canConfigureResources ? <CustomButton icon={<CustomIcon icon={MoreHorizontalIcon} color={theme.colors.white} size={26} strokeWidth={3} />} size="icon" variant="inverse" onPress={() => setMenuVisible(true)} style={styles.headerMenu} accessibilityLabel="Opciones de cancha" /> : null}
     >
       {({ onScroll, contentBottomInset }) => (
         <>
           <Animated.ScrollView contentContainerStyle={[styles.content, { paddingBottom: contentBottomInset }]} showsVerticalScrollIndicator={false} onScroll={onScroll} scrollEventThrottle={16}>
-            {!field ? <CustomText text={loading ? "Cargando" : error ?? "No encontramos esta cancha"} variant="body" style={styles.empty} accessibilityRole={error ? "alert" : undefined} /> : (
+            {!field ? (
+              <AppScreenState
+                kind={loading ? "loading" : error ? "error" : "empty"}
+                title={loading ? "Cargando cancha" : "No encontramos esta cancha"}
+                message={error ?? undefined}
+                style={styles.screenState}
+              />
+            ) : (
               <>
                 <View style={styles.media}>
                   <Image source={getVenueImage(field.venueId)} style={StyleSheet.absoluteFill} contentFit="cover" transition={180} cachePolicy="memory-disk" />
@@ -127,13 +141,13 @@ const FieldDetailView = () => {
                   </View>
 
                   <FieldTodayOverview
-                    reservations={todayReservations}
-                    blocks={todayBlocks}
+                    reservations={fieldReservations}
+                    blocks={fieldBlocks}
                     onOpenAgenda={() => router.push(createBusinessAgendaHref({ fieldId: field.fieldId, dateKey: reservationDates[0].dateKey }))}
                     onOpenReservation={(reservation) => router.push(createFocusedReservationAgendaHref(reservation))}
                   />
 
-                  <AppSection title="Disponibilidad" actionLabel="Editar" onAction={() => router.push({ pathname: "/business/fields/[fieldId]/availability", params: { fieldId: field.fieldId } })}>
+                  <AppSection title="Disponibilidad" actionLabel={canConfigureResources ? "Editar" : undefined} onAction={canConfigureResources ? () => router.push({ pathname: "/business/fields/[fieldId]/availability", params: { fieldId: field.fieldId } }) : undefined}>
                     <ScheduleSection schedule={schedule} />
                   </AppSection>
 
@@ -157,12 +171,12 @@ const FieldDetailView = () => {
                       </View>
                     </View>
                   </AppSection>
-                  {error || actionError ? <CustomText text={error ?? actionError ?? ""} variant="caption" style={styles.error} accessibilityRole="alert" /> : null}
+                  {error ? <AppFeedbackNotice message={error} /> : null}
                 </LinearGradient>
               </>
             )}
           </Animated.ScrollView>
-          <ResourceActionsMenu
+          {canConfigureResources ? <ResourceActionsMenu
             visible={menuVisible}
             title={field?.fieldName ?? "Cancha"}
             active={field?.status === "active"}
@@ -177,8 +191,8 @@ const FieldDetailView = () => {
             }}
             onToggleStatus={() => field && void updateStatus(field.status === "active" ? "inactive" : "active")}
             onDelete={confirmDelete}
-          />
-          <ResourceDeleteConfirmSheet
+          /> : null}
+          {canConfigureResources ? <ResourceDeleteConfirmSheet
             visible={deleteVisible}
             resourceName={field?.fieldName ?? "Cancha"}
             detail="Se eliminará su configuración. Esta acción no se puede deshacer."
@@ -188,7 +202,7 @@ const FieldDetailView = () => {
               setDeleteVisible(false);
               void deleteField();
             }}
-          />
+          /> : null}
         </>
       )}
     </AppScreenFrame>
@@ -220,5 +234,6 @@ const styles = StyleSheet.create({
   fieldName: { color: theme.colors.white }, venueName: { color: theme.colors.textOnDarkSecondary },
   schedule: { gap: theme.spacing.xl, paddingVertical: theme.spacing.sm },
   pricing: { gap: theme.spacing.lg }, priceGrid: { flexDirection: "row", gap: theme.spacing.md }, primaryRate: { flex: 1, minWidth: 0, minHeight: 118, justifyContent: "space-between", gap: theme.spacing.md, padding: theme.spacing.lg, borderRadius: theme.radius.extraLarge, borderCurve: "continuous", backgroundColor: theme.colors.authPrimary }, nightRate: { flex: 1, minWidth: 0, minHeight: 118, justifyContent: "space-between", gap: theme.spacing.xs, padding: theme.spacing.lg, borderRadius: theme.radius.extraLarge, borderCurve: "continuous", backgroundColor: theme.colors.authSurface }, modality: { minHeight: 40, justifyContent: "center" }, format: { color: theme.colors.white }, dayRateHint: { color: theme.colors.black }, rateHint: { color: theme.colors.white }, rateTime: { color: theme.colors.textOnDarkSecondary }, moneyValue: { flexShrink: 0, flexDirection: "row", alignItems: "baseline", gap: theme.spacing.xxs }, moneyCurrency: { color: theme.colors.textOnDarkSecondary }, moneyCurrencyInverted: { color: theme.colors.black, opacity: 0.66 }, moneyAmount: { color: theme.colors.white }, moneyAmountInverted: { color: theme.colors.black },
-  muted: { color: theme.colors.authTextSecondary }, error: { color: theme.colors.errorSoft }, empty: { minHeight: 360, color: theme.colors.authTextSecondary, textAlign: "center", textAlignVertical: "center" },
+  muted: { color: theme.colors.authTextSecondary },
+  screenState: { minHeight: 520, marginHorizontal: -theme.spacing.lg },
 });

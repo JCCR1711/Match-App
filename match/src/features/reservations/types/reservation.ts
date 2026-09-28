@@ -1,5 +1,7 @@
 export type ReservationStatus = "confirmed" | "pending" | "canceled";
 export type ReservationCreateStatus = Exclude<ReservationStatus, "canceled">;
+export type ReservationSource = "match" | "manual";
+export type ReservationPaymentStatus = "pending" | "paid" | "pay_at_venue" | "refund_pending" | "refunded";
 
 export interface ReservationCustomer {
   id: string;
@@ -25,6 +27,8 @@ export interface ReservationRecord {
   customerName: string;
   amount: number;
   status: ReservationStatus;
+  source: ReservationSource;
+  paymentStatus: ReservationPaymentStatus;
 }
 
 export interface AvailabilityBlock {
@@ -63,4 +67,6 @@ export interface ReservationCreateInput {
   amount: number;
   customerName: string;
   status: ReservationCreateStatus;
+  source: ReservationSource;
+  paymentStatus: ReservationPaymentStatus;
 }

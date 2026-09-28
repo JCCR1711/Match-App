@@ -4,7 +4,13 @@ import type { VenueVisual } from "@/src/features/venues/data/venueVisuals";
 import { theme } from "@/src/theme";
 import { Image, type ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { StyleSheet, Text, View } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 
 export type BusinessSetupKind = "venue" | "field" | "availability";
 
@@ -15,6 +21,7 @@ interface BusinessSetupCardProps {
   onPress: () => void;
   presentation?: "illustrated" | "neutral" | "accent";
   venueVisual?: VenueVisual;
+  style?: StyleProp<ViewStyle>;
 }
 
 const setupVisuals: Record<BusinessSetupKind, { image?: ImageSource; colors: readonly [string, string] }> = {
@@ -32,13 +39,13 @@ const setupVisuals: Record<BusinessSetupKind, { image?: ImageSource; colors: rea
   },
 };
 
-const BusinessSetupCard = ({ kind, title, accessibilityLabel, onPress, presentation = "illustrated", venueVisual }: BusinessSetupCardProps) => {
+const BusinessSetupCard = ({ kind, title, accessibilityLabel, onPress, presentation = "illustrated", venueVisual, style }: BusinessSetupCardProps) => {
   const visual = venueVisual ? { image: venueVisual.image, colors: venueVisual.accentColors } : setupVisuals[kind];
   const isNeutral = presentation === "neutral";
   const isAccent = presentation === "accent";
 
   return (
-    <AppSurface onPress={onPress} accessibilityLabel={accessibilityLabel} style={[styles.card, (isNeutral || isAccent) && styles.compactCard]}>
+    <AppSurface onPress={onPress} accessibilityLabel={accessibilityLabel} style={[styles.card, (isNeutral || isAccent) && styles.compactCard, style]}>
       {isNeutral ? <View style={styles.neutralBackground} /> : <LinearGradient colors={[visual.colors[0], visual.colors[1]]} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />}
       {!isNeutral && !isAccent ? (
         <LinearGradient
@@ -66,7 +73,7 @@ export default BusinessSetupCard;
 const styles = StyleSheet.create({
   card: { minHeight: 286 },
   compactCard: { minHeight: 140 },
-  neutralBackground: { ...StyleSheet.absoluteFillObject, backgroundColor: theme.colors.authPrimary },
+  neutralBackground: { ...StyleSheet.absoluteFill, backgroundColor: theme.colors.authPrimary },
   content: { flex: 1, minHeight: 286, justifyContent: "flex-end", padding: theme.spacing.xxl },
   compactContent: { minHeight: 140, justifyContent: "center", padding: theme.spacing.xl },
   heroImage: { position: "absolute", top: theme.spacing.sm, right: theme.spacing.sm, bottom: 0, width: "60%" },

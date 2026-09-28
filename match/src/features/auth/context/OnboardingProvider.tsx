@@ -1,7 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { onboardingStore } from "@/src/features/auth/services/OnboardingStore";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
-
-const ONBOARDING_STORAGE_KEY = "match:onboarding-completed:v1";
 
 interface OnboardingContextValue {
   initialized: boolean;
@@ -18,9 +16,9 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let active = true;
 
-    void AsyncStorage.getItem(ONBOARDING_STORAGE_KEY)
-      .then((storedValue) => {
-        if (active) setHasCompletedOnboarding(storedValue === "true");
+    void onboardingStore.hasCompleted()
+      .then((completed) => {
+        if (active) setHasCompletedOnboarding(completed);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -33,7 +31,7 @@ export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const completeOnboarding = useCallback(async () => {
-    await AsyncStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+    await onboardingStore.markCompleted();
     setHasCompletedOnboarding(true);
   }, []);
 

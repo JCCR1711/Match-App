@@ -1,6 +1,7 @@
 import AppSection from "@/src/components/ui/AppSection";
 import BusinessAttentionCard from "@/src/features/dashboard/components/BusinessAttentionCard";
 import BusinessOpportunityCard from "@/src/features/dashboard/components/BusinessOpportunityCard";
+import BusinessMarketplaceLink from "@/src/features/dashboard/components/BusinessMarketplaceLink";
 import FieldsCarousel from "@/src/features/dashboard/components/FieldsCarousel";
 import SettlementPreview from "@/src/features/dashboard/components/SettlementPreview";
 import TodayAgendaPreview from "@/src/features/dashboard/components/TodayAgendaPreview";
@@ -26,6 +27,8 @@ interface BusinessDashboardOverviewProps {
   todayReservations: ReservationRecord[];
   opportunity: BusinessAvailabilityOpportunity["bestSlot"];
   settlement: Settlement | null;
+  marketplaceLabel: string;
+  onOpenMarketplace?: () => void;
 }
 
 const getStartMinutes = (startTime: string) => {
@@ -46,6 +49,8 @@ const BusinessDashboardOverview = ({
   todayReservations,
   opportunity,
   settlement,
+  marketplaceLabel,
+  onOpenMarketplace,
 }: BusinessDashboardOverviewProps) => {
   const activeReservations = todayReservations.filter(isActiveReservation);
   const confirmedRevenue = todayReservations
@@ -64,6 +69,8 @@ const BusinessDashboardOverview = ({
       pendingCount={pendingReservations.length}
       onPress={onOpenAnalytics}
     />
+
+    <BusinessMarketplaceLink visibleInMatch={marketplaceLabel === "Visible en MATCH"} onPress={onOpenMarketplace} />
 
     {nextPendingReservation ? (
       <BusinessAttentionCard
@@ -94,4 +101,4 @@ const BusinessDashboardOverview = ({
 
 export default BusinessDashboardOverview;
 
-const styles = StyleSheet.create({ container: { gap: theme.layout.sectionGap } });
+const styles = StyleSheet.create({ container: { gap: theme.layout.groupGap } });

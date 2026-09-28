@@ -1,12 +1,16 @@
 import AppBackground from "@/src/components/ui/AppBackground";
 import AppScreenHeader from "@/src/components/ui/AppScreenHeader";
+import AppScreenState from "@/src/components/ui/AppScreenState";
+import AppFeedbackNotice from "@/src/components/ui/AppFeedbackNotice";
 import CustomButton from "@/src/components/ui/CustomButton";
 import CustomIcon from "@/src/components/ui/CustomIcon";
 import CustomText from "@/src/components/ui/CustomText";
 import PlayerBookingSummaryCard from "@/src/features/reservations/components/PlayerBookingSummaryCard";
 import { reservationDates } from "@/src/features/reservations/data/reservationDates";
-import { reservationsStore } from "@/src/features/reservations/services/MockReservationsStore";
+import { useReservationCommands } from "@/src/features/reservations/hooks/useReservationCommands";
+import { getReservationActionErrorMessage } from "@/src/features/reservations/utils/getReservationActionErrorMessage";
 import { publicVenuesPreview } from "@/src/features/venues/data/publicVenuesPreview";
+import { isPublicVenueBookable } from "@/src/features/venues/utils/isPublicVenueBookable";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useCollapsibleHeader } from "@/src/hooks/useCollapsibleHeader";
 import { theme } from "@/src/theme";
@@ -34,7 +38,8 @@ const PlayerReservationCreateView = () => {
   const { scrollY, onScroll, headerContentInset } = useCollapsibleHeader();
   const [durationMinutes, setDurationMinutes] = useState<(typeof durations)[number]>(60);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
-  const venue = publicVenuesPreview.find((item) => item.id === venueId);
+  const { createReservation, isMutating } = useReservationCommands();
+  const venue = publicVenuesPreview.find((item) => item.id === venueId && isPublicVenueBookable(item));
   const field = venue?.fields.find((item) => item.id === fieldId);
   const selectedDate = getReservationDate(dateId);
   const total = useMemo(
@@ -42,25 +47,33 @@ const PlayerReservationCreateView = () => {
     [durationMinutes, field],
   );
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!venue || !field || !slot) return;
 
-    const reservation = reservationsStore.createReservation({
-      customerId: user?.id ?? null,
-      venueId: venue.id,
-      venueName: venue.name,
-      fieldId: field.id,
-      fieldName: field.name,
-      dateKey: selectedDate.dateKey,
-      dateLabel: `${selectedDate.label}, ${selectedDate.detail}`,
-      startTime: slot,
-      durationMinutes,
-      amount: total,
-      customerName: user?.displayName ?? "Jugador Match",
-      status: "pending",
-    });
+    let reservation;
+    try {
+      reservation = await createReservation({
+        customerId: user?.id ?? null,
+        venueId: venue.id,
+        venueName: venue.name,
+        fieldId: field.id,
+        fieldName: field.name,
+        dateKey: selectedDate.dateKey,
+        dateLabel: `${selectedDate.label}, ${selectedDate.detail}`,
+        startTime: slot,
+        durationMinutes,
+        amount: total,
+        customerName: user?.displayName ?? "Jugador Match",
+        status: "pending",
+        source: "match",
+        paymentStatus: "pending",
+      });
+    } catch (createError) {
+      setAvailabilityError(getReservationActionErrorMessage(createError, "No pudimos reservar este horario."));
+      return;
+    }
     if (!reservation) {
-      setAvailabilityError("Ese horario ya no está disponible. Elige otro.");
+      setAvailabilityError("No pudimos reservar este horario. Revisa su disponibilidad e inténtalo nuevamente.");
       return;
     }
 
@@ -83,9 +96,13 @@ const PlayerReservationCreateView = () => {
       <View style={styles.root}>
         <AppBackground />
         <AppScreenHeader title="Reservar" onBack={() => router.back()} scrollY={scrollY} />
-        <View style={styles.emptyState}>
-          <CustomText text="No encontramos el horario seleccionado." variant="body" style={styles.emptyText} />
-        </View>
+        <AppScreenState
+          kind="empty"
+          title="Este horario ya no está disponible"
+          message="Vuelve a la cancha para elegir otro horario."
+          actionLabel="Volver a los horarios"
+          onAction={() => router.back()}
+        />
       </View>
     );
   }
@@ -142,11 +159,12 @@ const PlayerReservationCreateView = () => {
           />
         </Animated.ScrollView>
         <View style={styles.footer}>
-          {availabilityError ? <CustomText text={availabilityError} variant="caption" style={styles.availabilityError} accessibilityRole="alert" /> : null}
+          {availabilityError ? <AppFeedbackNotice message={availabilityError} /> : null}
           <CustomButton
             label="Confirmar reserva"
             trailingIcon={<CustomIcon icon={CheckmarkCircle02Icon} color={theme.colors.white} size={21} strokeWidth={2.4} />}
-            onPress={handleConfirm}
+            onPress={() => void handleConfirm()}
+            disabled={isMutating}
             accessibilityLabel="Confirmar reserva"
           />
         </View>
@@ -179,8 +197,5 @@ const styles = StyleSheet.create({
   optionLabel: { color: theme.colors.authText },
   durationOptionLabelSelected: { color: theme.colors.black },
   footer: { paddingHorizontal: theme.layout.screenGutter, paddingTop: theme.layout.elementGap, paddingBottom: theme.spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.authBorder, backgroundColor: theme.colors.fixedFooterSurface },
-  availabilityError: { color: theme.colors.errorSoft, textAlign: "center", paddingBottom: theme.spacing.sm },
   pressed: { opacity: 0.78 },
-  emptyState: { flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: theme.layout.screenGutter },
-  emptyText: { color: theme.colors.authTextSecondary, textAlign: "center" },
 });

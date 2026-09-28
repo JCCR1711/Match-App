@@ -6,10 +6,14 @@ import {
   UpdateVenueLocationInput,
   VenueLocationInput,
   VenueOnboardingGateway,
+  MarketplaceStatus,
 } from "@/src/features/venues/types/businessOnboarding";
 import { MockBusinessDraftStore } from "./MockBusinessDraftStore";
 import { resolveBusinessDraftNextStep } from "@/src/features/venues/utils/resolveBusinessDraftNextStep";
 import { isValidFieldInput, isValidVenueInput } from "@/src/features/venues/utils/businessResourceValidation";
+import type { VenueRole } from "@/src/types/businessAccess";
+import { getBusinessResourceAccess } from "@/src/features/venues/utils/businessResourceAccess";
+import { getMarketplaceReadiness } from "@/src/features/venues/utils/getMarketplaceReadiness";
 
 const wait = (duration: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, duration));
@@ -36,9 +40,13 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(350);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    this.assertCanConfigureResources();
 
+    const organizationId = this.draft?.organizationId ?? `mock-org-${ownerId}`;
     this.draft = {
-      organizationId: this.draft?.organizationId ?? `mock-org-${Date.now()}`,
+      organizationId,
+      marketplaceStatus: this.draft?.marketplaceStatus ?? "local_only",
+      membership: this.draft?.membership ?? { organizationId, role: "owner" },
       businessName: input.businessName.trim(),
       contactPhone: input.contactPhone,
       location: this.draft?.location ?? null,
@@ -63,6 +71,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(350);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    this.assertCanConfigureResources();
 
     if (!isValidVenueInput(input)) {
       throw new Error("Revisa los datos, la ubicacion y el horario de la sede.");
@@ -105,6 +114,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(300);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    this.assertCanConfigureResources();
     if (!isValidVenueInput(input)) {
       throw new Error("Revisa los datos, la ubicacion y el horario de la sede.");
     }
@@ -143,6 +153,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(350);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    this.assertCanConfigureResources();
 
     if (!isValidFieldInput(input)) {
       throw new Error("Revisa el nombre, las tarifas y el horario de la cancha.");
@@ -209,6 +220,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(300);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    this.assertCanConfigureResources();
 
     if (
       !this.draft ||
@@ -234,6 +246,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(300);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    this.assertCanConfigureResources();
     if (!isValidFieldInput(input)) throw new Error("Revisa el nombre, las tarifas y el horario de la cancha.");
     if (!this.draft || this.draft.organizationId !== organizationId || !this.draft.fields.some((field) => field.fieldId === fieldId)) throw new Error("No encontramos la cancha.");
     const fields = this.draft.fields.map((field) => {
@@ -275,6 +288,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(300);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    this.assertCanConfigureResources();
 
     if (!this.draft || this.draft.organizationId !== organizationId || !this.draft.venues.some((venue) => venue.venueId === venueId)) {
       throw new Error("No encontramos la sede que deseas eliminar.");
@@ -303,6 +317,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(220);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    this.assertCanConfigureResources();
     if (!this.draft || this.draft.organizationId !== organizationId) {
       throw new Error("No encontramos el club.");
     }
@@ -326,6 +341,7 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     await wait(220);
     const ownerId = this.getOwnerId(accessToken);
     await this.hydrateDraft(ownerId);
+    this.assertCanConfigureResources();
     if (!this.draft || this.draft.organizationId !== organizationId) {
       throw new Error("No encontramos el club.");
     }
@@ -340,9 +356,56 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     return this.draft;
   }
 
+  async updateMarketplaceStatus(
+    accessToken: string,
+    organizationId: string,
+    status: MarketplaceStatus,
+  ) {
+    await wait(220);
+    const ownerId = this.getOwnerId(accessToken);
+    await this.hydrateDraft(ownerId);
+    this.assertCanConfigureResources();
+    if (!this.draft || this.draft.organizationId !== organizationId) {
+      throw new Error("No encontramos el club.");
+    }
+    if (status === "live" && !getMarketplaceReadiness(this.draft).ready) {
+      throw new Error("Completa la sede, cancha y horario antes de recibir reservas online.");
+    }
+    this.draft = { ...this.draft, marketplaceStatus: status };
+    await this.draftStore.save(ownerId, this.draft);
+    return this.draft;
+  }
+
+  async setDevMembershipRole(
+    accessToken: string,
+    organizationId: string,
+    role: VenueRole,
+  ) {
+    if (!__DEV__) throw new Error("Esta herramienta solo está disponible en desarrollo.");
+    const ownerId = this.getOwnerId(accessToken);
+    await this.hydrateDraft(ownerId);
+    if (!this.draft || this.draft.organizationId !== organizationId) {
+      throw new Error("No encontramos el club.");
+    }
+
+    this.draft = {
+      ...this.draft,
+      membership: { organizationId, role },
+    };
+    await this.draftStore.save(ownerId, this.draft);
+    return this.draft;
+  }
+
   private async hydrateDraft(ownerId: string) {
     if (this.draftOwnerId !== ownerId) {
       this.draft = await this.draftStore.get(ownerId);
+      if (this.draft && !this.draft.membership) {
+        this.draft = {
+          ...this.draft,
+          membership: { organizationId: this.draft.organizationId, role: "owner" },
+        };
+        await this.draftStore.save(ownerId, this.draft);
+      }
       this.draftOwnerId = ownerId;
     }
   }
@@ -355,5 +418,14 @@ export class MockVenueOnboardingGateway implements VenueOnboardingGateway {
     }
 
     return decodeURIComponent(tokenBody.slice(0, separatorIndex));
+  }
+
+  private assertCanConfigureResources() {
+    if (
+      this.draft &&
+      !getBusinessResourceAccess(this.draft.membership.role).canConfigureResources
+    ) {
+      throw new Error("Esta acción requiere permisos de propietario o gestor.");
+    }
   }
 }

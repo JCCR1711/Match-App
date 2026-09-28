@@ -3,14 +3,19 @@ import ReservationMonthSheet from "@/src/features/reservations/components/Reserv
 import { addDays, formatMonthYear, toDateKey } from "@/src/features/reservations/utils/reservationDate";
 import { theme } from "@/src/theme";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useMemo, useRef, useState, type ComponentRef } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 
 interface BusinessReservationCalendarProps {
   selectedDateKey: string;
-  activityCounts: ReadonlyMap<string, number>;
+  activityByDate: ReadonlyMap<string, BusinessCalendarActivity>;
   onSelectDate: (dateKey: string) => void;
+}
+
+export interface BusinessCalendarActivity {
+  total: number;
+  pending: number;
 }
 
 const weekdayFormatter = new Intl.DateTimeFormat("es-PE", { weekday: "short" });
@@ -22,10 +27,10 @@ const parseDateKey = (dateKey: string) => {
   return new Date(year, month - 1, day);
 };
 
-const BusinessReservationCalendar = ({ selectedDateKey, activityCounts, onSelectDate }: BusinessReservationCalendarProps) => {
+const BusinessReservationCalendar = ({ selectedDateKey, activityByDate, onSelectDate }: BusinessReservationCalendarProps) => {
   const [monthVisible, setMonthVisible] = useState(false);
   const [weekViewportWidth, setWeekViewportWidth] = useState(0);
-  const weekScrollRef = useRef<ComponentRef<typeof Animated.ScrollView>>(null);
+  const weekScrollRef = useRef<ScrollView>(null);
   const scrollX = useSharedValue(0);
   const viewportWidth = useSharedValue(0);
   const contentWidth = useSharedValue(0);
@@ -44,16 +49,15 @@ const BusinessReservationCalendar = ({ selectedDateKey, activityCounts, onSelect
     const maximumOffset = Math.max(0, weekContentWidth - weekViewportWidth);
     const scrollOffset = Math.min(maximumOffset, Math.max(0, selectedCenter - weekViewportWidth / 2 + theme.layout.screenGutter));
     weekScrollRef.current?.scrollTo({ x: scrollOffset, animated: false });
-    scrollX.value = scrollOffset;
-  }, [scrollX, selectedDayIndex, weekViewportWidth]);
+  }, [selectedDayIndex, weekViewportWidth]);
   const onWeekScroll = useAnimatedScrollHandler((event) => {
-    scrollX.value = event.contentOffset.x;
+    scrollX.set(event.contentOffset.x);
   });
   const leftFadeStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(scrollX.value, [0, 18], [0, 1], Extrapolation.CLAMP),
+    opacity: interpolate(scrollX.get(), [0, 18], [0, 1], Extrapolation.CLAMP),
   }));
   const rightFadeStyle = useAnimatedStyle(() => {
-    const remaining = Math.max(0, contentWidth.value - viewportWidth.value - scrollX.value);
+    const remaining = Math.max(0, contentWidth.get() - viewportWidth.get() - scrollX.get());
     return { opacity: interpolate(remaining, [0, 18], [0, 1], Extrapolation.CLAMP) };
   });
 
@@ -61,25 +65,27 @@ const BusinessReservationCalendar = ({ selectedDateKey, activityCounts, onSelect
     <>
       <View style={styles.container}>
         <View style={styles.header}>
-          <CustomText text={formatMonthYear(selectedDate)} variant="subtitle" style={styles.title} />
+          <CustomText text={formatMonthYear(selectedDate)} variant="sectionHeading" style={styles.title} numberOfLines={1} />
           <Pressable onPress={() => setMonthVisible(true)} accessibilityRole="button" accessibilityLabel="Abrir calendario mensual" style={({ pressed }) => [styles.monthAction, pressed && styles.pressed]}>
-            <CustomText text="Calendario" variant="actionSecondary" style={styles.monthActionText} />
+            <CustomText text="Ver mes" variant="actionSecondary" style={styles.monthActionText} />
           </Pressable>
         </View>
-        <View style={styles.weekFrame} onLayout={(event) => { const width = event.nativeEvent.layout.width; viewportWidth.value = width; setWeekViewportWidth(width); }}>
-        <Animated.ScrollView ref={weekScrollRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.week} accessibilityRole="tablist" onContentSizeChange={(width) => { contentWidth.value = width; }} onScroll={onWeekScroll} scrollEventThrottle={16} decelerationRate="fast" snapToInterval={DAY_WIDTH + DAY_GAP} disableIntervalMomentum>
+        <View style={styles.weekFrame} onLayout={(event) => { const width = event.nativeEvent.layout.width; viewportWidth.set(width); setWeekViewportWidth(width); }}>
+        <Animated.ScrollView ref={weekScrollRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.week} accessibilityRole="tablist" onContentSizeChange={(width) => { contentWidth.set(width); }} onScroll={onWeekScroll} scrollEventThrottle={16} decelerationRate="fast" snapToInterval={DAY_WIDTH + DAY_GAP} disableIntervalMomentum>
           {weekDates.map((date) => {
             const dateKey = toDateKey(date);
             const selected = dateKey === selectedDateKey;
-            const count = activityCounts.get(dateKey) ?? 0;
+            const activity = activityByDate.get(dateKey);
+            const count = activity?.total ?? 0;
+            const hasPending = (activity?.pending ?? 0) > 0;
             const weekday = weekdayFormatter.format(date).replace(".", "").slice(0, 1);
             return (
               <Pressable key={dateKey} accessibilityRole="tab" accessibilityState={{ selected }} accessibilityLabel={`${weekday} ${date.getDate()}, ${count} reservas`} onPress={() => onSelectDate(dateKey)} style={({ pressed }) => [styles.day, selected && styles.daySelected, pressed && styles.pressed]}>
                 <CustomText text={weekday} variant="label" style={[styles.weekday, selected && styles.dayTextSelected]} />
                 <CustomText text={String(date.getDate())} variant="action" style={[styles.dayNumber, selected && styles.dayTextSelected]} />
                 {count > 0 ? (
-                  <View style={[styles.countBadge, styles.countBadgeActive, selected && styles.countBadgeSelected]}>
-                    <CustomText text={String(count)} variant="label" style={[styles.count, styles.countActive, selected && styles.countSelected]} />
+                  <View style={[styles.countBadge, hasPending ? styles.countBadgePending : styles.countBadgeActive, selected && styles.countBadgeSelected]}>
+                    <CustomText text={String(count)} variant="label" style={[styles.count, hasPending ? styles.countPending : styles.countActive, selected && styles.countSelected]} />
                   </View>
                 ) : <View style={styles.countPlaceholder} />}
               </Pressable>
@@ -94,7 +100,7 @@ const BusinessReservationCalendar = ({ selectedDateKey, activityCounts, onSelect
         </Animated.View>
         </View>
       </View>
-      <ReservationMonthSheet visible={monthVisible} selectedDateKey={selectedDateKey} activityCounts={activityCounts} onSelectDate={onSelectDate} onClose={() => setMonthVisible(false)} />
+      <ReservationMonthSheet visible={monthVisible} selectedDateKey={selectedDateKey} activityByDate={activityByDate} onSelectDate={onSelectDate} onClose={() => setMonthVisible(false)} />
     </>
   );
 };
@@ -104,7 +110,7 @@ export default BusinessReservationCalendar;
 const styles = StyleSheet.create({
   container: { gap: theme.spacing.lg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing.md },
-  title: { flex: 1, minWidth: 0, color: theme.colors.white, fontSize: 25, lineHeight: 32 },
+  title: { flex: 1, minWidth: 0, color: theme.colors.white },
   monthAction: { minHeight: 48, justifyContent: "center", paddingHorizontal: theme.spacing.sm },
   monthActionText: { color: theme.colors.authTextSecondary },
   weekFrame: { position: "relative", overflow: "hidden", marginHorizontal: -theme.layout.screenGutter },
@@ -118,10 +124,12 @@ const styles = StyleSheet.create({
   dayNumber: { color: theme.colors.white, includeFontPadding: false, textAlignVertical: "center" },
   countBadge: { minWidth: 26, height: 24, alignItems: "center", justifyContent: "center", borderRadius: theme.radius.pill },
   countBadgeActive: { backgroundColor: theme.colors.confirmedSurface },
+  countBadgePending: { backgroundColor: theme.colors.pendingSurface },
   countBadgeSelected: { backgroundColor: theme.colors.white },
   countPlaceholder: { width: 26, height: 24 },
   count: { color: theme.colors.authTextSecondary, includeFontPadding: false, textAlignVertical: "center" },
   countActive: { color: theme.colors.accent, fontFamily: theme.fontFamilies.poppinsBold, fontSize: 13, lineHeight: 16 },
+  countPending: { color: theme.colors.pendingLimeText, fontFamily: theme.fontFamilies.poppinsBold, fontSize: 13, lineHeight: 16 },
   countSelected: { color: theme.colors.authBlue },
   dayTextSelected: { color: theme.colors.white },
   pressed: { opacity: 0.7 },

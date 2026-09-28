@@ -1,4 +1,5 @@
 import CustomText from "@/src/components/ui/CustomText";
+import type { BusinessCalendarActivity } from "@/src/features/reservations/components/BusinessReservationCalendar";
 import ReservationSheetFrame from "@/src/features/reservations/components/ReservationSheetFrame";
 import { addDays, formatMonthYear, toDateKey } from "@/src/features/reservations/utils/reservationDate";
 import { theme } from "@/src/theme";
@@ -7,7 +8,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 interface ReservationMonthSheetProps {
   visible: boolean;
   selectedDateKey: string;
-  activityCounts: ReadonlyMap<string, number>;
+  activityByDate: ReadonlyMap<string, BusinessCalendarActivity>;
   onSelectDate: (dateKey: string) => void;
   onClose: () => void;
 }
@@ -19,7 +20,7 @@ const parseDateKey = (dateKey: string) => {
   return new Date(year, month - 1, day);
 };
 
-const ReservationMonthSheet = ({ visible, selectedDateKey, activityCounts, onSelectDate, onClose }: ReservationMonthSheetProps) => {
+const ReservationMonthSheet = ({ visible, selectedDateKey, activityByDate, onSelectDate, onClose }: ReservationMonthSheetProps) => {
   const selectedDate = parseDateKey(selectedDateKey);
   const monthStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
   const monthEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
@@ -38,11 +39,13 @@ const ReservationMonthSheet = ({ visible, selectedDateKey, activityCounts, onSel
             const dateKey = toDateKey(date);
             const selected = dateKey === selectedDateKey;
             const inMonth = date.getMonth() === selectedDate.getMonth();
-            const count = activityCounts.get(dateKey) ?? 0;
+            const activity = activityByDate.get(dateKey);
+            const count = activity?.total ?? 0;
+            const hasPending = (activity?.pending ?? 0) > 0;
             return (
               <Pressable key={dateKey} accessibilityRole="button" accessibilityState={{ selected }} accessibilityLabel={`Seleccionar ${date.getDate()}, ${count} reservas`} onPress={() => { onSelectDate(dateKey); onClose(); }} style={({ pressed }) => [styles.day, selected && styles.daySelected, pressed && styles.pressed]}>
                 <CustomText text={String(date.getDate())} variant="body" style={[styles.dayText, !inMonth && styles.dayTextMuted, selected && styles.dayTextSelected]} />
-                {count > 0 ? <CustomText text={String(count)} variant="label" style={[styles.count, selected && styles.countSelected]} /> : <View style={styles.countPlaceholder} />}
+                {count > 0 ? <CustomText text={String(count)} variant="label" style={[styles.count, hasPending && styles.countPending, selected && styles.countSelected]} /> : <View style={styles.countPlaceholder} />}
               </Pressable>
             );
           })}
@@ -65,6 +68,7 @@ const styles = StyleSheet.create({
   dayTextMuted: { color: theme.colors.surfaceMuted },
   dayTextSelected: { color: theme.colors.white },
   count: { minWidth: 18, color: theme.colors.accent, fontFamily: theme.fontFamilies.poppinsBold, textAlign: "center" },
+  countPending: { color: theme.colors.pendingLimeText },
   countSelected: { color: theme.colors.white },
   countPlaceholder: { height: 16 },
   pressed: { opacity: 0.7 },

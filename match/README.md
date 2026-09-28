@@ -23,6 +23,10 @@ Para conocer el modelo previsto de usuarios, negocios, permisos y planes, consul
 
 **[PRODUCT_MODEL.md](./PRODUCT_MODEL.md)**
 
+Para probar accesos demo, roles y datos mock durante el desarrollo, consultar:
+
+**[DEVELOPMENT_TESTING.md](./DEVELOPMENT_TESTING.md)**
+
 ## Rutas
 
 Expo Router utiliza la carpeta `app/` para definir la navegación de la aplicación.
@@ -68,6 +72,7 @@ El proyecto debe mantenerse sin errores de TypeScript.
 | `README.md`        | Información general y ejecución del proyecto |
 | `ARCHITECTURE.md`  | Arquitectura y organización del código       |
 | `PRODUCT_MODEL.md` | Usuarios, modos, permisos y planes            |
+| `DEVELOPMENT_TESTING.md` | Accesos demo, roles y datos mock       |
 | `TEAM_WORKFLOW.md` | Flujo de trabajo del equipo                  |
 | `AGENTS.md`        | Instrucciones para agentes de desarrollo     |
 | `CLAUDE.md`        | Instrucciones específicas para Claude        |

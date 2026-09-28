@@ -1,20 +1,21 @@
+import AppSurface from "@/src/components/ui/AppSurface";
 import CustomText from "@/src/components/ui/CustomText";
 import type { NearbyAvailableVenue } from "@/src/features/home/types/nearbyVenue";
 import { getVenueImage } from "@/src/features/venues/data/venueImages";
 import { theme } from "@/src/theme";
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 interface HomeVenueCardProps { item: NearbyAvailableVenue; width: number; onPress: () => void }
 
 const HomeVenueCard = ({ item, width, onPress }: HomeVenueCardProps) => (
-  <Pressable accessibilityRole="button" accessibilityLabel={`Ver ${item.venue.name}`} onPress={onPress} style={({ pressed }) => [styles.card, { width }, pressed && styles.pressed]}>
+  <AppSurface variant="transparent" accessibilityLabel={`Ver ${item.venue.name}`} onPress={onPress} style={[styles.card, { width }]}>
     <Image source={getVenueImage(item.venue.id)} style={styles.cover} contentFit="cover" transition={220} accessibilityLabel={`Cancha de ${item.venue.name}`} />
     <View style={styles.copy}>
       <CustomText text={item.venue.name} variant="actionSecondary" style={styles.title} numberOfLines={1} />
       <CustomText text={`${item.distanceLabel} · desde S/ ${item.startingPrice}`} variant="caption" style={styles.metadata} numberOfLines={1} />
     </View>
-  </Pressable>
+  </AppSurface>
 );
 
 export default HomeVenueCard;
@@ -25,5 +26,4 @@ const styles = StyleSheet.create({
   copy: { minHeight: 62, justifyContent: "center", gap: theme.spacing.xxs, paddingTop: theme.spacing.xs },
   title: { color: theme.colors.white },
   metadata: { color: theme.colors.authTextSecondary },
-  pressed: { opacity: 0.76 },
 });

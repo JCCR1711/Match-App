@@ -1,3 +1,5 @@
+import type { VenueMembership, VenueRole } from "@/src/types/businessAccess";
+
 export interface BusinessBasicsInput {
   businessName: string;
   contactPhone: string;
@@ -26,6 +28,7 @@ export type UpdateVenueLocationInput = Omit<VenueLocationInput, "status">;
 
 export type FieldFormat = "5v5" | "7v7" | "11v11";
 export type ResourceStatus = "active" | "inactive";
+export type MarketplaceStatus = "local_only" | "live" | "paused";
 export type FieldScheduleMode = "inherit" | "custom";
 
 export interface SportsFieldInput {
@@ -77,6 +80,8 @@ export type FieldAvailability = FieldAvailabilityInput;
 
 export interface BusinessOnboardingDraft {
   organizationId: string;
+  marketplaceStatus: MarketplaceStatus;
+  membership: VenueMembership;
   businessName: string;
   contactPhone: string;
   venues: VenueLocation[];
@@ -137,5 +142,15 @@ export interface VenueOnboardingGateway {
     organizationId: string,
     fieldId: string,
     status: ResourceStatus,
+  ): Promise<BusinessOnboardingDraft>;
+  updateMarketplaceStatus(
+    accessToken: string,
+    organizationId: string,
+    status: MarketplaceStatus,
+  ): Promise<BusinessOnboardingDraft>;
+  setDevMembershipRole?(
+    accessToken: string,
+    organizationId: string,
+    role: VenueRole,
   ): Promise<BusinessOnboardingDraft>;
 }

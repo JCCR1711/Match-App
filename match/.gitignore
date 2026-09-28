@@ -41,3 +41,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Obsidian workspace state for the project-memory vault
+/project-memory/.obsidian/

@@ -12,9 +12,10 @@ interface ReservationCustomerPickerProps {
   selectedCustomerId: string | null;
   onChangeQuery: (query: string) => void;
   onSelect: (customer: ReservationCustomer) => void;
+  allowManualEntry?: boolean;
 }
 
-const ReservationCustomerPicker = ({ customers, query, selectedCustomerId, onChangeQuery, onSelect }: ReservationCustomerPickerProps) => {
+const ReservationCustomerPicker = ({ customers, query, selectedCustomerId, onChangeQuery, onSelect, allowManualEntry = false }: ReservationCustomerPickerProps) => {
   const normalizedQuery = query.trim().toLocaleLowerCase("es-PE");
   const normalizedUsernameQuery = normalizedQuery.startsWith("@") ? normalizedQuery.slice(1) : normalizedQuery;
   const results = useMemo(
@@ -35,14 +36,14 @@ const ReservationCustomerPicker = ({ customers, query, selectedCustomerId, onCha
   return (
     <View style={styles.container}>
       <AppTextField
-        label="Jugador"
+        label={allowManualEntry ? "Cliente" : "Jugador"}
         value={query}
         onChangeText={onChangeQuery}
-        placeholder="Buscar por nombre o @usuario"
+        placeholder={allowManualEntry ? "Nombre o @usuario de Match" : "Buscar por nombre o @usuario"}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
-        accessibilityLabel="Buscar jugador"
+        accessibilityLabel={allowManualEntry ? "Ingresar cliente o buscar jugador" : "Buscar jugador"}
       />
       <View style={styles.results}>
         {results.map((customer) => {
@@ -66,6 +67,9 @@ const ReservationCustomerPicker = ({ customers, query, selectedCustomerId, onCha
           );
         })}
         {results.length === 0 ? <CustomText text="No encontramos jugadores." variant="caption" style={styles.empty} /> : null}
+        {allowManualEntry && normalizedQuery.length >= 2 && !selectedCustomerId ? (
+          <CustomText text="Se guardará como cliente local, sin cuenta Match." variant="caption" style={styles.manualHint} />
+        ) : null}
       </View>
     </View>
   );
@@ -84,5 +88,6 @@ const styles = StyleSheet.create({
   selectionMark: { width: 10, height: 10, borderRadius: 100, backgroundColor: theme.colors.surfaceMuted },
   selectionMarkSelected: { backgroundColor: theme.colors.electricBlue },
   empty: { paddingVertical: theme.spacing.md, color: theme.colors.textOnDarkSecondary },
+  manualHint: { color: theme.colors.accent },
   pressed: { opacity: 0.72 },
 });

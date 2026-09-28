@@ -1,7 +1,8 @@
 import AppCardArrow from "@/src/components/ui/AppCardArrow";
+import AppSurface from "@/src/components/ui/AppSurface";
 import { theme } from "@/src/theme";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 interface BusinessHighlightSurfaceProps {
   accessibilityLabel: string;
@@ -19,14 +20,13 @@ const BusinessHighlightSurface = ({
   const isLight = tone === "light";
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <AppSurface
+      variant="transparent"
       accessibilityLabel={accessibilityLabel}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.card,
         isLight ? styles.lightCard : styles.navyCard,
-        pressed && styles.pressed,
       ]}
     >
       <View style={styles.content}>{children}</View>
@@ -34,7 +34,7 @@ const BusinessHighlightSurface = ({
         backgroundColor={isLight ? theme.colors.black : theme.colors.white}
         color={isLight ? theme.colors.pendingLimeText : theme.colors.black}
       />
-    </Pressable>
+    </AppSurface>
   );
 };
 
@@ -60,8 +60,5 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     minWidth: 0,
-  },
-  pressed: {
-    opacity: 0.78,
   },
 });
